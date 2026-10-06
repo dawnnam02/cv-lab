@@ -84,9 +84,9 @@ K = [[fx,  0, cx],
 | 입력 | 캘리브레이션 타깃 | ChArUco 9×6 칸, 칸 1.5 mm, 마커 1.1 mm (권장) | 유리·세라믹 등 평평한 기판. 칸 크기 실측값 기록 |
 | 입력 | 보드 사진 | `data/raw/calib/CAL-2026-11-24-A/d1_views/view_000.png` … (25~40장) | 8-bit 또는 16-bit **무압축 PNG**. JPEG 금지 |
 | 입력 | 렌즈 상태 기록 | 초점·조리개 잠금, 필터 장착 사진 | 측정 때와 같은 상태여야 함 |
-| 산출물 | **카메라 내부 파라미터** | `config/calibration/CAL-2026-11-24-A/camera_intrinsics.yaml` | K, 왜곡계수, RMS, 사진 수, 보드 사양, 렌즈 상태 |
-| 산출물 | 사진별 오차표 | `.../d1_per_view.csv` (열: view, rms_px, used) | 제외한 사진과 이유 |
-| 산출물 | 커버리지 그림 | `.../d1_coverage.png` | 모든 코너를 한 영상에 찍은 산점도 |
+| 산출물 | **카메라 내부 파라미터** | `config/calibration/CAL-2026-11-24-A/camera_intrinsics.yaml` | K, 왜곡계수, RMS, 사진 수, 커버리지, 보드 사양, 렌즈 상태 |
+| 산출물 | 사진별 오차표 | `.../d1_per_view.csv` (열: view, rms_px) | 6.1 코드가 자동 저장. 제외 사유는 10장 표에 추가 기록 |
+| 산출물 | 예시 사진 | `d1_example_view.png` | 합성 사진 1장 (눈으로 확인용) |
 | 산출물 | 기록지 | 10장 양식 (YAML) | 날짜, 온도, 담당, 판정 |
 
 ---
@@ -265,7 +265,8 @@ def main():
             continue
         obj_list.append(obj)
         img_list.append(c)
-    print(f"사용한 사진: {len(img_list)} 장, 영상 커버리지: {coverage_percent(img_list):.0f} %")
+    cover = coverage_percent(img_list)
+    print(f"사용한 사진: {len(img_list)} 장, 영상 커버리지: {cover:.0f} %")
 
     # ------------------------------------------------ 캘리브레이션
     # 장초점(25 mm) 저왜곡 렌즈는 영상 가장자리에서도 r 이 작아서 k2, k3 를 따로 구분해 낼 수 없음
@@ -309,12 +310,15 @@ def main():
         "dist_model": "k1,p1,p2 (k2,k3 fixed=0)",
         "rms_reprojection_px": round(float(rms), 4),
         "n_views": len(img_list),
+        "coverage_pct": round(cover, 1),
         "board": {"type": "chessboard", "squares": list(SQUARES), "square_mm": SQ_MM},
         "lens_state": {"focus": "locked", "aperture": "f/8 locked", "filter": "bandpass 450nm"},
     }
     with open("camera_intrinsics.yaml", "w", encoding="utf-8") as f:
         yaml.safe_dump(out, f, allow_unicode=True, sort_keys=False)
-    print("저장: camera_intrinsics.yaml")
+    np.savetxt("d1_per_view.csv", np.c_[np.arange(len(per_view)), per_view.ravel()],
+               delimiter=",", header="view,rms_px", comments="", fmt=["%d", "%.4f"])
+    print("저장: camera_intrinsics.yaml, d1_per_view.csv")
 
 
 if __name__ == "__main__":
@@ -334,7 +338,7 @@ cy = 539.1 (정답 535.5) ± 6.0
 k1 = -0.1233 (정답 -0.1200) ± 0.0074
 사진별 RMS 최대 = 0.131 px (view 23) → 0.5 px 넘는 사진은 빼고 다시 계산
 hold-out 재투영 RMS 평균 = 0.051 px, 보드 거리(Z) 오차 최대 = 97 µm
-저장: camera_intrinsics.yaml
+저장: camera_intrinsics.yaml, d1_per_view.csv
 ```
 
 **출력 읽는 법**
