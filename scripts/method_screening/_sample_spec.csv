@@ -1,0 +1,4 @@
+id,name,config,z_sigma_um,xy_step_um,xy_blur_um,fov_mm,depth_mm,measures_z,edge_loss_um,max_slope_deg,time_min,cost_krw,access,surface_dep,in_situ,safety,learn_weeks,sources
+S01,(시험용) 자작 레이저 삼각측량,라인 레이저 + 산업용 카메라 + 프린터 Y축 이송 (가상 값),8,20,40,60,30,1,60,70,10,"800,000",own,4,2,Class 2 (IEC 60825-1:2014),6,시험용 가상 값
+S02,(시험용) 평판 스캐너,2400 dpi 평판 스캐너 (가상 값),NA,10.6,25,216,2,0,0,NA,3,300000,own,2,0,없음,1,시험용 가상 값
+S03,(시험용) 3차원 측정기 CMM,학내 CMM 접촉 프로브 Ø1 mm 점 측정 (가상 값),1.5,1000,500,500,300,1,0,90,60,5만,lab,1,0,없음,3,시험용 가상 값
