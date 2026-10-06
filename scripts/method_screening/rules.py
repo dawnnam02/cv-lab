@@ -15,25 +15,18 @@ BUDGET_OUTSOURCE_KRW = 300_000    # outsource: 시편 1개 1회 의뢰비 상한
 SPECIMEN_MIN_MM = 20.0            # 시편 20 × 40 mm 의 짧은 변. fov 가 이보다 작으면 이어 붙이기 필요
 
 # 안전: X선, 레이저 Class 3B, Class 4 → own 이면 탈락 (외부 의뢰만 허용)
+# 'Class 1, 4 mW' 처럼 등급이 아닌 숫자 4 에 걸리지 않게, 4 는 반드시 'Class'/'등급' 바로 뒤에서만 본다.
 _SAFETY_PATTERNS = [
-    re.compile(r"x\s*-?\s*선|x\s*-?\s*ray|엑스선|방사선", re.I),
-    re.compile(r"3\s*b|iii\s*b", re.I),
-    re.compile(r"(?<![\w.\-])(?:4|iv)(?![\w.])", re.I),     # 'Class 4', '4', 'IV' (낱말 단위)
+    ("X선", re.compile(r"x\s*선|x\s*-?\s*ray|엑스선", re.I)),
+    ("3B", re.compile(r"(?<![0-9A-Za-z])(?:class\s*)?(?:3\s*b|iii\s*b)(?![0-9A-Za-z])", re.I)),
+    ("Class 4", re.compile(r"(?:class|클래스|등급)\s*(?:4|iv)(?![0-9A-Za-z.])", re.I)),
 ]
 
 
 def safety_hit(text: str) -> str | None:
     t = str(text or "")
-    if not t.strip():
-        return None
-    names = ["X선", "3B", "4"]
-    for name, p in zip(names, _SAFETY_PATTERNS):
-        if name == "4":
-            # 'IEC 60825-1:2014' 같은 규격 번호의 숫자에 걸리지 않게 낱말 단위로 본다
-            t2 = re.sub(r"\d{3,}[\d\-:.]*", " ", t)
-            if p.search(t2):
-                return name
-        elif p.search(t):
+    for name, p in _SAFETY_PATTERNS:
+        if p.search(t):
             return name
     return None
 

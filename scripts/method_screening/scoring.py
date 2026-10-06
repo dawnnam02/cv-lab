@@ -25,10 +25,13 @@ CRIT_KO = {"precision": "정밀도 여유", "types": "오차 종류", "cost": "�
 # (통과 조건이 2종 이상이므로). 0.4 = 10:1 한계(4:1 한계의 0.4배).
 PRECISION_BINS = [(0.25, 5), (0.40, 4), (0.70, 3), (1.00, 2)]
 PRECISION_ELSE = 1
-PRECISION_GROUP_TYPES = {"높이": ["단차"], "윤곽": ["선폭"], "치수": ["구멍지름"]}
-# 오차 종류: 4:1 이상 통과한 종류 수 (단차·선폭·구멍지름·위치, '경계'는 참고라 제외)
-TYPE_COUNT_TYPES = ["단차", "선폭", "구멍지름", "위치"]
-TYPES_SCORE = {4: 5, 3: 4, 2: 3, 1: 2, 0: 1}
+# 그룹 판정 규칙: (오차 종류 목록, 'max' = 나쁜 쪽 / 'min' = 좋은 쪽)
+#  높이 = 국소높이 (단차는 참고), 윤곽 = 국소선폭 (전체 선폭·경계는 참고), 치수 = 구멍지름·길이40 중 나쁜 쪽
+GROUP_RULES = {"높이": (["국소높이"], "max"), "윤곽": (["국소선폭"], "max"),
+               "치수": (["구멍지름", "길이40"], "max")}
+# 오차 종류: 4:1 이상 통과한 종류 수 (참고 지표 단차·선폭·경계 제외)
+TYPE_COUNT_TYPES = ["국소높이", "국소선폭", "구멍지름", "길이40", "위치"]
+TYPES_SCORE = {5: 5, 4: 4, 3: 3, 2: 2, 1: 1, 0: 1}
 # 비용 [원]: own·조합은 구축비, outsource·lab 은 1회 이용료
 COST_BINS_OWN = [(300_000, 5), (1_000_000, 4), (2_500_000, 3), (5_000_000, 2)]
 COST_BINS_PER_USE = [(50_000, 5), (100_000, 4), (200_000, 3), (300_000, 2)]
@@ -48,6 +51,26 @@ MISSING_SCORE = 1
 MANUAL_DEFAULT = 3
 SENS_FACTORS = (0.5, 1.5)          # 가중치 ±50 %
 
+# 선 단면 장비: CSV 의 time_min 은 '단면 몇 줄' 기준이라 면 측정 시간이 아니다.
+# 국소높이·국소선폭은 면 래스터 모델값을 쓰므로, 속도 점수도 면 래스터 시간으로 다시 계산한다.
+#  면 래스터 시간 = 줄 수 × (줄 길이 / 주사 속도 + 줄당 이동·복귀 시간), 줄 간격 = xy_step
+#  주사 속도 100 µm/s: DektakXT 일반 측정 설정(1 mm 주사에 약 10 s) 수준.
+#    M02.md 의 '40 mm 한 줄 주사·이동 4분'(≈ 170 µm/s, 이동 포함)과 같은 크기.
+#  줄당 이동·복귀 20 s: 스테이지 복귀·안정화 가정.
+LINE_PROFILER = {"M02": {"scan_speed_um_s": 100.0, "overhead_s": 20.0}}
+SPEC_AREA_MM = (20.0, 40.0)        # 시편 20 × 40 mm, 줄은 40 mm 방향
+
+
+def raster_time_min(row) -> float:
+    rid = str(row.get("id", ""))
+    p = LINE_PROFILER.get(rid)
+    step = row.get("xy_step_um", np.nan)
+    if p is None or not np.isfinite(step) or step <= 0:
+        return np.nan
+    n_lines = SPEC_AREA_MM[0] * 1000 / step
+    t_line = SPEC_AREA_MM[1] * 1000 / p["scan_speed_um_s"] + p["overhead_s"]
+    return n_lines * t_line / 60.0
+
 
 def _bin(v, bins, other):
     if v is None or not np.isfinite(v):
@@ -59,14 +82,14 @@ def _bin(v, bins, other):
 
 
 def group_ratios(sim: dict) -> dict:
-    """그룹별 최소 (판정량 / 4:1 한계). 측정 불가 = inf."""
+    """그룹별 (판정량 / 4:1 한계). 측정 불가 = inf. 치수는 두 종류 중 나쁜 쪽."""
     out = {}
-    for g, types in PRECISION_GROUP_TYPES.items():
+    for g, (types, mode) in GROUP_RULES.items():
         rs = []
         for t in types:
             s = sim[t]
             rs.append(s["Q_um"] / s["lim4_um"] if np.isfinite(s["Q_um"]) else np.inf)
-        out[g] = min(rs)
+        out[g] = max(rs) if mode == "max" else min(rs)
     return out
 
 

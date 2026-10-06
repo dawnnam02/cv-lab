@@ -30,36 +30,46 @@ def _style(ax):
     ax.set_axisbelow(True)
 
 
+SC_COLORS = {"낙관": "#b9d6f2", "보수-100": "#5b8fd0", "보수-500": "#1f4e8c", "보수": "#1f4e8c"}   # 한 파랑 계열 밝음→어두움
+
+
 def q_bars(st, path):
-    types = ["단차", "선폭", "구멍지름", "위치"]
+    types = ["국소높이", "국소선폭", "구멍지름", "길이40", "위치", "단차"]
     ids = list(dict.fromkeys(st["id"]))
-    fig, axes = plt.subplots(2, 2, figsize=(max(8, 0.45 * len(ids) + 5), 7), constrained_layout=True)
+    scs = [s for s in ("낙관", "보수-100", "보수-500", "보수") if s in set(st["scenario"])]
+    fig, axes = plt.subplots(2, 3, figsize=(max(12, 0.5 * len(ids) * 3 / 2 + 6), 8), constrained_layout=True)
+    bw = 0.8 / max(len(scs), 1)
     for ax, t in zip(axes.flat, types):
-        d = st[st["error_type"] == t].set_index("id").reindex(ids)
-        q = d["Q_um"].to_numpy(float)
-        l4, l10 = float(d["lim_4to1_um"].iloc[0]), float(d["lim_10to1_um"].iloc[0])
-        finite = q[np.isfinite(q) & (q > 0)]
-        lo = min(l10 / 10, finite.min() / 2) if finite.size else l10 / 10
-        hi = max(l4 * 10, finite.max() * 2) if finite.size else l4 * 10
+        d0 = st[st["error_type"] == t]
+        l4, l10 = float(d0["lim_4to1_um"].iloc[0]), float(d0["lim_10to1_um"].iloc[0])
+        qs = {sc: d0[d0["scenario"] == sc].set_index("id").reindex(ids)["Q_um"].to_numpy(float) for sc in scs}
+        allq = np.concatenate([q[np.isfinite(q) & (q > 0)] for q in qs.values()])
+        lo = min(l10 / 10, allq.min() / 2) if allq.size else l10 / 10
+        hi = max(l4 * 10, allq.max() * 2) if allq.size else l4 * 10
         x = np.arange(len(ids))
-        qq = np.where(np.isfinite(q), np.maximum(q, lo * 1.01), np.nan)
-        colors = [BAR if (np.isfinite(v) and v <= l4) else BAR_FAIL for v in q]
-        ax.bar(x, qq, color=colors, width=0.6, bottom=lo)
+        for k, sc in enumerate(scs):
+            q = qs[sc]
+            qq = np.where(np.isfinite(q), np.maximum(q, lo * 1.01), np.nan)
+            ax.bar(x + (k - (len(scs) - 1) / 2) * bw, qq - lo, bottom=lo, width=bw * 0.92,
+                   color=SC_COLORS[sc], label=sc)
+            for xi, v in zip(x, q):
+                if not np.isfinite(v) and sc == scs[-1]:
+                    ax.text(xi, lo * 1.15, "불가", ha="center", va="bottom", fontsize=6, color=MUTED,
+                            rotation=90)
         ax.set_yscale("log")
         ax.set_ylim(lo, hi)
         ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
         ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
-        ax.axhline(l4, color=LINE4, lw=1.5, ls="--")
-        ax.axhline(l10, color=LINE10, lw=1.5, ls=":")
-        ax.text(len(ids) - 0.5, l4, f" 4:1 ({l4:g} µm)", color=LINE4, va="bottom", ha="right", fontsize=8)
-        ax.text(len(ids) - 0.5, l10, f" 10:1 ({l10:g} µm)", color=LINE10, va="top", ha="right", fontsize=8)
-        for xi, v in zip(x, q):
-            if not np.isfinite(v):
-                ax.text(xi, lo * 1.15, "측정\n불가", ha="center", va="bottom", fontsize=7, color=MUTED)
-        ax.set_xticks(x, ids, rotation=60 if len(ids) > 8 else 0, fontsize=8)
-        ax.set_title(f"{t}: 판정량 |bias| + 2σ [µm]", fontsize=10, color=INK, loc="left")
+        ax.axhline(l4, color=LINE4, lw=1.4, ls="--")
+        ax.axhline(l10, color=LINE10, lw=1.4, ls=":")
+        ax.text(len(ids) - 0.5, l4, f"4:1 ({l4:g})", color=LINE4, va="bottom", ha="right", fontsize=7)
+        ax.text(len(ids) - 0.5, l10, f"10:1 ({l10:g})", color=LINE10, va="top", ha="right", fontsize=7)
+        ax.set_xticks(x, ids, rotation=90 if len(ids) > 8 else 0, fontsize=7)
+        ref = " (참고)" if t == "단차" else ""
+        ax.set_title(f"{t}{ref}: |bias| + 2σ [µm]", fontsize=10, color=INK, loc="left")
         _style(ax)
-    fig.suptitle("후보별 판정량 (로그축, 낮을수록 좋음 · 파랑 = 4:1 통과, 회색 = 불합격/측정 불가)",
+    axes.flat[0].legend(frameon=False, fontsize=8, loc="upper left")
+    fig.suptitle("후보별 판정량 (로그축, 낮을수록 좋음) · 밝음→어두움 = 낙관 · 보수-100(자작 배율 교정) · 보수-500(판정 기준)",
                  fontsize=11, color=INK)
     fig.savefig(path, dpi=150)
     plt.close(fig)

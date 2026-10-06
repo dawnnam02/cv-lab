@@ -40,6 +40,31 @@
       오류 대신 NaN → 유효 회차가 80 % 미만이면 '측정 불가'.
   A10. 지표 추출은 측정 데이터와 설계값(G코드 위치·치수)만 쓴다. 넣은 오차(정답)는 쓰지 않는다.
        판정량 Q = |bias| + 2σ (위치는 |평균 오차 벡터| + 2·max(σx, σy)).
+
+국소 지표 (판정의 주 지표)
+  L1. 국소높이: 평평한 윗면 2 × 2 mm 를 0.2 mm 셀로 나눠 (셀 평균 − 설계 높이). 모든 회차의 셀을 모아
+      |평균| + 2σ. 기준 4:1 = 5 µm, 10:1 = 2 µm. '높이' 그룹의 주 판정 (단차는 참고).
+  L2. 국소선폭: 선 9 mm 를 0.5 mm 구간마다 따로 FWHM. 구간 오차를 모아 |bias| + 2σ.
+      기준 10 / 4 µm. '윤곽' 그룹의 주 판정 (전체 선폭·경계는 참고).
+  L3. 길이40: 시편 양 끝 경계 사이 40 mm 를 해석적으로 계산. 경계 잡음 2개(각 xy_step/√12)
+      + [보수] 배율·이어 붙이기. 치우침 0, Q = 2σ. '치수' = 구멍지름·길이40 중 나쁜 쪽.
+      ※ 측정 깊이(depth)는 길이에 적용하지 않았다 (윗면 경계만 찾으면 된다고 봄).
+
+시나리오 ('낙관'은 위 A3 그대로, '보수'가 판정 기준)
+  B1. 공간 상관 Z 잡음: 전체 분산 z_sigma² 유지, 백색 σ = z_sigma/√2 + 상관 σ = z_sigma/√2
+      (상관 성분 = 백색 잡음에 σ 0.5 mm 가우시안 필터, 50 µm 격자에서 만들어 보간).
+  B2. XY 배율 오차: 회차마다 s ~ N(0, u_s), XY 좌표 전체에 (1+s). u_s 는 CAL_CLASS (근거는 상수 주석).
+  B3. 이어 붙이기: fov < 40 mm 이면 seam = ceil(40/fov) − 1. seam 마다 XY σ = max(0.5·xy_step, 1 µm),
+      Z σ = z_sigma/√10 를 랜덤워크로 누적. 길이40 (XY) 와 국소높이 (Z, 패치를 가운데 seam 에 걸침,
+      전체 평균을 기준면으로 뺌) 에만 넣었다.
+      단, 프린터 축 래스터 점 센서(RASTER_POINT = M03·M07·M08)는 seam 0 이고, 대신 샘플마다
+      XY 위치 잡음 σ = 5 µm (실제로 읽는 위치만 흔들림, 보고 좌표는 명목 격자) + u_s printer_axis 500 ppm.
+      M18 은 카메라 타일이라 seam 규칙을 쓰되 u_s 는 printer_axis.
+  B2'. 배율 민감도: diy 등급 u_s 500 ppm (보수-500, 판정 기준) / 100 ppm (보수-100, 격자판 교정).
+      printer_axis 등급은 두 경우 모두 500 ppm.
+  B4. 점 측정 (POINT_IDS = M01, M04): 높이맵 모델 대신 해석 판정. 구멍 σ = z·√(2/8),
+      길이 √(2z² + (40 mm·u_s)²), 단차 z·√2, 선폭은 볼 지름 > 0.4 mm 면 측정 불가,
+      국소높이는 xy_step ≥ 200 µm 면 측정 불가, 위치 축별 σ = z·√(2/8).
 """
 from __future__ import annotations
 
@@ -67,14 +92,58 @@ MIN_BOUNDARY_PTS = 12
 DEFAULT_SLOPE_OPTICAL, DEFAULT_SLOPE_CONTACT = 60.0, 90.0
 CONTACT_MORPH = "closing"        # 'closing'(물리적으로 맞음) 또는 'opening'(지시서 원문)
 
+# 국소 지표 (청사진 2.1절 취지: A2 요구 = 격자점별 높이맵 정확도)
+FLAT_W, FLAT_H = 2000.0, PLATE_T  # 국소 높이용 평평한 윗면 패치 (한 변 2 mm, 높이 1 mm)
+CELL = 200.0                     # 국소 높이 셀 0.2 × 0.2 mm (비드 1개 폭)
+CELL_VALID_MIN = 0.5             # 점이 있는 셀이 이 비율 미만이면 그 회차는 측정 불가
+SEG_LEN = 500.0                  # 국소 선폭 구간 길이 0.5 mm
+SPEC_LEN = 40000.0               # 시편 길이 40 mm (양 끝 경계 사이)
+
+# ---------------------------------------------------------------- 보수 시나리오 상수
+# 시나리오: '낙관' = 샘플마다 독립 잡음만, '보수' = 아래 항을 모두 더함. 판정·점수는 '보수' 기준.
+CORR_LEN = 500.0                 # 공간 상관 Z 잡음의 가우시안 필터 σ [µm]
+CORR_FRAC = 0.5                  # 전체 분산 z_sigma² 중 상관 성분 비율 (백색 σ = 상관 σ = z_sigma/√2)
+CORR_GRID = 50.0                 # 상관 잡음장을 만드는 거친 격자 [µm] (상관 길이의 1/10, 샘플 점에 쌍선형 보간)
+# XY 배율 교정 오차 u_s [ppm]. 회차마다 s ~ N(0, u_s), XY 좌표 전체에 (1 + s).
+#  20 ppm : 교정 성적서가 있는 계측기 (학내·외부 CMM, 형상측정기, 현미경, CT, 상용 공초점 라인).
+#           일반 CMM MPE_E ≈ (1.5 + L/333) µm → 40 mm 에서 약 1.6 µm ≈ 40 ppm (최대허용오차, 표준불확도는 그 1/2 수준)
+#  100 ppm: 상용 산업 센서 (자체 구입). 데이터시트 직선성 ±0.01–0.05 % F.S. 수준 → 100 ppm
+#  500 ppm: 자작·비계측 장비 (평판 스캐너, 자작 광학계, 프린터 축). 스캐너 배율 0.1–0.3 %,
+#           프린터 스텝 축 0.05–0.2 % 수준이 보고됨 → 교정 후 잔차로 500 ppm
+#  printer_axis 500 ppm: 위치를 프린터 축(벨트·스텝모터)으로 정하는 방식. steps/mm 미교정 기준 0.05 % 수준.
+#  등급 이름 → (ppm, id 목록). 'diy' 는 배율 민감도(--diy-ppm, 기본 500 / 대안 100)의 대상이다.
+#  diy 100 ppm = 기준 격자판으로 배율을 교정한 경우 (D5·C3 계획).
+CAL_CLASS = {
+    "calibrated": (20, ["M01", "M02", "M04", "M14", "M15", "M16", "M23", "M09"]),   # M04: 교정 계측기(팀장 결정)
+    "industrial": (100, ["M06", "M10", "M21"]),
+    "diy": (500, ["M05", "M11", "M13", "M17", "M19", "M20", "M22", "M12"]),
+    "printer_axis": (500, ["M03", "M07", "M08", "M18"]),
+}
+CAL_DEFAULT_BY_ACCESS = {"lab": 20, "outsource": 20, "own": 500}   # 목록에 없는 id (예: 시험용 S*)
+# 프린터 축 래스터 점 센서: 한 점(또는 짧은 선)을 프린터 축으로 끌고 다니며 면을 만든다.
+#  → 카메라 타일을 잇는 것이 아니므로 이어 붙이기 seam 은 0. 대신 샘플마다 축 위치 잡음
+#    σ = 5 µm (GT2 벨트·1.8° 스텝모터 반복성 수 µm 수준)를 XY 좌표에 넣는다.
+#  M18 (카메라 타일을 프린터 축으로 옮김)은 seam 규칙을 그대로 쓰고 u_s 만 printer_axis.
+RASTER_POINT = {"M03", "M07", "M08"}
+RASTER_XY_SIGMA = 5.0
+STITCH_LEN_MM = 40.0             # 시야가 이보다 작으면 이어 붙이기: seam 수 = ceil(40/fov) − 1
+# seam 마다 XY 오차 σ = max(0.5·xy_step, 1 µm), Z 오프셋 σ = z_sigma/√10, 둘 다 랜덤워크로 누적
+POINT_IDS = {"M01", "M04"}       # 점 측정 방식 → 높이맵 모델 대신 사양값 해석 판정
+POINT_N_HOLE = 8                 # 구멍 원 맞춤 점 수
+
 # 오차 종류: (이름, 그룹, 정답, 4:1 한계, 10:1 한계)   — 청사진 2.1절
+#  그룹 판정: 높이 = 국소높이, 윤곽 = 국소선폭, 치수 = 구멍지름·길이40 중 나쁜 쪽 (scoring.GROUP_RULES)
 ERROR_TYPES = [
-    ("단차", "높이", STEP_ERR, 5.0, 2.0),
-    ("선폭", "윤곽", LINE_ERR, 10.0, 4.0),
+    ("국소높이", "높이", 0.0, 5.0, 2.0),
+    ("단차", "높이(참고)", STEP_ERR, 5.0, 2.0),
+    ("국소선폭", "윤곽", LINE_ERR, 10.0, 4.0),
+    ("선폭", "윤곽(참고)", LINE_ERR, 10.0, 4.0),
     ("구멍지름", "치수", HOLE_ERR, 25.0, 10.0),
+    ("길이40", "치수", 0.0, 25.0, 10.0),
     ("경계", "윤곽(참고)", -HOLE_ERR / 2, 25.0, 10.0),   # 구멍 경계의 반경 방향 이동, + = 재료 과다
     ("위치", "위치", float(np.hypot(*POS_ERR)), 50.0, 20.0),
 ]
+SCENARIOS = ["낙관", "보수"]
 TYPE_NAMES = [t[0] for t in ERROR_TYPES]
 GRADES = ["10:1 통과", "4:1 통과", "불합격", "측정 불가"]
 GRADE_RANK = {"10:1 통과": 3, "4:1 통과": 2, "불합격": 1, "측정 불가": 0}
@@ -90,6 +159,29 @@ class Model:
     measures_z: bool = True
     contact: bool = False
     depth: float = np.inf               # 측정 깊이 [µm] (depth_mm × 1000)
+    u_s: float = 0.0                    # XY 배율 교정 표준불확도 (무차원, 20 ppm = 20e-6)
+    cal_class: str = ""
+    xy_jitter: float = 0.0              # 샘플마다 XY 위치 잡음 σ [µm] (프린터 축 래스터, 보수 시나리오)
+    raster: bool = False                # 프린터 축 래스터 점 센서 → seam 0
+    fov: float = np.inf                 # 시야 [µm]
+    point: bool = False                 # 점 측정 방식 (해석 판정)
+
+    @property
+    def n_seams(self):
+        f = self.fov / 1000.0
+        if self.raster:
+            return 0
+        if not np.isfinite(f) or f <= 0 or f >= STITCH_LEN_MM:
+            return 0
+        return int(np.ceil(STITCH_LEN_MM / f)) - 1
+
+    @property
+    def seam_xy(self):
+        return max(0.5 * self.xy_step, 1.0)
+
+    @property
+    def seam_z(self):
+        return self.z_sigma / np.sqrt(10)
 
     @property
     def step(self):
@@ -113,7 +205,7 @@ class Model:
         return 4 * s + 1.2 * self.probe_r + self.edge_loss
 
 
-def model_from_row(row) -> tuple[Model | None, list[str]]:
+def model_from_row(row, diy_ppm=None) -> tuple[Model | None, list[str]]:
     """사양 행 → Model. 시뮬레이션 불가면 (None, 사유). 결측값 대체는 notes 에 적는다."""
     notes = []
     step = row.get("xy_step_um", np.nan)
@@ -145,9 +237,27 @@ def model_from_row(row) -> tuple[Model | None, list[str]]:
         notes.append(f"xy_step {step:g} < 2 µm → 2 µm 로 처리")
     dep = row.get("depth_mm", np.nan)
     dep = float(dep) * 1000 if np.isfinite(dep) and dep > 0 else np.inf
+    rid = str(row.get("id", "")).upper()
+    cls = next((c for c, (p, ids) in CAL_CLASS.items() if rid in ids), "")
+    if cls:
+        ppm = CAL_CLASS[cls][0]
+        if cls == "diy" and diy_ppm is not None:
+            ppm = diy_ppm
+    else:
+        ppm = CAL_DEFAULT_BY_ACCESS.get(str(row.get("access", "")).lower(), 500)
+        notes.append(f"배율 등급 목록에 없음 → access 기준 {ppm} ppm")
+    raster = rid in RASTER_POINT
+    if raster:
+        notes.append(f"프린터 축 래스터: seam 0, 샘플 XY 잡음 {RASTER_XY_SIGMA:g} µm(보수)")
+    fov = row.get("fov_mm", np.nan)
+    fov = float(fov) * 1000 if np.isfinite(fov) and fov > 0 else np.inf
+    point = rid in POINT_IDS
+    if point:
+        notes.append("해석 판정")
     return Model(z_sigma=float(zs) if mz else 0.0, xy_step=float(step), xy_blur=max(float(blur), 0.0),
                  edge_loss=max(float(el), 0.0), max_slope=float(ms), measures_z=mz,
-                 contact=contact, depth=dep), notes
+                 contact=contact, depth=dep, u_s=ppm * 1e-6, fov=fov, point=point, cal_class=cls,
+                 raster=raster, xy_jitter=RASTER_XY_SIGMA if raster else 0.0), notes
 
 
 # ---------------------------------------------------------------- 흐림 연산
@@ -195,6 +305,71 @@ def _nan_mask(zb, ztrue, res, m: Model):
             dist = ndimage.distance_transform_edt(~wall) * res
             nanm |= dist <= m.edge_loss / 2
     return nanm
+
+
+# ---------------------------------------------------------------- 시나리오별 회차 상태
+def _gauss_w2(sig_px, truncate=4.0):
+    """scipy gaussian_filter1d 커널 가중치의 제곱합 (백색 잡음을 거르면 분산이 이만큼 줄어듦)."""
+    r = int(truncate * sig_px + 0.5)
+    k = np.arange(-r, r + 1)
+    w = np.exp(-0.5 * (k / sig_px) ** 2)
+    w /= w.sum()
+    return float((w * w).sum())
+
+
+class CorrField:
+    """공간 상관 Z 잡음장: 거친 격자(CORR_GRID)의 백색 잡음에 σ = CORR_LEN 가우시안 필터 →
+    표준편차 sigma 로 맞춤 → 샘플 점에 쌍선형 보간."""
+
+    def __init__(self, rng, x0, x1, y0, y1, sigma):
+        self.sigma = sigma
+        if sigma <= 0:
+            return
+        g, pad = CORR_GRID, 4 * CORR_LEN
+        self.ox, self.oy, self.g = x0 - pad, y0 - pad, g
+        nx = int(np.ceil((x1 - x0 + 2 * pad) / g)) + 2
+        ny = int(np.ceil((y1 - y0 + 2 * pad) / g)) + 2
+        sp = CORR_LEN / g
+        f = ndimage.gaussian_filter(rng.standard_normal((ny, nx)), sp, mode="wrap")
+        self.f = (f * (sigma / _gauss_w2(sp))).astype(np.float32)   # 2D 분리형: std = Σw²
+
+    def __call__(self, x, y):
+        if self.sigma <= 0:
+            return np.zeros(np.broadcast(x, y).shape, np.float32)
+        x, y = np.broadcast_arrays(np.asarray(x, np.float32), np.asarray(y, np.float32))
+        return ndimage.map_coordinates(self.f, [(y - self.oy) / self.g, (x - self.ox) / self.g],
+                                       order=1, mode="nearest")
+
+
+@dataclass
+class Ctx:
+    """MC 1회의 시나리오 상태."""
+    cons: bool
+    ws: float          # 백색 Z 잡음 σ
+    cs: float          # 상관 Z 잡음 σ
+    s: float           # XY 배율 오차
+    dL: float          # 국소 높이 패치 왼쪽 타일 Z 오프셋 (seam 랜덤워크)
+    dR: float          # 오른쪽 타일
+    jit: float = 0.0   # 샘플마다 XY 위치 잡음 σ (프린터 축 래스터)
+
+    def field(self, rng, x0, x1, y0, y1):
+        return CorrField(rng, x0, x1, y0, y1, self.cs)
+
+
+def make_ctx(m: Model, rng, cons: bool) -> Ctx:
+    z = m.z_sigma if m.measures_z else 0.0
+    if not cons:
+        return Ctx(False, z, 0.0, 0.0, 0.0, 0.0)
+    ws, cs = z * np.sqrt(1 - CORR_FRAC), z * np.sqrt(CORR_FRAC)
+    s = float(rng.normal(0, m.u_s)) if m.u_s > 0 else 0.0
+    dL = dR = 0.0
+    n = m.n_seams
+    if n > 0 and m.seam_z > 0:
+        W = np.concatenate([[0.0], np.cumsum(rng.normal(0, m.seam_z, n))])   # 타일 0..n 의 Z 오프셋
+        W -= W.mean()                                                        # 전체 기준면(바닥 평면)으로 상수 제거
+        k = n // 2                                                           # 패치를 가운데 seam 에 걸침
+        dL, dR = float(W[k]), float(W[k + 1])
+    return Ctx(True, ws, cs, s, dL, dR, m.xy_jitter)
 
 
 # ---------------------------------------------------------------- 1D 패치 (단차·선)
@@ -265,17 +440,26 @@ def _phase_axis(lo, hi, phase, step):
     return phase + np.arange(k0, k1 + 1) * step
 
 
-def measure_step(p: Profile1D, m: Model, rng, phase):
+def measure_step(p: Profile1D, m: Model, rng, phase, ctx: Ctx):
     if not m.measures_z:
         return np.nan
     xs = _phase_axis(-FACE_W, FACE_W, phase[0], m.step)
-    ny = max(int(FACE_L // m.step), 1)
-    z, nan = p.sample(xs)
+    ys = _phase_axis(0, FACE_L, phase[1], m.step)
+    if ys.size == 0:
+        ys = np.array([phase[1]])
+    ny = ys.size
+    if ctx.jit > 0:      # 샘플마다 실제 위치가 흔들림 (보고 좌표는 명목 격자)
+        z, nan = p.sample(xs[None, :] + ctx.jit * rng.standard_normal((ny, xs.size)))
+    else:
+        z, nan = p.sample(xs)
     Z = np.broadcast_to(z.astype(np.float32), (ny, xs.size))
-    if m.z_sigma > 0:
-        Z = Z + np.float32(m.z_sigma) * rng.standard_normal((ny, xs.size), dtype=np.float32)
+    if ctx.ws > 0:
+        Z = Z + np.float32(ctx.ws) * rng.standard_normal((ny, xs.size), dtype=np.float32)
+    if ctx.cs > 0:
+        F = ctx.field(rng, xs[0], xs[-1], ys[0], ys[-1])
+        Z = Z + F(xs[None, :], ys[:, None])
     Z = np.array(Z, dtype=np.float32)
-    Z[:, nan] = np.nan
+    Z[np.broadcast_to(nan, Z.shape)] = np.nan
     if not (~nan).any():
         return np.nan
     col = np.nanmedian(Z[:min(ny, 200)], axis=0)       # 경계 찾기용 열 중앙값 (앞 200행)
@@ -344,21 +528,73 @@ def fwhm(xs, prof):
     return float(xr - xl)
 
 
-def measure_line(p: Profile1D, m: Model, rng, phase):
+def measure_line(p: Profile1D, m: Model, rng, phase, ctx: Ctx):
+    """→ (전체 선폭 오차, 0.5 mm 구간별 선폭 오차 배열). 배율 오차 (1+s) 포함."""
     L = _line_halfwidth_max() + abs(POS_ERR[0]) + 400 + 2 * m.xy_blur + m.edge_loss
     xs = _phase_axis(-L, L, phase[0], m.step)
+    ys = _phase_axis(0, LINE_LEN - 1e-6, phase[1], m.step)
+    nan_out = (np.nan, np.array([np.nan]))
+    if ys.size == 0 or xs.size < 3:
+        return nan_out
+    seg = np.floor(ys / SEG_LEN).astype(int)
     z, nan = p.sample(xs)
+    k = 1.0 + ctx.s
     if not m.measures_z:
-        # 2D: 열마다 같은 판정 → 마스크 폭 = 재료 칸 수 × 간격 (가정 A5·A6)
+        # 2D: 열마다 같은 판정 → 마스크 폭 = 재료 칸 수 × 간격 (가정 A5·A6). 모든 행·구간이 같다.
         base_w = float((z > 0.5).sum()) * m.step
         if base_w <= 0:
-            return np.nan
-        return base_w * FWHM_PER_BASE - LINE_W_NOM
-    ny = max(int(LINE_LEN // m.step), 1)
-    prof = z + (rng.normal(0, m.z_sigma / np.sqrt(ny), xs.size) if m.z_sigma > 0 else 0)  # 가정 A7
-    prof = np.where(nan, np.nan, prof)
-    w = fwhm(xs, prof)
-    return w - LINE_W_NOM if np.isfinite(w) else np.nan
+            return nan_out
+        e = base_w * FWHM_PER_BASE * k - LINE_W_NOM
+        return e, np.full(np.unique(seg).size, e)
+    profs, nrow = [], []
+    F = ctx.field(rng, xs[0], xs[-1], 0, LINE_LEN) if ctx.cs > 0 else None
+    sub = max(1, int(round(25.0 / m.step)))           # 상관 잡음은 매끈하므로 25 µm 간격 행으로 평균
+    for sid in np.unique(seg):
+        yr = ys[seg == sid]
+        n = yr.size
+        # 구간 평균 단면 = 단면 + 백색 N(0, ws/√행수) (독립 잡음의 행 평균과 같은 분포, 가정 A7) + 상관 성분 행 평균
+        if ctx.jit > 0:   # 프린터 축 위치 잡음: 행마다 실제 위치에서 단면을 읽어 평균
+            zj, _ = p.sample(xs[None, :] + ctx.jit * rng.standard_normal((n, xs.size)))
+            zz = zj.mean(axis=0)
+        else:
+            zz = z
+        pr = zz + (rng.normal(0, ctx.ws / np.sqrt(n), xs.size) if ctx.ws > 0 else 0)
+        if F is not None:
+            pr = pr + F(xs[None, :], yr[::sub][:, None]).mean(axis=0)
+        profs.append(np.where(nan, np.nan, pr))
+        nrow.append(n)
+    profs = np.array(profs)
+    segw = np.array([fwhm(xs, pr) for pr in profs]) * k - LINE_W_NOM
+    whole = fwhm(xs, np.average(profs, axis=0, weights=nrow))
+    return (whole * k - LINE_W_NOM if np.isfinite(whole) else np.nan), segw
+
+
+def measure_flat(m: Model, rng, phase, ctx: Ctx):
+    """국소 높이: 평평한 윗면 2 × 2 mm 를 0.2 mm 셀로 나눠 셀 평균 − 설계 높이.
+    seam 이 있으면 패치 가운데(x = 0)에 걸쳐 놓는다 → 왼쪽·오른쪽 타일의 Z 오프셋이 다르다."""
+    if not m.measures_z:
+        return np.array([np.nan])
+    h = FLAT_W / 2
+    xs = _phase_axis(-h, h - 1e-6, phase[0], m.step)
+    ys = _phase_axis(0, FLAT_W - 1e-6, phase[1], m.step)
+    if xs.size == 0 or ys.size == 0:
+        return np.array([np.nan])
+    Z = np.zeros((ys.size, xs.size), np.float32)
+    if ctx.ws > 0:
+        Z += np.float32(ctx.ws) * rng.standard_normal(Z.shape, dtype=np.float32)
+    if ctx.cs > 0:
+        Z += ctx.field(rng, -h, h, 0, FLAT_W)(xs[None, :], ys[:, None])
+    Z += np.where(xs < 0, ctx.dL, ctx.dR).astype(np.float32)[None, :]
+    nc = int(FLAT_W // CELL)
+    cx = np.clip(((xs + h) // CELL).astype(int), 0, nc - 1)
+    cy = np.clip((ys // CELL).astype(int), 0, nc - 1)
+    cid = (cy[:, None] * nc + cx[None, :]).ravel()
+    cnt = np.bincount(cid, minlength=nc * nc)
+    sm = np.bincount(cid, weights=Z.ravel().astype(float), minlength=nc * nc)
+    ok = cnt > 0
+    if ok.mean() < CELL_VALID_MIN:
+        return np.array([np.nan])
+    return sm[ok] / cnt[ok]          # 측정 − 설계 (평평한 면이라 설계 높이를 빼면 잡음·오프셋만 남음)
 
 
 # ---------------------------------------------------------------- 2D 패치 (구멍·핀)
@@ -442,7 +678,7 @@ def kasa(x, y):
     return cx, cy, (np.sqrt(r2) if r2 > 0 else np.nan)
 
 
-def measure_circle(patch: Patch2D, m: Model, rng, phase, design_c, true_c):
+def measure_circle(patch: Patch2D, m: Model, rng, phase, design_c, true_c, ctx: Ctx = None):
     """설계 중심 design_c 둘레 고리 ROI 에서 경계점을 찾아 원 맞춤.
     반환 (cx, cy, r): 설계 좌표계. 재료 쪽 경계와 빈 쪽 경계를 따로 맞춰 평균한다
     (결측 띠나 반 칸 치우침이 양쪽에 대칭으로 상쇄됨)."""
@@ -450,29 +686,50 @@ def measure_circle(patch: Patch2D, m: Model, rng, phase, design_c, true_c):
     # 2차(세밀) 단계: 1차 원 둘레의 얇은 고리만 원래 간격으로 다시 봐서 맞춘다 (계산량 절감).
     # 두 단계 모두 측정 데이터와 설계값만 쓴다.
     Rd, w, st = patch.R_design, patch.w, m.step
+    if ctx is None:
+        ctx = make_ctx(m, rng, False)
+    F = ctx.field(rng, design_c[0] - Rd - w, design_c[0] + Rd + w, design_c[1] - Rd - w,
+                  design_c[1] + Rd + w) if ctx.cs > 0 else None
+
+    def noise(x, y):
+        out = np.zeros(x.shape, np.float32)
+        if m.measures_z and ctx.ws > 0:
+            out += rng.normal(0, ctx.ws, x.size).astype(np.float32)
+        if m.measures_z and F is not None:
+            out += F(x, y)
+        return out
+
+    c, r = _measure_circle_core(patch, m, rng, phase, design_c, true_c, noise, Rd, w, st, ctx.jit)
+    k = 1.0 + ctx.s                                   # XY 배율 오차: 시편 원점 기준 좌표 전체에 (1+s)
+    return c[0] * k, c[1] * k, r * k
+
+
+def _measure_circle_core(patch, m, rng, phase, design_c, true_c, noise, Rd, w, st, jit=0.0):
+    nanc = ((np.nan, np.nan), np.nan)
     k = max(1, int(np.ceil(COARSE_STEP / st)))
     if k > 1:
-        fit0, thr = _circle_pass(patch, m, rng, phase, st * k, design_c, max(Rd - w, 0), Rd + w, true_c)
+        fit0, thr = _circle_pass(patch, m, rng, phase, st * k, design_c, max(Rd - w, 0), Rd + w, true_c,
+                                 noise=noise, jitter=jit)
         if fit0 is None or not np.isfinite(fit0[2]):
-            return np.nan, np.nan, np.nan
+            return nanc
         c0 = (design_c[0] + fit0[0], design_c[1] + fit0[1])
         wf = 3 * (m.sigma if m.measures_z else m.sigma_2d) + m.edge_loss / 2 + 1.2 * m.probe_r \
             + 1.5 * st * k + 24
         fit, _ = _circle_pass(patch, m, rng, phase, st, c0, max(fit0[2] - wf, 0), fit0[2] + wf,
-                              true_c, thr=thr)
+                              true_c, thr=thr, noise=noise, jitter=jit)
         if fit is None:
-            return np.nan, np.nan, np.nan
-        return c0[0] + fit[0], c0[1] + fit[1], fit[2]
-    fit, _ = _circle_pass(patch, m, rng, phase, st, design_c, max(Rd - w, 0), Rd + w, true_c)
+            return nanc
+        return (c0[0] + fit[0], c0[1] + fit[1]), fit[2]
+    fit, _ = _circle_pass(patch, m, rng, phase, st, design_c, max(Rd - w, 0), Rd + w, true_c, noise=noise, jitter=jit)
     if fit is None:
-        return np.nan, np.nan, np.nan
-    return design_c[0] + fit[0], design_c[1] + fit[1], fit[2]
+        return nanc
+    return (design_c[0] + fit[0], design_c[1] + fit[1]), fit[2]
 
 
 COARSE_STEP = 16.0   # 1차 단계 간격 하한 [µm]
 
 
-def _circle_pass(patch, m, rng, phase, st, ctr, r_in, r_out, true_c, thr=None):
+def _circle_pass(patch, m, rng, phase, st, ctr, r_in, r_out, true_c, thr=None, noise=None, jitter=0.0):
     """중심 ctr, 반경 [r_in, r_out] 고리 안 샘플 → (ctr 기준 원 맞춤, 문턱).
     재료 쪽 경계와 빈 쪽 경계를 따로 맞춰 평균한다 (결측 띠·반 칸 치우침이 대칭으로 상쇄)."""
     xs = _phase_axis(ctr[0] - r_out, ctr[0] + r_out, phase[0], st).astype(np.float32)
@@ -485,9 +742,13 @@ def _circle_pass(patch, m, rng, phase, st, ctr, r_in, r_out, true_c, thr=None):
     if iy.size < 20:
         return None, thr
     shape = (ys.size, xs.size)
-    zz, nn = patch.sample(xs[ix] - np.float32(true_c[0]), ys[iy] - np.float32(true_c[1]))
-    if m.measures_z and m.z_sigma > 0:
-        zz = zz + rng.normal(0, m.z_sigma, zz.size).astype(np.float32)
+    jx = jy = 0.0
+    if jitter > 0:        # 프린터 축 위치 잡음: 실제로 읽는 위치만 흔들리고 경계점 좌표는 명목 격자
+        jx = (jitter * rng.standard_normal(ix.size)).astype(np.float32)
+        jy = (jitter * rng.standard_normal(ix.size)).astype(np.float32)
+    zz, nn = patch.sample(xs[ix] + jx - np.float32(true_c[0]), ys[iy] + jy - np.float32(true_c[1]))
+    if m.measures_z and noise is not None:
+        zz = zz + noise(xs[ix], ys[iy])
     lab = np.full((shape[0] + 2, shape[1] + 2), -2, np.int8)   # -2 ROI 밖, -1 결측, 0 빈 쪽, 1 재료 쪽
     iy, ix = iy + 1, ix + 1                                     # 테두리 1칸 덧댐
     if m.measures_z:
@@ -556,7 +817,7 @@ PIN_CENTERS = [(i * PIN_PITCH, j * PIN_PITCH) for j in (-1, 0, 1) for i in (-1, 
 
 # ---------------------------------------------------------------- MC 실행
 # 패치별 높이 범위 [µm]: 측정 깊이(depth_mm)보다 크면 그 패치는 '측정 불가' (2D 방식은 무관)
-PATCH_RELIEF = {"step": STEP_UPPER, "line": LINE_H, "hole": PLATE_T, "pin": PIN_H}
+PATCH_RELIEF = {"step": STEP_UPPER, "line": LINE_H, "hole": PLATE_T, "pin": PIN_H, "flat": FLAT_H}
 
 
 def _safe(f, *a, n=1):
@@ -573,21 +834,32 @@ def depth_ok(m: Model, key):
     return (not m.measures_z) or PATCH_RELIEF[key] <= m.depth
 
 
-def run_once(parts, m: Model, rng):
-    """MC 1회 → {오차종류: 추정 오차 (위치는 (dx, dy))}."""
+def run_once(parts, m: Model, rng, cons=False):
+    """MC 1회 → {오차종류: 추정 오차}. 위치는 (dx, dy), 국소높이·국소선폭은 셀/구간 배열."""
+    ctx = make_ctx(m, rng, cons)
     phase = rng.uniform(0, m.step, 2)
-    out = {"단차": _safe(measure_step, parts["step"], m, rng, phase) if depth_ok(m, "step") else np.nan,
-           "선폭": _safe(measure_line, parts["line"], m, rng, phase) if depth_ok(m, "line") else np.nan}
+    out = {"단차": _safe(measure_step, parts["step"], m, rng, phase, ctx) if depth_ok(m, "step") else np.nan}
+    if depth_ok(m, "line"):
+        res = _safe(measure_line, parts["line"], m, rng, phase, ctx, n=2)
+        out["선폭"], out["국소선폭"] = (res if isinstance(res, tuple) and len(res) == 2
+                                     else (np.nan, np.array([np.nan])))
+    else:
+        out["선폭"], out["국소선폭"] = np.nan, np.array([np.nan])
+    if np.ndim(out["국소선폭"]) == 0:
+        out["국소선폭"] = np.array([out["국소선폭"]])
+    out["국소높이"] = _safe(measure_flat, m, rng, phase, ctx) if depth_ok(m, "flat") else np.array([np.nan])
+    if np.ndim(out["국소높이"]) == 0:
+        out["국소높이"] = np.array([np.nan])
     r = np.nan
     if depth_ok(m, "hole"):
-        cx, cy, r = _safe(measure_circle, parts["hole"], m, rng, phase, (0.0, 0.0), POS_ERR, n=3)
+        cx, cy, r = _safe(measure_circle, parts["hole"], m, rng, phase, (0.0, 0.0), POS_ERR, ctx, n=3)
     out["구멍지름"] = 2 * r - HOLE_D_NOM if np.isfinite(r) else np.nan
     out["경계"] = -(2 * r - HOLE_D_NOM) / 2 if np.isfinite(r) else np.nan
     d = []
     if depth_ok(m, "pin"):
         for c in PIN_CENTERS:
             tc = (c[0] + POS_ERR[0], c[1] + POS_ERR[1])
-            px, py, pr = _safe(measure_circle, parts["pin"], m, rng, phase, c, tc, n=3)
+            px, py, pr = _safe(measure_circle, parts["pin"], m, rng, phase, c, tc, ctx, n=3)
             if np.isfinite(px) and np.isfinite(py):
                 d.append((px - c[0], py - c[1]))
     out["위치"] = tuple(np.mean(d, axis=0)) if len(d) >= 5 else (np.nan, np.nan)
@@ -609,42 +881,98 @@ def grade(q, lim4, lim10):
     return "불합격"
 
 
-def simulate(m: Model, n_mc=50, seed=0):
-    """→ (요약 dict {종류: {...}}, 원시 리스트). 판정량 Q = |bias| + 2σ."""
-    rng = np.random.default_rng(seed)
-    parts = build_parts(m)
-    runs = [run_once(parts, m, rng) for _ in range(n_mc)]
+def _summ(group, truth, l4, l10, bias, sd, valid, q=None, **extra):
+    if q is None:
+        q = abs(bias) + 2 * sd if (np.isfinite(bias) and np.isfinite(sd)) else np.nan
+    return dict(group=group, truth_um=truth, bias_um=bias, sd2_um=2 * sd if np.isfinite(sd) else np.nan,
+                Q_um=q, lim4_um=l4, lim10_um=l10, grade=grade(q, l4, l10), valid_frac=valid, **extra)
+
+
+def length_sd(m: Model, cons: bool):
+    """길이 40 mm 해석 판정의 표준편차.
+    경계 위치 잡음 2개(각 xy_step/√12, 양자화) + [보수] 배율 40 mm·u_s + seam XY 랜덤워크 √n·σ_xy.
+    점 측정은 경계 잡음 대신 z_sigma 2개."""
+    e = m.z_sigma if m.point else m.step / np.sqrt(12)
+    v = 2 * e * e
+    if cons:
+        v += (SPEC_LEN * m.u_s) ** 2 + m.n_seams * m.seam_xy ** 2
+    return float(np.sqrt(v))
+
+
+def point_summary(m: Model, cons: bool):
+    """점 측정 방식(CMM·수동 계측) 해석 판정 (보수 지시 B-4). 치우침 0, Q = 2σ."""
+    z, us = m.z_sigma, (m.u_s if cons else 0.0)
+    out = {}
+    for name, g, t, l4, l10 in ERROR_TYPES:
+        sd = np.nan
+        if name == "단차":
+            sd = z * np.sqrt(2)
+        elif name == "국소높이":
+            sd = z if m.xy_step < CELL else np.nan            # 셀마다 점이 없으면 측정 불가
+        elif name in ("선폭", "국소선폭"):
+            sd = np.nan if 2 * m.xy_blur > LINE_W_NOM else float(np.hypot(z * np.sqrt(2), LINE_W_NOM * us))
+        elif name == "구멍지름":
+            sd = float(np.hypot(z * np.sqrt(2 / POINT_N_HOLE), HOLE_D_NOM * us))
+        elif name == "경계":
+            sd = float(np.hypot(z * np.sqrt(2 / POINT_N_HOLE), HOLE_D_NOM * us)) / 2
+        elif name == "길이40":
+            sd = length_sd(m, cons)
+        elif name == "위치":
+            sd = float(np.hypot(z * np.sqrt(2 / POINT_N_HOLE), PIN_PITCH * us))   # 원 중심 축별 σ ≈ z·√(2/N)
+        ok = np.isfinite(sd)
+        out[name] = _summ(g, t, l4, l10, 0.0 if ok else np.nan, sd, 1.0 if ok else 0.0, note="해석 판정")
+    return out
+
+
+def summarize(runs, m: Model, cons: bool):
     summary = {}
     for name, group, truth, l4, l10 in ERROR_TYPES:
+        if name == "길이40":
+            summary[name] = _summ(group, truth, l4, l10, 0.0, length_sd(m, cons), 1.0, note="해석 계산")
+            continue
         if name == "위치":
             e = np.array([r["위치"] for r in runs], float) - np.array(POS_ERR)
             ok = np.all(np.isfinite(e), axis=1)
             e = e[ok]
             if ok.mean() < VALID_FRAC_MIN or len(e) < 2:
-                bias = sd = q = np.nan
+                bias = sd = np.nan
+                q = np.nan
             else:
                 bias = float(np.hypot(*e.mean(axis=0)))
                 sd = float(np.max(e.std(axis=0, ddof=1)))
                 q = bias + 2 * sd
-            extra = {"bias_x_um": float(e[:, 0].mean()) if len(e) else np.nan,
-                     "bias_y_um": float(e[:, 1].mean()) if len(e) else np.nan}
+            summary[name] = _summ(group, truth, l4, l10, bias, sd, float(ok.mean()), q=q,
+                                  bias_x_um=float(e[:, 0].mean()) if len(e) else np.nan,
+                                  bias_y_um=float(e[:, 1].mean()) if len(e) else np.nan)
+            continue
+        if name in ("국소높이", "국소선폭"):
+            arrs = [np.asarray(r[name], float) for r in runs]
+            ok = np.array([a.size > 0 and np.isfinite(a).mean() >= 0.5 for a in arrs])
+            pooled = np.concatenate([a[np.isfinite(a)] for a, o in zip(arrs, ok) if o]) if ok.any() else np.array([])
+            e = pooled - truth
         else:
             v = np.array([r[name] for r in runs], float)
             ok = np.isfinite(v)
             e = v[ok] - truth
-            if ok.mean() < VALID_FRAC_MIN or len(e) < 2:
-                bias = sd = q = np.nan
-            else:
-                bias, sd = float(e.mean()), float(e.std(ddof=1))
-                q = abs(bias) + 2 * sd
-            extra = {}
-        summary[name] = dict(group=group, truth_um=truth, bias_um=bias, sd2_um=2 * sd if np.isfinite(sd) else np.nan,
-                             Q_um=q, lim4_um=l4, lim10_um=l10, grade=grade(q, l4, l10),
-                             valid_frac=float(ok.mean()), **extra)
-    return summary, runs
+        if ok.mean() < VALID_FRAC_MIN or len(e) < 2:
+            bias = sd = np.nan
+        else:
+            bias, sd = float(e.mean()), float(e.std(ddof=1))
+        summary[name] = _summ(group, truth, l4, l10, bias, sd, float(ok.mean()))
+    return summary
+
+
+def simulate(m: Model, n_mc=50, seed=0, cons=False, parts=None):
+    """→ (요약 dict {종류: {...}}, 원시 리스트). cons=True 면 보수 시나리오.
+    판정량 Q = |bias| + 2σ. 국소 지표는 모든 회차의 셀/구간 오차를 모아 계산."""
+    if m.point:
+        return point_summary(m, cons), []
+    rng = np.random.default_rng(seed + (7919 if cons else 0))
+    if parts is None:
+        parts = build_parts(m)
+    runs = [run_once(parts, m, rng, cons) for _ in range(n_mc)]
+    return summarize(runs, m, cons), runs
 
 
 def unmeasurable_summary(reason=""):
-    return {name: dict(group=g, truth_um=t, bias_um=np.nan, sd2_um=np.nan, Q_um=np.nan, lim4_um=l4,
-                       lim10_um=l10, grade="측정 불가", valid_frac=0.0)
-            for name, g, t, l4, l10 in ERROR_TYPES}
+    return {name: _summ(g, t, l4, l10, np.nan, np.nan, 0.0) for name, g, t, l4, l10 in ERROR_TYPES}
