@@ -417,9 +417,9 @@ python line_extraction.py
 반사피크 CoG guide_band=None: RMS=6.875 px, P95=29.916 px
 반사피크 CoG guide_band=8: RMS=0.071 px, P95=0.133 px
 포화 이미지: 포화 픽셀이 있는 열 100 %, 평균 선폭 4.7 px
-cog       1080x1440 1장:    4.2 ms
-gauss3    1080x1440 1장:   52.0 ms
-steger1d  1080x1440 1장:   94.4 ms
+cog       1080x1440 1장:    4.9 ms
+gauss3    1080x1440 1장:   53.2 ms
+steger1d  1080x1440 1장:   93.6 ms
 ```
 
 (속도 ms 값은 PC 성능에 따라 다릅니다. 나머지 숫자는 난수 시드가 고정되어 있어 거의 같게 나와야 합니다.)
@@ -537,8 +537,8 @@ fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 ax[0].imshow(img, cmap="gray", aspect="auto")
 ax[0].plot(np.arange(v.size), v, "r.", ms=1)
 ax[0].set_ylabel("v [px]")
-ax[1].plot(q["width"], label="선 폭 [px]")
-ax[1].plot(q["peak"] / 255 * 10, label="피크 밝기 (×10/255)")
+ax[1].plot(q["width"], label="line width [px]")
+ax[1].plot(q["peak"] / 255 * 10, label="peak x10/255")
 ax[1].set_xlabel("u [px]")
 ax[1].legend()
 fig.savefig("f1_overlay.png", dpi=150)
@@ -549,7 +549,7 @@ print("저장: f1_overlay.png")
 저장: f1_overlay.png
 ```
 
-(한글 범례가 네모로 보이면 matplotlib 한글 글꼴 설정이 필요합니다. 범례를 영어로 써도 됩니다.)
+(그림 글자는 영어로 썼습니다. 한글을 쓰려면 matplotlib 에 한글 글꼴을 따로 설정해야 하며, 설정하지 않으면 글자가 네모로 나오고 경고가 출력됩니다.)
 
 ## 7. 검증 방법과 완료 기준
 
