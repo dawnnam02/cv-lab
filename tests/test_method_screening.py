@@ -222,3 +222,131 @@ def test_선단면장비_면래스터_시간():
     t = scoring.raster_time_min({"id": "M02", "xy_step_um": 1.0})
     assert t == pytest.approx(20000 * (400 + 20) / 60)
     assert np.isnan(scoring.raster_time_min({"id": "M05", "xy_step_um": 20.0}))
+
+
+# ---------------------------------------------------------------- 2차 후보 확장 (mode·cal_class·실현성·병렬·입력)
+def test_mode열_대응():
+    m, _ = sim.model_from_row(_row("M200", mode="raster_point"))
+    assert m.raster and m.n_seams == 0 and m.xy_jitter == pytest.approx(5.0)
+    m, nt = sim.model_from_row(_row("M201", mode="point_probe", xy_step_um=1000))
+    assert m.point and "해석 판정" in nt
+    m, nt = sim.model_from_row(_row("M202", mode="2d", measures_z=1.0))
+    assert not m.measures_z and m.z_sigma == 0.0
+    m, _ = sim.model_from_row(_row("M203", mode="area", fov_mm=19.9))
+    assert not m.raster and not m.point and m.n_seams == 2
+    # mode 열이 비면 1차 id 목록 상수
+    assert sim.resolve_mode(_row("M07", mode="")) == ("raster_point", "id목록")
+    assert sim.resolve_mode(_row("M01")) == ("point_probe", "id목록")
+    assert sim.resolve_mode(_row("M02")) == ("line_profiler", "id목록")
+    assert sim.resolve_mode(_row("M20", measures_z=0.0)) == ("2d", "id목록")
+    assert sim.resolve_mode(_row("M07", mode="area")) == ("area", "csv")    # 열 값이 우선
+    # cal_class 열이 id 목록보다 우선, 없으면 id 목록
+    m, _ = sim.model_from_row(_row("M05", cal_class="calibrated"))
+    assert m.u_s == pytest.approx(20e-6) and m.cal_class == "calibrated"
+    m, _ = sim.model_from_row(_row("M300", cal_class="industrial"))
+    assert m.u_s == pytest.approx(100e-6)
+    m1, _ = sim.model_from_row(_row("M300", cal_class="diy"), diy_ppm=100)
+    assert m1.u_s == pytest.approx(100e-6)
+
+
+def test_line_profiler_면래스터_시간_기본값과_CSV값():
+    import scoring
+    t_def = scoring.raster_time_min({"id": "M226", "mode": "line_profiler", "xy_step_um": 10.0})
+    assert t_def == pytest.approx(2000 * (400 + 20) / 60)                  # M02 기본값 100 µm/s, 20 s
+    t_csv = scoring.raster_time_min({"id": "M226", "mode": "line_profiler", "xy_step_um": 10.0,
+                                     "scan_speed_um_s": 1000.0, "line_overhead_s": 5.0})
+    assert t_csv == pytest.approx(2000 * (40 + 5) / 60)
+    assert np.isnan(scoring.raster_time_min({"id": "M02", "mode": "area", "xy_step_um": 1.0}))
+
+
+def test_indirect_건너뛰기():
+    import screen
+    m, nt = sim.model_from_row(_row("M117", mode="indirect"))
+    assert m is None and any("간접 지표" in x for x in nt)
+    res = screen.run_candidate((_row("M117", mode="indirect"), 5, 0))
+    assert res["mode"] == "indirect"
+    assert any("간접 지표" in x for x in res["notes"])
+    for sc in (screen.SC_OPT, screen.SC_C500, screen.SC_C100):
+        assert all(v["grade"] == "측정 불가" for v in res["sims"][sc].values())
+    assert res["sec"] < 2.0                                                  # 시뮬레이션을 돌리지 않음
+
+
+def test_pass_feasible():
+    base = {"access": "lab", "cost_krw": 5e4, "safety": "없음", "xy_step_um": 1.0, "fov_mm": 55}
+    assert rules.judge_row(dict(base, id="M900", time_min=480))["pass_feasible"] == "통과"
+    assert rules.judge_row(dict(base, id="M900", time_min=481))["pass_feasible"] == "탈락"
+    assert rules.judge_row(dict(base, id="M900", time_min=np.nan))["pass_feasible"] == "확인필요"
+    # 선 단면 장비: CSV 시간(60분)이 아니라 면 래스터 시간(약 140,000분)으로 판정
+    out = rules.judge_row(dict(base, id="M02", time_min=60))
+    assert out["pass_feasible"] == "탈락" and out["time_min_feasible"] == pytest.approx(140000)
+    out = rules.judge_row(dict(base, id="M926", mode="line_profiler", time_min=60))
+    assert out["pass_feasible"] == "탈락"
+    import pandas as pd
+    df = pd.DataFrame([dict(base, id="M900", name="a", time_min=30), dict(base, id="M02", name="b", time_min=60)])
+    rt = rules.judge(df).set_index("id")
+    assert bool(rt.loc["M900", "rule_ok"]) and not bool(rt.loc["M02", "rule_ok"])
+
+
+def test_병렬_순차_결과_일치():
+    import pandas as pd
+    import screen
+    rows = [_row("M501", xy_step_um=60.0, xy_blur_um=60.0, fov_mm=100.0, z_sigma_um=3.0),
+            _row("M502", xy_step_um=80.0, xy_blur_um=80.0, fov_mm=10.0, measures_z=0.0, z_sigma_um=np.nan),
+            _row("M503", mode="indirect")]
+    df = pd.DataFrame(rows)
+    quiet = lambda *a, **k: None   # noqa: E731
+    s1, n1, _ = screen.run_sims(df, 2, 7, log=quiet, workers=1)
+    s2, n2, _ = screen.run_sims(df, 2, 7, log=quiet, workers=2)
+    for sc in s1:
+        for rid in df["id"]:
+            for t, v in s1[sc][rid].items():
+                w = s2[sc][rid][t]
+                assert v["grade"] == w["grade"]
+                for k in ("Q_um", "bias_um", "sd2_um"):
+                    assert (np.isnan(v[k]) and np.isnan(w[k])) or v[k] == w[k]
+    assert n1 == n2
+    # 시드는 행 순서와 무관 (id 로 정함)
+    s3, _, _ = screen.run_sims(df.iloc[::-1].reset_index(drop=True), 2, 7, log=quiet, workers=1)
+    assert s3[screen.SC_C500]["M501"]["국소높이"]["Q_um"] == s1[screen.SC_C500]["M501"]["국소높이"]["Q_um"]
+
+
+def test_범위_추정_숫자_읽기():
+    assert to_num("5~10") == 10
+    assert to_num("5-10") == 10
+    assert to_num("5 ~ 10 µm") == 10
+    assert to_num("5 µm ~ 10 µm") == 10
+    assert to_num("5–10") == 10
+    assert to_num("5~10", prefer="min") == 5
+    assert to_num("추정 5") == 5
+    assert to_num("5(추정)") == 5
+    assert to_num("약 3~4만 원") == 40000
+    assert to_num("300만~500만") == 5e6
+    assert to_num("-5") == -5
+    assert to_num("1e-3") == pytest.approx(1e-3)
+    assert np.isnan(to_num("추정"))
+
+
+def test_사양_CSV_열차이_건너뛰기_중복(tmp_path):
+    from specs import load_specs
+    a = tmp_path / "후보-사양_A.csv"
+    a.write_text("id,name,z_sigma_um,xy_step_um,max_slope_deg,access\n"
+                 "M01,하나,1.5,1000,60~80,lab\n", encoding="utf-8")
+    e = tmp_path / "후보-사양_E1.csv"
+    e.write_text("id,name,z_sigma_um,xy_step_um,mode,cal_class,access\n"
+                 "M24,둘,추정 2~3,10,area,industrial,own\n"
+                 "M25,셋,1,10,area,diy,own,남는칸\n"
+                 "M26,넷,1,10,면,diy,own\n"
+                 "M27,다섯,1,10,,,own\n", encoding="utf-8")
+    with pytest.warns(UserWarning):
+        df = load_specs([str(a), str(e)])
+    assert list(df["id"]) == ["M01", "M24", "M27"]
+    skipped = {i for i, _, _ in df.attrs["skipped"]}
+    assert skipped == {"M25", "M26"}
+    r = df.set_index("id")
+    assert r.loc["M24", "z_sigma_um"] == 3 and r.loc["M01", "max_slope_deg"] == 60   # 범위: 보수적인 쪽
+    assert r.loc["M01", "mode"] == "" and r.loc["M24", "cal_class"] == "industrial"
+    assert np.isnan(r.loc["M01", "fov_mm"])                                       # 없는 열은 NaN
+    d = tmp_path / "후보-사양_E2.csv"
+    d.write_text("id,name\nM24,중복\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="중복"):
+        load_specs([str(a), str(e), str(d)])

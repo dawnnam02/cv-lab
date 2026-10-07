@@ -33,10 +33,79 @@ def _style(ax):
 SC_COLORS = {"낙관": "#b9d6f2", "보수-100": "#5b8fd0", "보수-500": "#1f4e8c", "보수": "#1f4e8c"}   # 한 파랑 계열 밝음→어두움
 
 
+MANY_IDS = 40            # 후보가 이보다 많으면 그림1_판정량.png 는 가로 막대 개요(보수-500만)로 그린다
+RANK_TOP = 30            # 점수 순위 그림에 그릴 상위 개수
+# 그룹별 판정량 그림: 파일 이름 → (그룹, 오차 종류 목록). 청사진 2.1절 그룹 (높이·윤곽·치수)
+GROUP_TYPES = {"높이": ["국소높이", "단차"], "윤곽": ["국소선폭", "선폭"], "치수": ["구멍지름", "길이40"]}
+GROUP_FILES = {"높이": "그림1_판정량_높이.png", "윤곽": "그림1_판정량_윤곽.png", "치수": "그림1_판정량_치수.png"}
+REF_TYPES = {"단차", "선폭"}
+
+
+def _hbars(st, types, scs, path, title):
+    """가로 막대: 행 = 후보(id 순, 위→아래), 열 = 오차 종류, 로그축. 후보가 많아도 읽히게."""
+    ids = list(dict.fromkeys(st["id"]))
+    n = len(ids)
+    h = max(4.0, 0.075 * n * max(len(scs), 1) + 0.12 * n + 1.6)
+    fig, axes = plt.subplots(1, len(types), figsize=(3.6 * len(types) + 1.2, h), constrained_layout=True,
+                             squeeze=False)
+    bh = 0.8 / max(len(scs), 1)
+    y = np.arange(n)[::-1]
+    for ax, t in zip(axes.flat, types):
+        d0 = st[st["error_type"] == t]
+        if not len(d0):
+            ax.set_visible(False)
+            continue
+        l4, l10 = float(d0["lim_4to1_um"].iloc[0]), float(d0["lim_10to1_um"].iloc[0])
+        qs = {sc: d0[d0["scenario"] == sc].drop_duplicates("id").set_index("id").reindex(ids)["Q_um"]
+              .to_numpy(float) for sc in scs}
+        allq = np.concatenate([q[np.isfinite(q) & (q > 0)] for q in qs.values()]) if qs else np.array([])
+        lo = min(l10 / 10, allq.min() / 2) if allq.size else l10 / 10
+        hi = max(l4 * 10, allq.max() * 2) if allq.size else l4 * 10
+        for k, sc in enumerate(scs):
+            q = qs[sc]
+            qq = np.where(np.isfinite(q), np.maximum(q, lo * 1.01), np.nan)
+            ax.barh(y + ((len(scs) - 1) / 2 - k) * bh, qq - lo, left=lo, height=bh * 0.92,
+                    color=SC_COLORS[sc], label=sc)
+        qlast = qs[scs[-1]]
+        for yi, v in zip(y, qlast):
+            if not np.isfinite(v):
+                ax.text(lo * 1.15, yi, "불가", ha="left", va="center", fontsize=6, color=MUTED)
+        ax.set_xscale("log")
+        ax.set_xlim(lo, hi)
+        ax.set_ylim(-0.7, n - 0.3)
+        ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+        ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+        ax.axvline(l4, color=LINE4, lw=1.3, ls="--")
+        ax.axvline(l10, color=LINE10, lw=1.3, ls=":")
+        ax.text(l4, n - 0.4, f" 4:1 ({l4:g})", color=LINE4, va="bottom", ha="left", fontsize=7)
+        ax.text(l10, n - 0.4, f"10:1 ({l10:g}) ", color=LINE10, va="bottom", ha="right", fontsize=7)
+        ax.set_yticks(y, ids, fontsize=7 if n <= 60 else 6)
+        ref = " (참고)" if t in REF_TYPES else ""
+        ax.set_title(f"{t}{ref}: |bias| + 2σ [µm]", fontsize=10, color=INK, loc="left")
+        _style(ax)
+        ax.yaxis.grid(False)
+        ax.xaxis.grid(True, color=GRID, lw=0.6, alpha=0.6)
+    axes.flat[0].legend(frameon=False, fontsize=8, loc="lower right")
+    fig.suptitle(title, fontsize=11, color=INK)
+    fig.savefig(path, dpi=150 if n <= 60 else 110)
+    plt.close(fig)
+
+
+def q_group(st, group, path):
+    """그룹(높이·윤곽·치수) 하나의 판정량 그림. 시나리오 3개 (밝음→어두움 = 낙관 · 보수-100 · 보수-500)."""
+    scs = [s for s in ("낙관", "보수-100", "보수-500", "보수") if s in set(st["scenario"])]
+    _hbars(st, GROUP_TYPES[group], scs, path,
+           f"{group} 그룹 판정량 (로그축, 낮을수록 좋음) · 밝음→어두움 = 낙관 · 보수-100 · 보수-500(판정 기준)")
+
+
 def q_bars(st, path):
     types = ["국소높이", "국소선폭", "구멍지름", "길이40", "위치", "단차"]
     ids = list(dict.fromkeys(st["id"]))
     scs = [s for s in ("낙관", "보수-100", "보수-500", "보수") if s in set(st["scenario"])]
+    if len(ids) > MANY_IDS:      # 후보가 많으면 개요: 판정 기준 시나리오만, 가로 막대
+        sc0 = [s for s in ("보수-500", "보수") if s in scs][:1] or scs[-1:]
+        _hbars(st, types, sc0, path, f"후보별 판정량 개요 ({sc0[0]}, 로그축, 낮을수록 좋음) · 시나리오 비교는 그룹별 그림")
+        return
     fig, axes = plt.subplots(2, 3, figsize=(max(12, 0.5 * len(ids) * 3 / 2 + 6), 8), constrained_layout=True)
     bw = 0.8 / max(len(scs), 1)
     for ax, t in zip(axes.flat, types):
@@ -75,11 +144,15 @@ def q_bars(st, path):
     plt.close(fig)
 
 
-def score_rank(sdf, cdf, path):
+def score_rank(sdf, cdf, path, top=None):
+    """점수 순위 (후보 + 유효 조합 상위 10). top 을 주면 점수 상위 top 개만 그린다."""
     rows = [(r["id"], r["score"], bool(r["pass_all"])) for _, r in sdf.iterrows()]
     if len(cdf) and "valid" in cdf:
         rows += [(r["combo"], r["score"], True) for _, r in cdf[cdf["valid"]].head(10).iterrows()]
     rows.sort(key=lambda t: t[1])
+    n_all = len(rows)
+    if top is not None and n_all > top:
+        rows = rows[-top:]
     fig, ax = plt.subplots(figsize=(7.5, max(3, 0.32 * len(rows) + 1.2)), constrained_layout=True)
     y = np.arange(len(rows))
     ax.barh(y, [r[1] for r in rows], color=[BAR if r[2] else BAR_FAIL for r in rows], height=0.6)
@@ -88,7 +161,8 @@ def score_rank(sdf, cdf, path):
         ax.text(r[1] + 0.03, yi, f"{r[1]:.2f}", va="center", fontsize=8, color=INK)
     ax.set_xlim(0, 5.4)
     ax.set_xlabel("가중 점수 (1–5)", color=MUTED, fontsize=9)
-    ax.set_title("점수 순위 (파랑 = 통과 조건 모두 만족 · 조합 포함, 회색 = 탈락 후보 참고)",
+    head = f"점수 상위 {len(rows)}개 / {n_all}개" if len(rows) < n_all else "점수 순위"
+    ax.set_title(f"{head} (파랑 = 통과 조건 모두 만족 · 조합 포함, 회색 = 탈락 후보 참고)",
                  fontsize=10, color=INK, loc="left")
     _style(ax)
     ax.yaxis.grid(False)

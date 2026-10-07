@@ -13,6 +13,8 @@ BUDGET_OWN_KRW = 5_000_000        # own(구입·자작) 구축비 상한 (K3 확
 BUDGET_LAB_KRW = 5_000_000        # lab(학내 장비): 이용료를 own 상한으로 본다 (임시 해석)
 BUDGET_OUTSOURCE_KRW = 300_000    # outsource: 시편 1개 1회 의뢰비 상한
 SPECIMEN_MIN_MM = 20.0            # 시편 20 × 40 mm 의 짧은 변. fov 가 이보다 작으면 이어 붙이기 필요
+# 실현성 (비교-선정.md 4.1절): 시편 1개 측정 ≤ 1 근무일. 선 단면 장비는 면 래스터 시간으로 판정.
+FEASIBLE_MAX_MIN = 480.0
 
 # 안전: X선, 레이저 Class 3B, Class 4 → own 이면 탈락 (외부 의뢰만 허용)
 # 'Class 1, 4 mW' 처럼 등급이 아닌 숫자 4 에 걸리지 않게, 4 는 반드시 'Class'/'등급' 바로 뒤에서만 본다.
@@ -78,12 +80,40 @@ def judge_row(r) -> dict:
         reasons.append(f"G코드: fov {fov:g} mm < {SPECIMEN_MIN_MM:g} mm → 이어 붙이기·래스터 필요")
     else:
         pg = "통과"
-    return {"pass_budget": pb, "pass_safety": ps, "pass_gcode": pg, "사유": "; ".join(reasons)}
+
+    # 실현성: 시편 1개 측정 시간 ≤ 480분. 선 단면 장비는 면 래스터 시간(scoring.raster_time_min)
+    pf, t_used, by_raster = feasible_time(r)
+    if pf == "확인필요":
+        reasons.append("실현성: time_min 없음")
+    elif pf == "탈락" or by_raster:
+        what = "선 단면 장비 면 래스터 " if by_raster else ""
+        reasons.append(f"실현성: {what}{t_used:,.0f}분 {'≤' if pf == '통과' else '>'} {FEASIBLE_MAX_MIN:g}분")
+    return {"pass_budget": pb, "pass_safety": ps, "pass_gcode": pg, "pass_feasible": pf,
+            "time_min_feasible": t_used, "사유": "; ".join(reasons)}
+
+
+def feasible_time(r) -> tuple[str, float, bool]:
+    """→ (판정, 판정에 쓴 시간 [분], 면 래스터 시간을 썼는지)."""
+    from scoring import raster_time_min
+    tr = raster_time_min(r)
+    if np.isfinite(tr):
+        t, by_raster = tr, True
+    else:
+        by_raster = False
+        try:
+            t = float(r.get("time_min", np.nan))
+        except (TypeError, ValueError):
+            t = np.nan
+    if not np.isfinite(t):
+        return "확인필요", np.nan, by_raster
+    return ("통과" if t <= FEASIBLE_MAX_MIN else "탈락"), t, by_raster
 
 
 def judge(df: pd.DataFrame) -> pd.DataFrame:
-    out = df[["id", "name", "access", "cost_krw", "safety", "xy_step_um", "fov_mm"]].copy()
+    cols = ["id", "name"] + [c for c in ("mode",) if c in df.columns] + \
+        ["access", "cost_krw", "safety", "xy_step_um", "fov_mm", "time_min"]
+    out = df[cols].copy()
     res = df.apply(judge_row, axis=1, result_type="expand")
     out = pd.concat([out, res], axis=1)
-    out["rule_ok"] = ~(out[["pass_budget", "pass_safety", "pass_gcode"]] == "탈락").any(axis=1)
+    out["rule_ok"] = ~(out[["pass_budget", "pass_safety", "pass_gcode", "pass_feasible"]] == "탈락").any(axis=1)
     return out

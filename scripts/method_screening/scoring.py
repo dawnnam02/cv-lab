@@ -57,15 +57,36 @@ SENS_FACTORS = (0.5, 1.5)          # 가중치 ±50 %
 #  주사 속도 100 µm/s: DektakXT 일반 측정 설정(1 mm 주사에 약 10 s) 수준.
 #    M02.md 의 '40 mm 한 줄 주사·이동 4분'(≈ 170 µm/s, 이동 포함)과 같은 크기.
 #  줄당 이동·복귀 20 s: 스테이지 복귀·안정화 가정.
-LINE_PROFILER = {"M02": {"scan_speed_um_s": 100.0, "overhead_s": 20.0}}
+LINE_PROFILER_DEFAULT = {"scan_speed_um_s": 100.0, "overhead_s": 20.0}
+LINE_PROFILER = {"M02": dict(LINE_PROFILER_DEFAULT)}
 SPEC_AREA_MM = (20.0, 40.0)        # 시편 20 × 40 mm, 줄은 40 mm 방향
 
 
+def is_line_profiler(row) -> bool:
+    """mode 열이 있으면 그 값(line_profiler), 없으면 id 목록(LINE_PROFILER)."""
+    mode = str(row.get("mode", "") or "").strip().lower()
+    if mode and mode != "nan":
+        return mode == "line_profiler"
+    return str(row.get("id", "")) in LINE_PROFILER
+
+
 def raster_time_min(row) -> float:
+    """선 단면 장비의 면 래스터 시간 [분]. 선 단면 장비가 아니면 NaN.
+    주사 속도·줄당 이동 시간은 CSV 선택 열(scan_speed_um_s, line_overhead_s) → id 목록 → M02 기본값 순."""
+    if not is_line_profiler(row):
+        return np.nan
     rid = str(row.get("id", ""))
-    p = LINE_PROFILER.get(rid)
+    p = dict(LINE_PROFILER.get(rid, LINE_PROFILER_DEFAULT))
+    for col, key in (("scan_speed_um_s", "scan_speed_um_s"), ("line_overhead_s", "overhead_s")):
+        v = row.get(col, np.nan)
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            v = np.nan
+        if np.isfinite(v) and (v > 0 or (key == "overhead_s" and v >= 0)):
+            p[key] = v
     step = row.get("xy_step_um", np.nan)
-    if p is None or not np.isfinite(step) or step <= 0:
+    if not np.isfinite(step) or step <= 0:
         return np.nan
     n_lines = SPEC_AREA_MM[0] * 1000 / step
     t_line = SPEC_AREA_MM[1] * 1000 / p["scan_speed_um_s"] + p["overhead_s"]
@@ -188,8 +209,9 @@ def combo_budget_ok(ra, rb, budget_own, budget_out):
     return own_sum <= budget_own
 
 
-def find_combos(ids, rows, sims, manual, rule_tab, budget_own, budget_out):
-    """통과 조건 1을 혼자 못 맞추는 (규칙 탈락 없는) 후보끼리 2개 조합을 모두 본다."""
+def find_combos(ids, rows, sims, manual, rule_tab, budget_own, budget_out, time_max=None):
+    """통과 조건 1을 혼자 못 맞추는 (규칙 탈락 없는) 후보끼리 2개 조합을 모두 본다.
+    time_max [분] 를 주면 두 후보 시간의 합으로 실현성(feasible)을 판정한다 (비교-선정 4.1절)."""
     res = []
     for a, b in itertools.combinations(ids, 2):
         csim, who = combine_sims(sims[a], sims[b])
@@ -208,6 +230,9 @@ def find_combos(ids, rows, sims, manual, rule_tab, budget_own, budget_out):
             rec[f"{name}_Q_um"] = csim[name]["Q_um"]
             rec[f"{name}_담당"] = (a, b)[who[name]]
         rec.update({k: crow[k] for k in ("cost_krw", "time_min", "learn_weeks")})
+        if time_max is not None:
+            t = crow["time_min"]
+            rec["feasible"] = "확인필요" if not np.isfinite(t) else ("통과" if t <= time_max else "탈락")
         for k in WEIGHTS:
             rec[f"s_{k}"] = sc[k]
         rec["score"] = total(sc)

@@ -65,6 +65,9 @@
   B4. 점 측정 (POINT_IDS = M01, M04): 높이맵 모델 대신 해석 판정. 구멍 σ = z·√(2/8),
       길이 √(2z² + (40 mm·u_s)²), 단차 z·√2, 선폭은 볼 지름 > 0.4 mm 면 측정 불가,
       국소높이는 xy_step ≥ 200 µm 면 측정 불가, 위치 축별 σ = z·√(2/8).
+  B5. 2차 후보(청사진 8.1절): 사양 CSV 의 mode 열이 위 id 목록을 대신한다 (raster_point → B3 래스터 규칙,
+      point_probe → B4 해석 판정, line_profiler → 면 래스터, 2d → measures_z 0, indirect → 시뮬레이션 생략·
+      모든 지표 측정 불가). cal_class 열은 CAL_CLASS 의 id 목록을 대신한다. 열이 비면 id 목록을 쓴다.
 """
 from __future__ import annotations
 
@@ -130,6 +133,65 @@ STITCH_LEN_MM = 40.0             # 시야가 이보다 작으면 이어 붙이�
 # seam 마다 XY 오차 σ = max(0.5·xy_step, 1 µm), Z 오프셋 σ = z_sigma/√10, 둘 다 랜덤워크로 누적
 POINT_IDS = {"M01", "M04"}       # 점 측정 방식 → 높이맵 모델 대신 사양값 해석 판정
 POINT_N_HOLE = 8                 # 구멍 원 맞춤 점 수
+# 선 단면 장비 (촉침·윤곽): 면 측정은 래스터 가정, 시간은 scoring.raster_time_min 으로 다시 계산
+LINE_PROFILER_IDS = {"M02"}
+
+# ---------------------------------------------------------------- mode · cal_class (청사진 8.1절)
+# 사양 CSV 에 mode / cal_class 열이 있으면 그 값을 쓰고, 없거나 비면(1차 A–D) 위 id 목록 상수로 판정한다.
+#  area          면 높이맵 (기본)
+#  line_profiler 선 단면 장비 → 면 래스터 모델 + 면 래스터 시간 재계산 (LINE_PROFILER_IDS 와 같음)
+#  raster_point  프린터 축으로 끄는 점 센서 → RASTER_POINT 규칙 (seam 0, 축 잡음 5 µm)
+#  point_probe   점 측정 CMM·게이지 → POINT_IDS 해석 판정
+#  2d            높이 없음 → measures_z = 0
+#  indirect      형상을 재지 않음(질량·유량 등) → 모든 지표 '측정 불가', 시뮬레이션 생략
+MODES = ("area", "line_profiler", "raster_point", "point_probe", "2d", "indirect")
+CAL_PPM = {c: p for c, (p, _) in CAL_CLASS.items()}
+
+
+def _choice(v):
+    s = str(v if v is not None else "").strip().lower()
+    return "" if s in ("", "nan", "none", "na", "-") else s
+
+
+def resolve_mode(row) -> tuple[str, str]:
+    """→ (mode, 출처 'csv' | 'id목록'). CSV 값이 허용값이면 그대로, 아니면 id 목록 상수와 measures_z 로."""
+    v = _choice(row.get("mode", ""))
+    if v in MODES:
+        return v, "csv"
+    rid = str(row.get("id", "")).upper()
+    if rid in POINT_IDS:
+        return "point_probe", "id목록"
+    if rid in RASTER_POINT:
+        return "raster_point", "id목록"
+    if rid in LINE_PROFILER_IDS:
+        return "line_profiler", "id목록"
+    mz = row.get("measures_z", np.nan)
+    try:
+        mz = float(mz)
+    except (TypeError, ValueError):
+        mz = np.nan
+    if np.isfinite(mz) and mz < 0.5:
+        return "2d", "id목록"
+    return "area", "id목록"
+
+
+def resolve_cal(row, diy_ppm=None) -> tuple[str, float, str]:
+    """→ (등급 이름 또는 '', ppm, 메모). CSV cal_class → id 목록(CAL_CLASS) → access 기본값 순."""
+    v = _choice(row.get("cal_class", ""))
+    rid = str(row.get("id", "")).upper()
+    note = ""
+    if v in CAL_PPM:
+        cls = v
+    else:
+        cls = next((c for c, (p, ids) in CAL_CLASS.items() if rid in ids), "")
+    if cls:
+        ppm = CAL_PPM[cls]
+        if cls == "diy" and diy_ppm is not None:
+            ppm = diy_ppm
+    else:
+        ppm = CAL_DEFAULT_BY_ACCESS.get(str(row.get("access", "")).lower(), 500)
+        note = f"배율 등급 목록에 없음 → access 기준 {ppm} ppm"
+    return cls, float(ppm), note
 
 # 오차 종류: (이름, 그룹, 정답, 4:1 한계, 10:1 한계)   — 청사진 2.1절
 #  그룹 판정: 높이 = 국소높이, 윤곽 = 국소선폭, 치수 = 구멍지름·길이40 중 나쁜 쪽 (scoring.GROUP_RULES)
@@ -208,11 +270,18 @@ class Model:
 def model_from_row(row, diy_ppm=None) -> tuple[Model | None, list[str]]:
     """사양 행 → Model. 시뮬레이션 불가면 (None, 사유). 결측값 대체는 notes 에 적는다."""
     notes = []
+    mode, _ = resolve_mode(row)
+    if mode == "indirect":
+        return None, ["간접 지표 (형상을 재지 않음) → 모든 지표 측정 불가, 시뮬레이션 생략"]
     step = row.get("xy_step_um", np.nan)
     if not np.isfinite(step) or step <= 0:
         return None, ["xy_step 없음 → 측정 불가"]
     mz = row.get("measures_z", np.nan)
     zs = row.get("z_sigma_um", np.nan)
+    if mode == "2d":
+        if np.isfinite(mz) and mz >= 0.5:
+            notes.append("mode 2d → measures_z 0 으로 처리")
+        mz = 0.0
     if not np.isfinite(mz):
         mz = 1.0 if np.isfinite(zs) else 0.0
         notes.append(f"measures_z 없음 → {int(mz)} 가정")
@@ -237,21 +306,15 @@ def model_from_row(row, diy_ppm=None) -> tuple[Model | None, list[str]]:
         notes.append(f"xy_step {step:g} < 2 µm → 2 µm 로 처리")
     dep = row.get("depth_mm", np.nan)
     dep = float(dep) * 1000 if np.isfinite(dep) and dep > 0 else np.inf
-    rid = str(row.get("id", "")).upper()
-    cls = next((c for c, (p, ids) in CAL_CLASS.items() if rid in ids), "")
-    if cls:
-        ppm = CAL_CLASS[cls][0]
-        if cls == "diy" and diy_ppm is not None:
-            ppm = diy_ppm
-    else:
-        ppm = CAL_DEFAULT_BY_ACCESS.get(str(row.get("access", "")).lower(), 500)
-        notes.append(f"배율 등급 목록에 없음 → access 기준 {ppm} ppm")
-    raster = rid in RASTER_POINT
+    cls, ppm, cnote = resolve_cal(row, diy_ppm)
+    if cnote:
+        notes.append(cnote)
+    raster = mode == "raster_point"
     if raster:
         notes.append(f"프린터 축 래스터: seam 0, 샘플 XY 잡음 {RASTER_XY_SIGMA:g} µm(보수)")
     fov = row.get("fov_mm", np.nan)
     fov = float(fov) * 1000 if np.isfinite(fov) and fov > 0 else np.inf
-    point = rid in POINT_IDS
+    point = mode == "point_probe"
     if point:
         notes.append("해석 판정")
     return Model(z_sigma=float(zs) if mz else 0.0, xy_step=float(step), xy_blur=max(float(blur), 0.0),
