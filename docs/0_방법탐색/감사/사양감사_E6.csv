@@ -1,0 +1,121 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M65,z_sigma_um,1,"축 분해능 0.2 µm, 선형성 2 µm(거울 수직, 20 °C)",추정,0.5,2.5,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,데이터시트 기준값 확인. 1은 잡음 바닥과 선형성 사이 + PLA 산란 보정 추정. 범위 = 분해능 기반 하한~선형성+산란
+M65,xy_step_um,3.69,2.5 mm 프로브 pitch 3.69 ± 0.08 µm,확인,3.61,5,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,선 방향 확인. 이송 방향은 스테이지 설정 5 µm라 상한 5
+M65,xy_blur_um,5,2.5 mm 프로브 가로 분해능 값 없음(NA 0.55),추정,3.69,8,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,데이터시트에 가로 분해능 표기 없음. NA 0.55 회절 스폿은 1 µm 안팎이라 점 간격이 지배. 하한 = pitch
+M65,fov_mm,4.4,선 길이 4.4 ± 0.1 mm,확인,4.3,4.5,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,공차 그대로
+M65,depth_mm,2.5,측정범위 2.5 mm,확인,2.5,2.5,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,
+M65,edge_loss_um,20,공개값 없음,추정,10,60,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,"동축이라 그림자 없음, 경사 33° 넘는 모서리 R부만 손실이라는 근거 타당"
+M65,max_slope_deg,33,측정 각도 90° ± 33°(큰 각에서 정확도 저하),확인,25,33,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,주석 5) 큰 입사각에서 정확도 저하 → 하한 25
+M65,time_min,10,"7,930선/s(전체 범위), 1,200점/선",추정,5,30,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,"선 40,000줄은 약 5 s. 스테이지 왕복·띠 정렬 포함 10분 추정 타당"
+M65,cost_krw,80000000,"공개 가격 없음. 점 센서 2S 중고 €8,300(검색 결과 요약, 원문 페이지는 현재 다른 목록으로 바뀜)",추정,40000000,120000000,https://shop.labexchange.com/en/precitec-chrocodile-2s.html,확신 낮음. 2S 중고가 근거만 확인됨. 라인 센서 신품가 배수 가정 → 폭 크게
+M65,measures_z,1,높이 단면(distance),확인,,,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,맞음
+M65,mode,line_profiler,"라인 센서 1,200점/선 + 스테이지 5 µm 이송 래스터 → 3.69 × 5 µm 면 높이맵",불일치,,,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,틀림. line_profiler는 촉침·윤곽기용(면 래스터 시간 재계산). 같은 구조인 M38 Keyence LJ-X(라인+Y 스테이지)는 area. area로 수정
+M65,cal_class,industrial,산업용 상용 센서,확인,,,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf,맞음(industrial). XY 축척은 스테이지 정밀도에 달림
+M66,z_sigma_um,1.5,"높이 반복성 σ 0.4 µm(Z 이어 붙이기 없음)·1.0 µm(있음), 정확도 ±2.5 µm",추정,0.4,3,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,원문 0.4 확인. 1.5는 PLA 줄무늬 번짐·이어 붙이기 보정값(보정 논리 유지)
+M66,xy_step_um,11.7,"4 MP 흑백 CMOS(VR-6000), 화상 2048 × 1536(VR-3200), 12× 시야 24 mm",확인,11.7,12,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,24 mm ÷ 2048 = 11.7 µm 환산 맞음
+M66,xy_blur_um,25,공개값 없음,추정,12,35,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,약 2화소 추정 타당
+M66,fov_mm,18,12× 시야 24.0 × 18.0 mm,확인,18,18,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,짧은 변
+M66,depth_mm,10,"저배율 측정 범위 10 mm(Z 이어 붙이기 없음), 50 mm(있음)",확인,10,10,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,VR-6000 원문에서 직접 확인(md는 VR-3200 값으로 추정했으나 같은 값)
+M66,edge_loss_um,50,공개값 없음,추정,25,150,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,"두 방향 투광 근거 타당, 숫자는 추정"
+M66,max_slope_deg,60,공개값 없음,출처 없음,22,85,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,"md에 '공개값 없음'만 있고 근거 없음 → 보수값 45, 범위 ×0.5~(×3, 85° 상한)"
+M66,time_min,10,측정 시간 원문 없음(md: 한 장 약 1초),추정,5,30,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,3장 이어 붙이기·해석 포함 추정
+M66,cost_krw,300000,"KCL VR-6200 'EA 기준 300,000원'",확인,300000,330000,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0243107,상한은 부가세 별도 가능성
+M66,measures_z,1,면 높이맵,확인,,,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,맞음
+M66,mode,area,면 높이맵,확인,,,https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/,맞음(area)
+M66,cal_class,calibrated,공인 시험기관(KCL) 보유 계측기,확인,,,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0243107,맞음(calibrated)
+M67,z_sigma_um,2,"높이 반복성 σ 0.5 µm, 정확도 ±3 µm",추정,0.5,4,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,원문 0.5 확인. 2는 PLA·이어 붙이기·중고 교정 불명 보정값(보정 논리 유지)
+M67,xy_step_um,11.7,"화상 크기 1024 × 768, 2048 × 1536, 광시야 24 mm",확인,11.7,23.4,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,"2048 모드 11.7, 1024 모드면 23.4"
+M67,xy_blur_um,25,공개값 없음,추정,12,50,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,약 2화소 추정
+M67,fov_mm,18,광시야 12× 24.0 × 18.0 mm,확인,18,18,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,
+M67,depth_mm,10,광시야 측정 높이 10 mm(±5 mm),확인,10,10,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,
+M67,edge_loss_um,50,공개값 없음,추정,25,150,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,M66과 같은 구조 근거
+M67,max_slope_deg,60,공개값 없음,출처 없음,22,85,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,근거 없음 → 보수값 45
+M67,time_min,10,측정 시간 원문 없음,추정,5,30,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,3장 이어 붙이기 + 해석
+M67,cost_krw,25200000,"중고 VR-3200 가격 없음. 2021년식 VR-6100 세트 $32,900",추정,12600000,46100000,https://revelationmachinery.com/product/keyence-vr-6100-3d-optical-profiler/,"확신 낮음. 상한 = VR-6100 세트가 × 1,400원"
+M67,measures_z,1,면 높이맵,확인,,,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,맞음
+M67,mode,area,면 높이맵,확인,,,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,맞음(area)
+M67,cal_class,industrial,중고·교정 이력 불명,확인,,,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf,"맞음(industrial). 연세대 의뢰(시간당 21,200원 확인)면 calibrated"
+M68,z_sigma_um,2,"Repeatability Z 0.2 µm, Accuracy XYZ 6 µm(구 맞춤)",추정,0.5,6,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,원문 확인. 2는 점 잡음 + PLA·이어 붙이기 보정값(보정 논리 유지). 상한 = XYZ 정확도
+M68,xy_step_um,7,Resolution XY 6.7–7.1 µm,확인,6.7,7.1,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,
+M68,xy_blur_um,15,공개값 없음,추정,7,25,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,약 2화소 추정
+M68,fov_mm,12.1,FOV 12.1 × 13.2(near)–13.0 × 15.0(far) mm,확인,12.1,13.0,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,짧은 변
+M68,depth_mm,7,Measurement Range 7 mm,확인,7,7,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,
+M68,edge_loss_um,40,공개값 없음,추정,20,120,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,스테레오로 가림 감소 근거 타당
+M68,max_slope_deg,60,공개값 없음,출처 없음,22,85,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,근거 없음 → 보수값 45
+M68,time_min,10,Scan rate 6 Hz,추정,5,30,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,"8장 촬영은 수 초, 스테이지·이어 붙이기 포함"
+M68,cost_krw,25200000,"$18,000(검색 결과 요약; 판매처 페이지 본문은 열리지 않음)",추정,12600000,37800000,https://shop.axisne.com/gocator-3504/ecomm-product-detail/314848/,단종 재고가 변동 큼 → ×0.5~×1.5
+M68,measures_z,1,면 높이맵,확인,,,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,맞음
+M68,mode,area,스냅샷 면 센서,확인,,,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,맞음(area)
+M68,cal_class,industrial,Pre-calibrated 산업 센서,확인,,,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf,맞음(industrial)
+M69,z_sigma_um,50,"점 정밀도 1σ 80 µm, 국소 평면 정밀도 1σ 100 µm(600 mm, 람베르트, 필터 끔)",추정,20,100,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,600 mm 값 확인. 300 mm 환산(거리 제곱)과 PLA 보정 추정. 그림 8 곡선 값은 읽지 못함
+M69,xy_step_um,122,공간 분해능 4.07 × 10⁻⁴ × z(mm),확인,122,142,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,"300 mm 122 µm, 최적 거리 하한 350 mm면 142 µm"
+M69,xy_blur_um,250,공개값 없음,추정,122,500,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,약 2화소 추정
+M69,fov_mm,230,570 × 460 mm @ 600 mm,추정,200,260,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,거리 비례 환산 230(300 mm). 근거 타당
+M69,depth_mm,800,"권장 거리 300–1100 mm, 최적 350–900 mm",확인,550,800,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,하한 = 최적 범위 폭
+M69,edge_loss_um,500,공개값 없음,추정,250,1500,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,프로젝터–카메라 1쌍 한쪽 그림자 근거
+M69,max_slope_deg,60,공개값 없음,출처 없음,22,85,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,근거 없음 → 보수값 45
+M69,time_min,5,"캡처 50–1500 ms, 예열 10분 권장",추정,2,15,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,예열 10분을 넣으면 15분까지 → 상한에 반영
+M69,cost_krw,16800000,가격 비공개(견적 요청),추정,8400000,30000000,https://www.zivid.com/pricing/zivid-3d-camera-for-academics,"확신 낮음. PhoXi S $12,810 비교 근거"
+M69,measures_z,1,3D 점군,확인,,,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,맞음
+M69,mode,area,면 점군,확인,,,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,맞음(area)
+M69,cal_class,industrial,"Factory calibrated, thermal compensation",확인,,,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf,맞음(industrial)
+M70,z_sigma_um,80,"Temporal noise 1σ 0.050 mm, Calibration accuracy 1σ 0.050 mm",추정,50,150,https://www.photoneo.com/products/phoxi-scan-s/,원문 50 확인. 80은 적색 레이저 PLA 침투·스펙클 보정값(보정 논리 유지)
+M70,xy_step_um,174,Point-to-point distance 0.174 mm(최적 거리),확인,174,174,https://www.photoneo.com/products/phoxi-scan-s/,
+M70,xy_blur_um,350,공개값 없음,추정,174,700,https://www.photoneo.com/products/phoxi-scan-s/,약 2점 간격 추정
+M70,fov_mm,272,360 × 272 mm @ 442 mm,확인,272,272,https://www.photoneo.com/products/phoxi-scan-s/,짧은 변
+M70,depth_mm,136,Scanning range 384–520 mm,확인,136,136,https://www.photoneo.com/products/phoxi-scan-s/,520 − 384 = 136
+M70,edge_loss_um,500,공개값 없음,추정,250,1500,https://www.photoneo.com/products/phoxi-scan-s/,투광–수광 1쌍(기선 230 mm) 한쪽 그림자
+M70,max_slope_deg,60,공개값 없음,출처 없음,22,85,https://www.photoneo.com/products/phoxi-scan-s/,근거 없음 → 보수값 45
+M70,time_min,5,Scanning time 250–2250 ms,추정,2,15,https://www.photoneo.com/products/phoxi-scan-s/,준비 포함 추정
+M70,cost_krw,17900000,"Graftek $12,810",확인,17900000,21500000,https://graftek.com/product/phoxi-3d-scanner-s-gen2/,"× 1,400원 환산 맞음. 상한은 수입·부가세 약 +20 %"
+M70,measures_z,1,3D 점군,확인,,,https://www.photoneo.com/products/phoxi-scan-s/,맞음
+M70,mode,area,면 점군,확인,,,https://www.photoneo.com/products/phoxi-scan-s/,맞음(area)
+M70,cal_class,industrial,공장 교정,확인,,,https://www.photoneo.com/products/phoxi-scan-s/,맞음(industrial)
+M71,z_sigma_um,40,Single shot accuracy ≤ 0.05 mm(정의 미공개),추정,25,80,https://www.einscan.com/einscan-sp/einscan-sp-specs/,원문 확인. 40은 최대오차→1σ + PLA·스프레이 보정값(보정 논리 유지)
+M71,xy_step_um,170,Point distance 0.17–0.2 mm,확인,170,200,https://www.einscan.com/einscan-sp/einscan-sp-specs/,
+M71,xy_blur_um,350,공개값 없음,추정,170,700,https://www.einscan.com/einscan-sp/einscan-sp-specs/,메시 평활화 포함 약 2점 간격
+M71,fov_mm,150,Single capture range 200 × 150 mm,확인,150,150,https://www.einscan.com/einscan-sp/einscan-sp-specs/,짧은 변
+M71,depth_mm,190,Working distance 290–480 mm,확인,190,190,https://www.einscan.com/einscan-sp/einscan-sp-specs/,480 − 290
+M71,edge_loss_um,300,공개값 없음,추정,150,900,https://www.einscan.com/einscan-sp/einscan-sp-specs/,메시 평활화 근거
+M71,max_slope_deg,70,공개값 없음,추정,45,80,https://www.einscan.com/einscan-sp/einscan-sp-specs/,턴테이블 다방향 합성 근거
+M71,time_min,15,"Turntable scanning < 45 s, single < 1 s",추정,5,30,https://www.einscan.com/einscan-sp/einscan-sp-specs/,2방향 + 스프레이·합성
+M71,cost_krw,2940000,"Top3DShop $1,799(정가 $2,599), md 기록 $2,099",확인,2520000,3640000,https://top3dshop.com/product/shining-3d-einscan-sp-3d-scanner,"$2,099 × 1,400 = 2,938,600 환산 맞음. 범위 = $1,799~$2,599"
+M71,measures_z,1,3D 메시,확인,,,https://www.einscan.com/einscan-sp/einscan-sp-specs/,맞음
+M71,mode,area,면 메시,확인,,,https://www.einscan.com/einscan-sp/einscan-sp-specs/,맞음(area)
+M71,cal_class,industrial,"보급형 상용, 교정판 자체 교정",확인,,,https://www.einscan.com/einscan-sp/einscan-sp-specs/,맞음(industrial). 정확도 50 µm/200 mm라 축척 등급보다 잡음이 지배
+M72,z_sigma_um,8,Accuracy 0.01 mm(정의 미공개),추정,5,20,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,원문 확인. 8은 점 잡음 + 스프레이·PLA 보정값(보정 논리 유지)
+M72,xy_step_um,50,Point distance 0.05 mm,확인,50,50,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,
+M72,xy_blur_um,100,공개값 없음,추정,50,200,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,약 2점 간격
+M72,fov_mm,90,FOV 140 × 90 × 80 mm,확인,90,90,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,짧은 변
+M72,depth_mm,80,FOV 깊이 80 mm,확인,80,80,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,
+M72,edge_loss_um,100,공개값 없음,추정,50,300,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,3축 다방향 + 평활화 근거
+M72,max_slope_deg,70,공개값 없음,추정,45,80,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,3축 회전 근거
+M72,time_min,15,스캔 시간 원문 없음,추정,5,40,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,스프레이 + 자동 스캔 + 합성
+M72,cost_krw,14000000,"$9,999(검색 결과 요약, 여러 판매처 동일; Additiveplus 본문에는 가격 표시 안 됨), 유럽 €11,998.80(세금 포함)",추정,12600000,19200000,https://additiveplus.com/product/shining-3d-autoscan-inspec2-automatic-desktop-3d-inspection-scanner-metrology-0-01-mm/,원문 페이지에서 직접은 못 봄 → 추정. 상한 = 유럽 세금 포함가
+M72,measures_z,1,3D 메시,확인,,,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,맞음
+M72,mode,area,면 메시,확인,,,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,맞음(area)
+M72,cal_class,industrial,"상용, PTB 인증은 검사 소프트웨어 모듈",확인,,,https://www.shining3d.com/metrology-solutions/high-precision-3d-inspection-system/autoscan-inspec2,맞음(industrial)
+M73,z_sigma_um,3,"MV100 PF(sigma) 0.0006–0.0009 mm(한계 0.003), PS 0.0023, SD −0.0023, E 0.0013 mm",추정,1,6,https://www.zebicon.com/fileadmin/user_upload/2025-05-12_VDI_Test_MV100_ATOS_Q_SN210221.pdf,원문 확인. 3은 스프레이 두께 변동 보정값(보정 논리 유지)
+M73,xy_step_um,30,ATOS Q 12M 점간격 0.03–0.12 mm,확인,30,30,https://www.zeiss.com/metrology/us/systems/optical-3d/3d-scanning/atos/atos-q.html,MV100이 최소 0.03
+M73,xy_blur_um,60,공개값 없음,추정,30,120,https://www.zeiss.com/metrology/us/systems/optical-3d/3d-scanning/atos/atos-q.html,약 2점 간격
+M73,fov_mm,70,"MV100 (100 × 70 × 60) mm, 교정 볼륨 114 × 80 × 60 mm",확인,70,80,https://www.zebicon.com/fileadmin/user_upload/2025-05-12_VDI_Test_MV100_ATOS_Q_SN210221.pdf,짧은 변
+M73,depth_mm,60,MV100 깊이 60 mm,확인,60,60,https://www.zebicon.com/fileadmin/user_upload/2025-05-12_VDI_Test_MV100_ATOS_Q_SN210221.pdf,
+M73,edge_loss_um,60,카메라 각 28.41°(보고서),추정,30,180,https://www.zebicon.com/fileadmin/user_upload/2025-05-12_VDI_Test_MV100_ATOS_Q_SN210221.pdf,Triple Scan·다방향 근거
+M73,max_slope_deg,70,공개값 없음,추정,45,80,https://www.zebicon.com/fileadmin/user_upload/2025-05-12_VDI_Test_MV100_ATOS_Q_SN210221.pdf,회전·기울임 테이블 근거
+M73,time_min,30,스캔 1초 이내(i-Tube),추정,15,90,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0233845,스프레이·마커·다방향·정렬 포함
+M73,cost_krw,150000,"한국섬유기계융합연구원 ATOS Q 시간별 50,000원",추정,100000,300000,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0233845,"요율 확인, 3시간은 가정 → 2~6시간"
+M73,measures_z,1,3D 점군,확인,,,https://www.zeiss.com/metrology/us/systems/optical-3d/3d-scanning/atos/atos-q.html,맞음
+M73,mode,area,면 점군,확인,,,https://www.zeiss.com/metrology/us/systems/optical-3d/3d-scanning/atos/atos-q.html,맞음(area)
+M73,cal_class,calibrated,"VDI/VDE 2634-3 인수 시험, 길이 오차 1.3 µm/67 mm(약 20 ppm)",확인,,,https://www.zebicon.com/fileadmin/user_upload/2025-05-12_VDI_Test_MV100_ATOS_Q_SN210221.pdf,맞음(calibrated)
+M74,z_sigma_um,25,"의뢰 가능 장비: SILVER Elite 정확도 0.030 mm(경북TP), HandySCAN 307 0.04 mm(KAPID·KTR). BLACK Elite 0.025 mm는 의뢰처에 없음",불일치,30,80,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0244163,CSV는 의뢰처에 없는 BLACK Elite 값. 같은 보정 논리(정확도 값을 σ로)로 SILVER Elite 0.030 → 30
+M74,xy_step_um,25,"SILVER Elite 측정 분해능 0.030 mm(307은 0.1 mm, Aniwaa)",불일치,30,100,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0244163,의뢰 장비 기준으로 수정. 307로 가면 100
+M74,xy_blur_um,100,"SILVER Elite 메시 분해능 0.2 mm, 307 해상도 0.2 mm(KTR)",불일치,100,300,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0244163,BLACK Elite 0.1 → 의뢰 장비 0.2
+M74,fov_mm,300,307·MetraSCAN 750 스캔 영역 275 × 250 mm(KAPID·창원대),불일치,250,310,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0215700,md도 HandySCAN 값 못 찾고 MetraSCAN BLACK 310 × 350 차용 → 의뢰 장비 짧은 변 250
+M74,depth_mm,250,BLACK Elite 피사계 심도 250 mm,추정,150,250,https://www.creaform3d.com/en/products/portable-3d-scanners/portable-3d-scanner-handyscan-3d/technical-specifications,의뢰 장비(SILVER·307) 심도 원문 없음 → BLACK 값 차용 추정
+M74,edge_loss_um,200,공개값 없음,추정,100,600,https://www.creaform3d.com/en/products/portable-3d-scanners/portable-3d-scanner-handyscan-3d/technical-specifications,메시 평활화 근거
+M74,max_slope_deg,75,공개값 없음,추정,45,85,https://www.creaform3d.com/en/products/portable-3d-scanners/portable-3d-scanner-handyscan-3d/technical-specifications,손으로 여러 각도 근거
+M74,time_min,20,작업 시간 원문 없음,추정,10,60,https://www.creaform3d.com/en/products/portable-3d-scanners/portable-3d-scanner-handyscan-3d/technical-specifications,마커·스캔·메시 처리
+M74,cost_krw,105000,"KAPID HandySCAN 307 시간당 35,000원, 경북TP SILVER Elite 30,000원, KTR 307 건당 300,000원",확인,90000,300000,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0215700,"35,000 × 3 h 환산 맞음(시간은 가정). 범위 = 경북TP 3 h ~ KTR 건당"
+M74,measures_z,1,3D 메시,확인,,,https://www.creaform3d.com/en/products/portable-3d-scanners/portable-3d-scanner-handyscan-3d/technical-specifications,맞음
+M74,mode,area,면 메시,확인,,,https://www.creaform3d.com/en/products/portable-3d-scanners/portable-3d-scanner-handyscan-3d/technical-specifications,맞음(area)
+M74,cal_class,calibrated,"체적 정확도 0.020 mm + 0.060 mm/m(SILVER Elite), 307은 0.04 + 0.06 mm/m",불일치,,,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0244163,틀림. 길이 항 60 ppm은 calibrated(20 ppm)보다 큼 → industrial(100)로 보수 수정

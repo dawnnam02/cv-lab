@@ -1,0 +1,73 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M05,z_sigma_um,12,"원문 없음(설계 문서 스펙클 11.5 µm; Faes 표2 PLA 4.43~8.42 µm, 반투명 ABS 13.86 µm, 405 nm 5 mW)",추정,8,18,docs/blueprints/B-optics/B2-geometry.md;https://arxiv.org/pdf/1612.02219,"RSS(11.5, 4.4~8.4)=12.3~14.2 µm라 12는 '보수값'이 아니라 하한 쪽. Faes 값은 평균 치우침이라 σ와 성격이 다름. 상한은 반투명 13.9 µm 포함 RSS"
+M05,xy_step_um,20,"X 13.8 µm/px(B1), Y 스캔 간격 20 µm(설정)",확인,13.8,20,docs/blueprints/B-optics/B1-triangulation-principle.md,설정값. 성긴 쪽 사용
+M05,xy_blur_um,60,"물체 위 선 두께 50~80 µm 설계, 깊이 끝에서 약 110 µm(B6 2.4)",확인,50,110,docs/blueprints/B-optics/B6-laser.md,설계 목표값(실물 미확인)
+M05,fov_mm,19.9,FOV_x = 19.87 mm(B1),확인,19.8,19.9,docs/blueprints/B-optics/B1-triangulation-principle.md,환산 일치
+M05,depth_mm,10,f/8 초점 범위 10.2 mm(B2 6.1절),확인,10,14,docs/blueprints/B-optics/B2-geometry.md,f/11이면 14 mm
+M05,edge_loss_um,120,가림 h·tan30° = 0.58h → 0.2 mm 단차 115 µm(B2),확인,115,580,docs/blueprints/B-optics/B2-geometry.md,0.2 mm 벽 기준. 합성 시편의 핀·판 벽 1 mm면 577 µm라 상한으로 둠
+M05,max_slope_deg,45,원문 없음(기하 한계 60° 미만에서 반사광 감소),추정,30,60,,근거는 기하 상한 60°뿐
+M05,time_min,2,40 mm ÷ 2 mm/s = 20 s × 2회 + 준비(B4·K3 시나리오 B),추정,1,5,docs/blueprints/K-management/K3-budget.md,프린터 축 속도·준비 시간 가정
+M05,cost_krw,2400000,K3 4.1 P01·P02·P03·P04·P06·P07 합 105~370만 원,확인,1050000,3700000,docs/blueprints/K-management/K3-budget.md,중간값 237.5만 원 반올림. 견적 전 범위
+M05,measures_z,1,높이맵,확인,,,docs/blueprints/B-optics/B1-triangulation-principle.md,맞음
+M05,mode,area(id목록),라인 삼각측량 + Y 스캔 → 면 높이맵,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),"CSV에 열 없음, simulate.py 판정값. 맞음"
+M05,cal_class,diy(id목록),자작 광학계 + 프린터 축 Y 스캔,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),diy·printer_axis 모두 500 ppm이라 판정 영향 없음. 단 diy는 --diy-ppm 100 민감도 대상이 됨
+M06,z_sigma_um,4,"사양 Z 반복성 0.2 µm(이상 표면); PLA 확산 4.43~8.42 µm(Faes, 자작)",추정,2,8.4,https://www.sincevision.com/industrial-sensors/3d-laser-profilers/sr-series/sr7000/sr7050;https://arxiv.org/pdf/1612.02219,사양값을 PLA 확산 하한의 절반으로 키운 보정. 보정 논리 유지
+M06,xy_step_um,10,"X-axis data interval 10 µm, 3,200점",확인,10,10,https://www.sincevision.com/industrial-sensors/3d-laser-profilers/sr-series/sr7000/sr7050,Y는 스캔 간격 설정
+M06,xy_blur_um,40,"원문 없음(SR7050 선 두께 미공개). Keyence LJ-X8020 32 µm, LJ-X8060 49 µm(기준거리)",추정,30,50,https://www.keyence.com/products/measure/laser-2d/lj-x8000/specs/,동급 Keyence 사이 값. 근거 맞음
+M06,fov_mm,27.5,X FOV 근 27.5 / 기준 28.5 / 원 29 mm,확인,27.5,29,https://www.sincevision.com/industrial-sensors/3d-laser-profilers/sr-series/sr7000/sr7050,근거리 값(보수)
+M06,depth_mm,8.8,Z 범위(FS) 8.8 mm,확인,8.8,8.8,https://www.sincevision.com/industrial-sensors/3d-laser-profilers/sr-series/sr7000/sr7050,
+M06,edge_loss_um,100,"원문 없음(삼각측량 각 미공개, 25° 가정 → 0.2 mm 단차 93 µm)",추정,60,470,,각 15~35°·벽 0.2~1 mm 폭. 1 mm 벽·25°면 466 µm
+M06,max_slope_deg,45,원문 없음,추정,30,60,,확산면 일반 한계 가정
+M06,time_min,1,"주사 속도 1,250~10,000 Hz(원문). 10 µm 간격 10 mm/s → 1 kHz로 가능",추정,0.5,3,https://www.sincevision.com/industrial-sensors/3d-laser-profilers/sr-series/sr7000/sr7050,속도는 사양 안. 준비 시간 가정
+M06,cost_krw,9450000,"판매가 $6,000~7,500(검색 요약). alibaba 원문 404",추정,8400000,12000000,https://www.alibaba.com/supplier/3d-laser-profiler.html,"× 1,400원. 상한은 컨트롤러·세금·배송 여유. 원문 직접 확인 못 함"
+M06,measures_z,1,높이 단면,확인,,,https://www.sincevision.com/industrial-sensors/3d-laser-profilers/sr-series/sr7000/sr7050,맞음
+M06,mode,area(id목록),라인 프로파일러 + Y 스캔 → 면 높이맵,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),line_profiler(촉침 단면) 모드가 아님. 맞음
+M06,cal_class,industrial(id목록),"X는 센서 교정(선형성 ±0.025 % FS), Y 40 mm는 프린터 축 스캔",불일치,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),CSV에 열 없음 → simulate.py id 목록 값. Y(40 mm 방향) 스캔을 프린터 축이 맡으므로 8.1절 정의상 printer_axis(500 ppm)가 맞음. CSV에 cal_class 열이 없어 고치지 않음 → 팀장 판단 필요
+M07,z_sigma_um,4,"반복성 0.5 µm(2 kHz, median 9, 백색 세라믹), 선형성 <±8 µm; PLA 확산 4.43~8.42 µm(Faes)",추정,2,8.4,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf;https://arxiv.org/pdf/1612.02219,PLA 실사용 보정 논리 유지. 사양 각주 조건 원문 확인
+M07,xy_step_um,40,"설정값(줄 간격 40 µm, 선 방향 10 µm)",추정,30,50,,설정값. 스폿 45×40 µm에 맞춤
+M07,xy_blur_um,45,"스폿 MMR 45×40 µm(±10 %), SMR 90×120, EMR 140×160 µm",확인,40,120,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,시편 높이차 ≤ 1 mm라 MMR 근처. 초점 위치 어긋남 시 SMR 쪽까지
+M07,fov_mm,0.05,점 센서 스폿 45 µm,확인,0.045,0.05,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,
+M07,depth_mm,10,측정범위 10 mm(20~30 mm),확인,10,10,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,
+M07,edge_loss_um,120,"원문 없음(송수광 각 미공개, 30° 가정 → 115 µm)",추정,60,580,,각 15~30°·벽 0.2~1 mm 폭
+M07,max_slope_deg,30,원문 없음(데이터시트에 값 없음 확인),추정,20,45,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,
+M07,time_min,25,"500줄 × (2 s + 전환 1 s) = 25분, 2 kHz·20 mm/s → 10 µm",추정,17,40,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,계산 맞음. 전환 시간 0~3 s 폭
+M07,cost_krw,2500000,"센서 $1,450(eBay, 원문 403) × 1,400 + 주변품 50만 원",추정,2000000,3500000,https://www.ebay.com/itm/194590157137,eBay 403으로 원문 확인 못 함. 신품 정가는 더 높을 수 있어 상한 확대
+M07,measures_z,1,변위 센서,확인,,,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,맞음
+M07,mode,raster_point(id목록),점 센서 + 프린터 축 래스터,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),맞음
+M07,cal_class,printer_axis(id목록),XY 위치 = 프린터 축,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),맞음
+M08,z_sigma_um,1,"분해능 0.006 µm, 선형성 ±0.8 µm(SCI04025)",추정,0.5,3,https://www.sincevision.com/product/spectral-confocal-displacement-sensor.html,선형성 ±0.8 µm를 σ로 쓴 셈. PLA 체적 산란 문헌 없음 → 상한 3
+M08,xy_step_um,20,설정값(20 µm 격자),추정,20,25,,설정값
+M08,xy_blur_um,25,스폿 12/25.2 µm,확인,12,25.2,https://www.sincevision.com/product/spectral-confocal-displacement-sensor.html,큰 값 사용(보수)
+M08,fov_mm,0.025,점 센서 스폿 25.2 µm,확인,0.012,0.025,https://www.sincevision.com/product/spectral-confocal-displacement-sensor.html,
+M08,depth_mm,4,"측정범위 4 mm, WD 16 mm",확인,4,4,https://www.sincevision.com/product/spectral-confocal-displacement-sensor.html,
+M08,edge_loss_um,30,"원문 없음(동축, NA 원뿔 가림 가정)",추정,10,60,,WD 16 mm·스폿 12 µm면 NA가 커서 1 mm 벽 근처 가림이 더 클 수 있음
+M08,max_slope_deg,25,최대 반사각 ±25°,확인,25,40,https://www.sincevision.com/product/spectral-confocal-displacement-sensor.html,원문은 반사(거울)면 각. 확산면은 더 넓을 수 있어 상한만 확대
+M08,time_min,45,"1,000줄 × 2.7 s ≈ 45분",추정,30,60,,계산 맞음
+M08,cost_krw,6900000,국산 점 공초점 3~4만 위안(검색 요약). 지정 원문 페이지에는 금액 없음(면의). alibaba 410,추정,2400000,8000000,https://www.instrument.com.cn/zhuti/155760.html,"원문 확인 못 함. 3~4만 위안 → 590~790만 원, 알리바바 저가 240~410만 원"
+M08,measures_z,1,변위 센서,확인,,,https://www.sincevision.com/product/spectral-confocal-displacement-sensor.html,맞음
+M08,mode,raster_point(id목록),점 센서 + 프린터 축 래스터,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),맞음
+M08,cal_class,printer_axis(id목록),XY 위치 = 프린터 축,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),맞음
+M09,z_sigma_um,1.5,"Z 반복성 0.25 µm(Gocator 5516, LCI1620 동일)",추정,0.5,4,https://am.lmi3d.com/manuals/gopxl/gopxl-1.1/LMIConfocalLineProfiler/Content/Specs/G5/Gocator5500Series/Gocator5500Series.htm;https://www.daheng-imaging.com/uploadfile/2021/0812/20210812042144487.pdf,PLA 실사용 보정(M08 1 µm보다 나쁘게). 근거 문헌 없음 → 폭 넓힘
+M09,xy_step_um,10,"X 9.9 µm, 1,792점(LCI1620 시트는 1,728점)",확인,9.9,10,https://am.lmi3d.com/manuals/gopxl/gopxl-1.1/LMIConfocalLineProfiler/Content/Specs/G5/Gocator5500Series/Gocator5500Series.htm;https://www.daheng-imaging.com/uploadfile/2021/0812/20210812042144487.pdf,Y는 설정
+M09,xy_blur_um,15,원문 없음(가로 분해능 미공개),추정,10,25,,점 간격의 1.5배 가정
+M09,fov_mm,17,17.0 mm,확인,17,17,https://am.lmi3d.com/manuals/gopxl/gopxl-1.1/LMIConfocalLineProfiler/Content/Specs/G5/Gocator5500Series/Gocator5500Series.htm;https://www.daheng-imaging.com/uploadfile/2021/0812/20210812042144487.pdf,
+M09,depth_mm,5.5,측정범위 5.5 mm,확인,5.5,5.5,https://am.lmi3d.com/manuals/gopxl/gopxl-1.1/LMIConfocalLineProfiler/Content/Specs/G5/Gocator5500Series/Gocator5500Series.htm;https://www.daheng-imaging.com/uploadfile/2021/0812/20210812042144487.pdf,WD 61.3 mm(LMI) / 64.0 mm(LCI 시트)
+M09,edge_loss_um,20,원문 없음(동축),추정,10,50,,
+M09,max_slope_deg,13.5,거울면 최대 경사 ±13.5°,확인,13.5,30,https://www.daheng-imaging.com/uploadfile/2021/0812/20210812042144487.pdf,원문은 거울면 조건. 확산 PLA는 더 넓을 수 있어 상한만 확대
+M09,time_min,2,"전 범위 3,800 Hz(LMI) / 3,000 Hz(LCI 시트) × 10 µm = 30~38 mm/s",추정,1,5,https://am.lmi3d.com/manuals/gopxl/gopxl-1.1/LMIConfocalLineProfiler/Content/Specs/G5/Gocator5500Series/Gocator5500Series.htm;https://www.daheng-imaging.com/uploadfile/2021/0812/20210812042144487.pdf,계산 맞음. 이어 붙이기·준비 시간 가정
+M09,cost_krw,59000000,수입 라인 공초점 12~35만 위안/대(원문). CSV 근거는 '약 30만 위안',추정,23700000,69000000,https://www.cnblogs.com/qihuoke2/p/19473336,"30만 위안은 원문 범위 안. 12~35만 위안 ÷ 7.1 × 1,400"
+M09,measures_z,1,높이 단면,확인,,,https://am.lmi3d.com/manuals/gopxl/gopxl-1.1/LMIConfocalLineProfiler/Content/Specs/G5/Gocator5500Series/Gocator5500Series.htm,맞음
+M09,mode,area(id목록),라인 센서 + Y 스캔 2회 → 면 높이맵,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),맞음
+M09,cal_class,calibrated(id목록),"자체 구입 센서(교정 성적서 없음), Y는 프린터 축 스캔",불일치,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),CSV에 열 없음 → simulate.py id 목록 값. Y(40 mm 방향) 스캔을 프린터 축이 맡으므로 8.1절 정의상 printer_axis(500 ppm)가 맞음. CSV에 cal_class 열이 없어 고치지 않음 → 팀장 판단 필요. 같은 구조의 M06(industrial)보다 좋게 잡혀 있음
+M10,z_sigma_um,3,"축 분해능 7 µm(공기), 5~6 µm(조직); 표면 위치 정밀도 문헌 없음",추정,1,7,https://md-innovationtech.com/products/oct/oq-labscope/;https://octnews.org/octnews-posts/low-cost-oct-lumedica-launches-oq-labscope-3-0-equipped-with-3d-rendering-at-bios-and-pwest-2023/,봉우리 맞춤 가정. 상한은 축 분해능
+M10,xy_step_um,10,"512×512 영상, 시야 5 mm → 9.8 µm",확인,9.8,10,https://md-innovationtech.com/products/oct/oq-labscope/;https://octnews.org/octnews-posts/low-cost-oct-lumedica-launches-oq-labscope-3-0-equipped-with-3d-rendering-at-bios-and-pwest-2023/,환산 일치
+M10,xy_blur_um,15,가로 분해능 15 µm,확인,15,20,https://md-innovationtech.com/products/oct/oq-labscope/,초점 밖에서 커짐
+M10,fov_mm,5,5 × 5 mm²,확인,5,5,https://octnews.org/octnews-posts/low-cost-oct-lumedica-launches-oq-labscope-3-0-equipped-with-3d-rendering-at-bios-and-pwest-2023/,
+M10,depth_mm,2.8,"영상 깊이 2.8 mm(공기), 2 mm(조직)",확인,2,2.8,https://md-innovationtech.com/products/oct/oq-labscope/,
+M10,edge_loss_um,20,원문 없음(동축),추정,10,50,,
+M10,max_slope_deg,30,원문 없음,추정,10,45,,"거울면은 수 도, 확산면 30° 가정"
+M10,time_min,20,볼륨 1회 수 초(원문) + 이동 30 s × 32장,추정,10,40,https://octnews.org/octnews-posts/low-cost-oct-lumedica-launches-oq-labscope-3-0-equipped-with-3d-rendering-at-bios-and-pwest-2023/,계산 맞음
+M10,cost_krw,16800000,"기본형 $11,995",확인,16800000,25000000,https://octnews.org/octnews-posts/low-cost-oct-lumedica-launches-oq-labscope-3-0-equipped-with-3d-rendering-at-bios-and-pwest-2023/,"× 1,400. 상한은 옵션·세금·배송"
+M10,measures_z,1,표면 봉우리 높이,확인,,,https://md-innovationtech.com/products/oct/oq-labscope/,맞음
+M10,mode,area(id목록),5 mm 타일 32장 이어 붙인 면 높이맵,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),맞음
+M10,cal_class,industrial(id목록),"타일 내부는 장비 스캐너, 타일 간 위치는 프린터 축",불일치,,,scripts/method_screening/simulate.py (CAL_CLASS·RASTER_POINT id 목록),CSV에 열 없음 → simulate.py id 목록 값. 타일 32장의 위치를 프린터 축이 맡으므로 8.1절 정의상 printer_axis(500 ppm)가 맞음. CSV에 cal_class 열이 없어 고치지 않음 → 팀장 판단 필요. seam 랜덤워크는 따로 들어감

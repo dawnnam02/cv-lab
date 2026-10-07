@@ -1,0 +1,131 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M48,z_sigma_um,4,"Z 분해능 1.1 µm, Z 반복성 0.2 µm(3R 기준, 4,096프레임·전체 FOV 평균의 95 %); PLA 산란 평균 오차 4.43~8.42 µm(Faes 표 2, 405 nm)",추정,2,9,https://iptech1.com/wp-content/uploads/2018/02/DATASHEET_Gocator_2410_2420_US_WEB-2.pdf;https://am.lmi3d.com/manuals/gopxl/gopxl-1.0/G2/Content/Specs/G2/Gocator2400Series/Gocator2400Series.htm;https://arxiv.org/pdf/1612.02219,"반복성 0.2 µm는 평균값이라 단일 점 아님(매뉴얼 정의 확인). RSS(1.1, 2~8.4) → 2.3~8.5. 2M 판은 사양 미보장. GoPxL 매뉴얼은 Z 분해능을 0.2 µm로 적어 데이터시트(1.1)와 다름 → 보수적인 1.1 사용이 맞음"
+M48,xy_step_um,6,X 분해능(프로파일 간격) 5.8~6.2 µm; Y는 스캔 설정 6 µm,확인,5.8,6.2,https://iptech1.com/wp-content/uploads/2018/02/DATASHEET_Gocator_2410_2420_US_WEB-2.pdf;https://am.lmi3d.com/manuals/gopxl/gopxl-1.0/G2/Content/Specs/G2/Gocator2400Series/Gocator2400Series.htm,데이터시트·매뉴얼 일치
+M48,xy_blur_um,30,원문 없음(선 두께 미공개),추정,15,60,https://iptech1.com/wp-content/uploads/2018/02/DATASHEET_Gocator_2410_2420_US_WEB-2.pdf,X 간격 6 µm·CD 19 mm 청색 선에서 유추. M06 가정 40 µm보다 가늘게 잡은 논리만 있고 실측 근거 없음 → 폭을 넓게
+M48,fov_mm,10,FOV 10.0~10.0 mm,확인,10,10,https://iptech1.com/wp-content/uploads/2018/02/DATASHEET_Gocator_2410_2420_US_WEB-2.pdf;https://am.lmi3d.com/manuals/gopxl/gopxl-1.0/G2/Content/Specs/G2/Gocator2400Series/Gocator2400Series.htm,
+M48,depth_mm,6,MR 6.0 mm,확인,6,6,https://iptech1.com/wp-content/uploads/2018/02/DATASHEET_Gocator_2410_2420_US_WEB-2.pdf;https://am.lmi3d.com/manuals/gopxl/gopxl-1.0/G2/Content/Specs/G2/Gocator2400Series/Gocator2400Series.htm,
+M48,edge_loss_um,200,"원문 없음(삼각측량 각도 미공개, 매뉴얼에도 없음)",추정,115,350,https://am.lmi3d.com/manuals/gopxl/gopxl-1.0/G2/Content/Specs/G2/Gocator2400Series/Gocator2400Series.htm,θ 30~60° 가정 시 0.2 mm × tanθ = 115~346 µm. 200은 45° 가정
+M48,max_slope_deg,45,원문 없음,추정,30,60,,M05 기준과 같은 논리
+M48,time_min,3,"스캔 속도 200 Hz(확장 전체 창), 최대 5 kHz",추정,2,5,https://iptech1.com/wp-content/uploads/2018/02/DATASHEET_Gocator_2410_2420_US_WEB-2.pdf,"6,667 프로파일 ÷ 200 Hz = 33 s × 3회 = 100 s + 준비·이어 붙임 이동. 속도 원문 확인"
+M48,cost_krw,16800000,"eBay 신품 Gocator 2410A-3R-B-01-S US $12,000 (페이지 403, 검색 결과 제목·가격으로 확인)",확인,15600000,19200000,https://www.ebay.com/itm/364174229873,"환율 1,300~1,450원 + 배송·부가세 10 %. 2410A-2M은 LMI가 단종(EOL) 공지 → 신품은 3R만 현실적. 중고 매물은 미확인"
+M48,measures_z,1,"레이저 선 삼각측량, 높이 출력",확인,,,https://iptech1.com/wp-content/uploads/2018/02/DATASHEET_Gocator_2410_2420_US_WEB-2.pdf,맞음
+M48,mode,area,선 프로파일 + 프린터 축 Y 스캔 → 면 높이맵,확인,,,,맞음(area)
+M48,cal_class,industrial,"X는 공장 교정, Y 40 mm 스캔과 X 3회 이어 붙임은 프린터 축",불일치,,,https://iptech1.com/wp-content/uploads/2018/02/DATASHEET_Gocator_2410_2420_US_WEB-2.pdf,8.1절 정의상 시편 전체 배율은 프린터 축이 정함 → printer_axis. B묶음 M06과 같은 판단. CSV 수정
+M49,z_sigma_um,8,"원문 없음. 계산 근거: 스펙클 δz = Cλ/(2π sinu sinθ)(HW 식 1 확인) = 6.5 µm, PLA 4.43~8.42 µm(Faes 표 2), 양자화 2.0 µm",추정,4,11,https://arxiv.org/pdf/2112.05113;https://arxiv.org/pdf/1612.02219;https://machinevisiondirect.com/products/opto-tcsm024,"작동 f/8·0.35x → sinu 0.022 계산 맞음. 하한 C 0.5·PLA 2 µm, 상한 PLA 8.4 µm. Faes 값은 평균 치우침이라 σ와 성격 다름"
+M49,xy_step_um,10,"배율 0.35x(가로), 3.45 µm 화소 → 9.9 µm; Y 스캔 10 µm 설정",확인,9.9,10,https://machinevisiondirect.com/products/opto-tcsm024,환산 일치. 샤임플러그 경사 시 세로 배율 0.262~0.34x로 바뀌지만 X 간격엔 영향 없음
+M49,xy_blur_um,60,"원문 없음(레이저 선 두께 50~80 µm, M05 설계값)",추정,50,110,docs/0_방법탐색/후보/M05.md,M05 감사(B묶음) 범위와 맞춤: 깊이 끝 약 110 µm
+M49,fov_mm,24.3,2/3형 시야 24.29 × 20.26 mm(경사 0°),확인,24.29,24.29,https://machinevisiondirect.com/products/opto-tcsm024,
+M49,depth_mm,20,원문 없음(심도 미기재). 세로 시야 20.26 mm(0°)~27.06 mm(20°),추정,15,40,https://machinevisiondirect.com/products/opto-tcsm024,샤임플러그로 레이저 평면 전체 초점. 높이 범위 ≈ 세로 시야 ÷ sin30° 로 최대 40 mm 이상도 가능하나 레이저 선 초점 심도가 제한 → 20 mm 보수값 유지
+M49,edge_loss_um,120,원문 없음(0.2 × tan30° = 115 µm),추정,100,150,docs/0_방법탐색/후보/M05.md,기하 계산 맞음
+M49,max_slope_deg,45,원문 없음,추정,30,60,docs/0_방법탐색/후보/M05.md,M05 기준
+M49,time_min,2,원문 없음(5 MP 글로벌셔터 약 75 fps 가정),추정,1,4,,"4,000 프레임 ÷ 30~75 fps = 53~133 s + 준비"
+M49,cost_krw,5800000,"TCSM024 US $2,672; 나머지 품목 판매처 자료 없음",추정,4600000,7000000,https://machinevisiondirect.com/products/opto-tcsm024;docs/0_방법탐색/후보/M05.md,"렌즈 $2,672 확인. 환율 1,300~1,450, 카메라 60~150만, 기타 105~160만 원"
+M49,measures_z,1,레이저 선 삼각측량,확인,,,,맞음
+M49,mode,area,선 + 프린터 축 Y 스캔 → 면,확인,,,,맞음(area)
+M49,cal_class,diy,자작 광학계 교정 + 프린터 축 Y,확인,,,,"diy·printer_axis 모두 500 ppm, 맞음"
+M50,z_sigma_um,9,"원문 없음. 스펙클 6.9 µm(HW 식 1, 작동 f/12·0.5x → sinu 0.021), PLA 4 µm, 양자화 1.4 µm",추정,4.5,12,https://arxiv.org/pdf/2112.05113;https://arxiv.org/pdf/1612.02219,"RSS 8.1 계산 맞음. 하한 C 0.5·PLA 2, 상한 PLA 8.4 + 심도 가장자리 흐림"
+M50,xy_step_um,10,"원문 없음(3.45/0.5 = 6.9 µm, Y 스캔 10 µm 설정)",추정,6.9,10,,카메라·렌즈 출처 URL 없음. 환산은 맞음
+M50,xy_blur_um,60,"원문 없음(레이저 선 두께 50~80 µm, M05)",추정,50,110,docs/0_방법탐색/후보/M05.md,M05 감사 범위와 맞춤
+M50,fov_mm,28.3,원문 없음(4096 × 3.45 µm = 14.13 mm ÷ 0.5),추정,27,30,,IMX304 센서 폭 환산 맞음. 매크로 배율 공차 ±5 %
+M50,depth_mm,3,원문 없음(M05 심도 10.2 mm를 작동 f/#÷M² 비로 환산 = 3.1 mm),추정,2,5,docs/0_방법탐색/후보/M05.md,착란원 기준에 따라 달라짐
+M50,edge_loss_um,120,원문 없음(0.2 × tan30°),추정,100,150,docs/0_방법탐색/후보/M05.md,
+M50,max_slope_deg,45,원문 없음,추정,30,60,docs/0_방법탐색/후보/M05.md,
+M50,time_min,4,원문 없음(12 MP USB3 약 23 fps 가정),추정,2,6,,"4,000 프레임 ÷ 15~30 fps + 준비"
+M50,cost_krw,3700000,원문 없음(카메라 200 + 렌즈 60 + 기타 110만 원 추정),추정,3000000,5500000,docs/0_방법탐색/후보/M05.md,판매처 견적 없음. 1.1형용 0.5x 매크로 렌즈는 60만 원보다 비쌀 수 있어 상한을 넓힘
+M50,measures_z,1,레이저 선 삼각측량,확인,,,,맞음
+M50,mode,area,선 + 프린터 축 스캔 → 면,확인,,,,맞음(area)
+M50,cal_class,diy,자작,확인,,,,맞음(diy)
+M51,z_sigma_um,6,"원문 없음. C_s = min(sinu_obs/sinu_ill, 1)(HW 식 3 확인) → 스펙클 1.4 µm, 중심 찾기 3 µm, PLA 4 µm",추정,3,10,https://arxiv.org/pdf/2112.05113;https://arxiv.org/pdf/1612.02219,HW 원문: 레이저 40 µm 예시가 비결맞음 투영으로 약 4배 좋아짐(확인). sinu_ill 0.1은 설계 가정. 상한은 PLA 8.4 µm + 넓은 선 중심 잡음
+M51,xy_step_um,20,"원문 없음(M05와 같은 X 13.8 µm, Y 20 µm 설정)",추정,13.8,20,docs/0_방법탐색/후보/M05.md,
+M51,xy_blur_um,150,원문 없음(LED 슬릿 투영 선 폭 약 0.15 mm 설계 가정),추정,80,300,,설계 가정값. 광원 크기에 따라 크게 달라짐
+M51,fov_mm,19.9,원문 없음(M05 카메라 1440 × 3.45 µm ÷ 0.25 = 19.9 mm),추정,19.8,19.9,docs/0_방법탐색/후보/M05.md,M05 감사에서 환산 일치 확인된 값
+M51,depth_mm,2,원문 없음(조명 개구 0.1 → ±1 mm),추정,1,4,,선 폭 허용 증가를 어디까지 보느냐에 따라 달라짐
+M51,edge_loss_um,130,원문 없음(115 µm + 조명 개구 ±5.7° 그늘),추정,115,150,,
+M51,max_slope_deg,45,원문 없음,추정,30,60,docs/0_방법탐색/후보/M05.md,
+M51,time_min,4,"원문 없음(0.5 mm/s 가정, 80 s × 2회)",추정,2,10,,LED 광량 미확인. 노출이 길어지면 더 느려짐
+M51,cost_krw,3200000,원문 없음(M05 240만 − 레이저 30 + LED 광학 110만 원 추정),추정,2400000,4500000,docs/0_방법탐색/후보/M05.md,견적 없음
+M51,measures_z,1,선 구조광 삼각측량,확인,,,,맞음
+M51,mode,area,선 + 프린터 축 스캔 → 면,확인,,,,맞음(area)
+M51,cal_class,diy,자작,확인,,,,맞음(diy)
+M52,z_sigma_um,10,"원문 없음. 스펙클 11.5/√2 = 8.1 µm(HW 식 1), PLA 4 µm, 두 카메라 교정 불일치 2 µm",추정,5,13,https://arxiv.org/pdf/2112.05113;https://arxiv.org/pdf/1612.02219;docs/0_방법탐색/후보/M05.md,계산 맞음. 상한은 스펙클이 독립이 아닐 때(11.5) + PLA 큰 값
+M52,xy_step_um,20,원문 없음(M05와 같음),추정,13.8,20,docs/0_방법탐색/후보/M05.md,
+M52,xy_blur_um,60,원문 없음(M05 선 두께),추정,50,110,docs/0_방법탐색/후보/M05.md,
+M52,fov_mm,19.9,원문 없음(M05와 같음),추정,19.8,19.9,docs/0_방법탐색/후보/M05.md,
+M52,depth_mm,10,원문 없음(M05 f/8 심도 10.2 mm),추정,7,12,docs/0_방법탐색/후보/M05.md,
+M52,edge_loss_um,30,원문 없음(선 반폭 정도 경계 흐림),추정,25,120,https://doi.org/10.1007/s11801-021-0160-0,논문 본문 열람 불가(로그인). 두 높이맵 합치기가 실패하면 한쪽 가림 120 µm로 돌아감 → 상한 120
+M52,max_slope_deg,60,원문 없음,추정,45,60,,마주 보는 카메라 기하 논리는 맞음
+M52,time_min,2,"원문 없음(M05와 같음, 동시 촬영)",추정,1,4,docs/0_방법탐색/후보/M05.md,
+M52,cost_krw,4000000,원문 없음(M05 240 + 카메라 100 + 렌즈 40 + 기구 20만 원),추정,3000000,5500000,docs/0_방법탐색/후보/M05.md,
+M52,measures_z,1,레이저 선 삼각측량,확인,,,,맞음
+M52,mode,area,선 + 프린터 축 스캔 → 면,확인,,,,맞음(area)
+M52,cal_class,diy,자작,확인,,,,맞음(diy)
+M53,z_sigma_um,25,"원문 없음. 스펙클 7.2 µm(HW 식 1, λ 0.65 µm), 중심 찾기 12.6, PLA 8, 거치대 5 µm",추정,15,50,https://arxiv.org/pdf/2112.05113;https://arxiv.org/pdf/1612.02219;https://doi.org/10.3390/s120709046,RSS 17.3 계산 맞음. 롤링셔터·압축·렌즈 왜곡 잔차는 폭이 커서 상한 50. Sensors 2012 원문(403) 미열람
+M53,xy_step_um,50,OV2710 화소 3 µm(확인) → R 화소 6 µm ÷ 0.19 = 32 µm; Y 50 µm 설정,추정,32,50,https://www.ovt.com/products/ov2710/,배율 0.19는 f16·WD 100 mm 계산값
+M53,xy_blur_um,300,원문 없음(저가 고정초점 모듈 선 두께 300 µm 가정),추정,150,500,,
+M53,fov_mm,30.3,OV2710 1920 × 3 µm = 5.76 mm(확인) ÷ 0.19 = 30.3 mm,확인,28,33,https://www.ovt.com/products/ov2710/,센서 폭 환산 일치. 배율은 WD 설정 공차만큼
+M53,depth_mm,5,원문 없음(M05 심도 환산 5.9 mm),추정,3,8,docs/0_방법탐색/후보/M05.md,
+M53,edge_loss_um,120,원문 없음(0.2 × tan30°),추정,100,150,docs/0_방법탐색/후보/M05.md,
+M53,max_slope_deg,45,원문 없음,추정,30,60,docs/0_방법탐색/후보/M05.md,
+M53,time_min,2,OV2710 1080p 30 fps(확인) × 50 µm = 1.5 mm/s → 27 s,추정,1,3,https://www.ovt.com/products/ov2710/,
+M53,cost_krw,150000,원문 없음(부품 합 15만 원). 비교값 C920s 정가 US $69.99 확인,추정,100000,300000,https://www.logitech.com/en-us/products/webcams/c920-pro-hd-webcam.960-000764.html,
+M53,measures_z,1,레이저 선 삼각측량,확인,,,,맞음
+M53,mode,area,선 + 프린터 축 스캔 → 면,확인,,,,맞음(area)
+M53,cal_class,diy,자작,확인,,,,맞음(diy)
+M54,z_sigma_um,15,"원문 없음. 스펙클 7.2(HW 식 1), 양자화 3.2, PLA 6, 지지대 8 µm(Faes: 캐리어 롤 20 µm, R&R 50 µm 확인)",추정,10,25,https://arxiv.org/pdf/2112.05113;https://arxiv.org/pdf/1612.02219,RSS 12.7 계산 맞음. 상한은 열 드리프트 미보정 시
+M54,xy_step_um,20,OV9281 3 µm(확인) ÷ 0.19 = 15.8 µm; Y 20 µm 설정,추정,15.8,20,https://www.ovt.com/products/ov9281/,
+M54,xy_blur_um,60,원문 없음(M05 선 두께),추정,50,110,docs/0_방법탐색/후보/M05.md,
+M54,fov_mm,20.2,OV9281 1280 × 3 µm = 3.84 mm(확인) ÷ 0.19 = 20.2 mm,확인,19,21,https://www.ovt.com/products/ov9281/,센서 폭 환산 일치. 배율은 WD 공차만큼
+M54,depth_mm,8,원문 없음(M05 심도 환산 8.4 mm),추정,5,10,docs/0_방법탐색/후보/M05.md,
+M54,edge_loss_um,120,원문 없음(0.2 × tan30°),추정,100,150,docs/0_방법탐색/후보/M05.md,노즐·히트블록 가림이 더해질 수 있음
+M54,max_slope_deg,45,원문 없음,추정,30,60,docs/0_방법탐색/후보/M05.md,
+M54,time_min,1,OV9281 120 fps(확인) × 20 µm = 2.4 mm/s → 윗면 1회 17 s,추정,0.5,2,https://www.ovt.com/products/ov9281/,윗면 1회 기준. 100층 전부 재면 출력 시간 약 28분 추가(별도)
+M54,cost_krw,500000,원문 없음(부품 합 50만 원),추정,350000,900000,,견적 없음
+M54,measures_z,1,레이저 선 삼각측량,확인,,,,맞음
+M54,mode,area,선 + 프린터 이동 → 면,확인,,,,맞음(area)
+M54,cal_class,printer_axis,XY = 프린터 축,확인,,,,맞음(printer_axis)
+M121,z_sigma_um,5,"도막 두께 정밀도 < 1 µm(판매처, 자동차 도막). PLA 단일 점 값 없음",추정,1,15,https://www.menlosystems.com/products/thz-time-domain-solutions/,매끈한 도막 평균값 기준. 거친 PLA 윗면 단일 점 5배 가정
+M121,xy_step_um,125,원문 없음(래스터 간격 설정 = 초점 지름 절반),추정,100,250,https://www.menlosystems.com/products/thz-time-domain-solutions/tera-image/,설정값
+M121,xy_blur_um,250,Spatial resolution < 250 µm(초점 지름이 정함),확인,150,400,https://www.menlosystems.com/products/thz-time-domain-solutions/tera-image/,원문은 상한 표기. 광대역 펄스라 저주파 성분은 초점이 더 커짐 → 상한 400
+M121,fov_mm,0.25,"점 측정, 초점 지름 < 250 µm",확인,0.15,0.4,https://www.menlosystems.com/products/thz-time-domain-solutions/tera-image/,
+M121,depth_mm,7.5,스캔 창 50 ps(>120 traces/s at 50 ps) → 50 ps × c ÷ 2 = 7.5 mm,확인,7.5,15,https://www.menlosystems.com/products/thz-time-domain-solutions/,환산 일치. 더 긴 창도 가능(느려짐)
+M121,edge_loss_um,250,원문 없음(초점 지름만큼 경계 섞임),추정,125,500,https://www.menlosystems.com/products/thz-time-domain-solutions/tera-image/,
+M121,max_slope_deg,10,원문 없음(거울 반사 가정),추정,5,20,,
+M121,time_min,25,"영상 속도 > 30 (최대 40) 픽셀/s(K15) → 51,200점 ÷ 30~40 = 21~28분",확인,21,29,https://www.menlosystems.com/products/thz-time-domain-solutions/tera-image/,환산 일치
+M121,cost_krw,140000000,"공개 가격 없음(판매처 ""견적 요청"")",추정,100000000,350000000,https://www.menlosystems.com/products/thz-time-domain-solutions/,fs 레이저 기반 THz-TDS + 영상 확장이라 1억 원 이상은 타당. 실제 견적 없음 → 폭 넓게. 판정(부적합)에 영향 없음
+M121,measures_z,1,반사 펄스 시간차로 높이·두께,확인,,,https://www.menlosystems.com/products/thz-time-domain-solutions/,맞음
+M121,mode,raster_point,점 측정 + 2축 스테이지 래스터,확인,,,https://www.menlosystems.com/products/thz-time-domain-solutions/tera-image/,맞음(raster_point)
+M121,cal_class,industrial,자체 2축 스테이지(분해능 < 10 µm),확인,,,https://www.menlosystems.com/products/thz-time-domain-solutions/tera-image/,맞음(industrial). 프린터 축이 아님
+M122,z_sigma_um,1,"CS-1/B: 동적 분해능 20 nm(DT6530 기준), 선형성 < ±1 µm; DT6110 동적 분해능 0.015 % FSO = 0.15 µm",추정,0.3,3,https://www.micro-epsilon.com/fileadmin/download/products/cat--capaNCDT--en.pdf,md의 20 nm는 DT6530 조건 값(DT6110에선 0.15 µm). CSV 1 µm는 코팅 불균일·기울기 감안 추정으로 타당
+M122,xy_step_um,500,원문 없음(래스터 간격 설정),추정,250,1000,,설정값
+M122,xy_blur_um,5500,"CS-1/B Active measuring area Ø 5.5 mm, 권장 표적 Ø 9 mm",확인,5500,9000,https://www.micro-epsilon.com/fileadmin/download/products/cat--capaNCDT--en.pdf,
+M122,fov_mm,5.5,감지 지름 Ø 5.5 mm,확인,5.5,9,https://www.micro-epsilon.com/fileadmin/download/products/cat--capaNCDT--en.pdf,
+M122,depth_mm,1,"측정범위 Nominal 1 mm(Reduced 0.5, Extended 2)",확인,0.5,2,https://www.micro-epsilon.com/fileadmin/download/products/cat--capaNCDT--en.pdf,
+M122,edge_loss_um,2750,원문 없음(감지 지름 절반),추정,2750,4500,https://www.micro-epsilon.com/fileadmin/download/products/cat--capaNCDT--en.pdf,전기장이 감지면 밖으로 퍼짐(권장 표적 Ø 9) → 상한 4.5 mm
+M122,max_slope_deg,5,원문 없음(카탈로그: 기울면 가장자리 거리가 달라져 오차),추정,2,10,https://www.micro-epsilon.com/fileadmin/download/products/cat--capaNCDT--en.pdf,
+M122,time_min,15,원문 없음(40줄 × 40 mm ÷ 5 mm/s + 이동),추정,6,20,,코팅 시간 제외
+M122,cost_krw,4200000,공개 가격 없음(검색에서도 없음),추정,3000000,7000000,https://www.micro-epsilon.com/fileadmin/download/products/cat--capaNCDT--en.pdf,입문형 단채널 시스템 어림. 예산 초과 판정은 범위 전체에서 같음
+M122,measures_z,1,도체 코팅·접지 조건에서 거리 측정,확인,,,https://www.micro-epsilon.com/fileadmin/download/products/cat--capaNCDT--en.pdf,맞음(카탈로그: 절연체는 저항 성분만 → 코팅 필수)
+M122,mode,raster_point,점 센서 + 프린터 축 래스터,확인,,,,맞음(raster_point)
+M122,cal_class,industrial,XY = 프린터 축 래스터,불일치,,,,8.1절 정의와 E5 묶음(점 센서 래스터 = printer_axis)에 맞춰 industrial → printer_axis. CSV 수정
+M123,z_sigma_um,NA,PLA(절연체) 감지 불가. 공장 교정은 강철 St37·알루미늄 AlMg3,확인,,,https://www.micro-epsilon.com/fileadmin/download/products/cat--eddyNCDT--en.pdf,NA 맞음(measures_z = 0)
+M123,xy_step_um,500,원문 없음(래스터 간격 설정),추정,250,1000,,
+M123,xy_blur_um,5000,ES-S04 최소 표적 Ø 5 mm; 차폐형 측정 점 ≈ 센서 지름 × 1.5,확인,3600,5000,https://www.micro-epsilon.com/fileadmin/download/products/cat--eddyNCDT--en.pdf,
+M123,fov_mm,5,최소 표적 Ø 5 mm,확인,3.6,5,https://www.micro-epsilon.com/fileadmin/download/products/cat--eddyNCDT--en.pdf,
+M123,depth_mm,0.4,ES-S04 측정범위 0.4 mm(시작 0.04 mm),확인,0.4,0.4,https://www.micro-epsilon.com/fileadmin/download/products/cat--eddyNCDT--en.pdf,
+M123,edge_loss_um,5000,원문 없음(측정 점 전체),추정,2500,5000,https://www.micro-epsilon.com/fileadmin/download/products/cat--eddyNCDT--en.pdf,M122는 감지 지름 절반을 썼음 → 하한 2.5 mm. 높이 측정 불가라 판정 영향 없음
+M123,max_slope_deg,NA,PLA 높이 측정 불가,확인,,,https://www.micro-epsilon.com/fileadmin/download/products/cat--eddyNCDT--en.pdf,NA 맞음
+M123,time_min,15,원문 없음(M122와 같은 래스터),추정,6,20,,
+M123,cost_krw,5600000,공개 가격 없음(검색에서도 없음),추정,4000000,9000000,https://www.micro-epsilon.com/fileadmin/download/products/cat--eddyNCDT--en.pdf,고정밀 컨트롤러 + 센서 어림. 판정 영향 없음
+M123,measures_z,0,"와전류는 도체만 감지, PLA 투과해 금속 베드만 봄",확인,,,https://www.micro-epsilon.com/fileadmin/download/products/cat--eddyNCDT--en.pdf,맞음(0)
+M123,mode,indirect,PLA 형상 아님(금속 거리),확인,,,,맞음(indirect)
+M123,cal_class,industrial,XY = 프린터 축 래스터,불일치,,,,M122와 같은 이유로 industrial → printer_axis. measures_z = 0이라 판정 영향 없음. CSV 수정
+M48,probe,,optical,확인,,,,비접촉 광학 센서
+M49,probe,,optical,확인,,,,비접촉 광학 센서
+M50,probe,,optical,확인,,,,비접촉 광학 센서
+M51,probe,,optical,확인,,,,비접촉 광학 센서
+M52,probe,,optical,확인,,,,비접촉 광학 센서
+M53,probe,,optical,확인,,,,비접촉 광학 센서
+M54,probe,,optical,확인,,,,비접촉 광학 센서
+M121,probe,,optical,확인,,,,비접촉 THz 전자기파(표면 아래 투과 있음) → optical로 분류
+M122,probe,,none,확인,,,,비접촉 정전용량(광학 아님) → 접촉·광학 산란 모델 모두 해당 없어 none
+M123,probe,,none,확인,,,,"비접촉 와전류, PLA 형상 아님 → none"

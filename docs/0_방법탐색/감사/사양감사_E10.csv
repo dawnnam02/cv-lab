@@ -1,0 +1,121 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M105,z_sigma_um,NA,NA,확인,NA,NA,https://www.filmscanner.info/en/PlustekOpticFilm8200i.html,"2D 투과 실루엣, 높이 없음"
+M105,xy_step_um,3.5,7200 dpi → 3.53 µm,확인,3.5,3.5,https://www.filmscanner.info/en/PlustekOpticFilm8200i.html,표기 해상도 환산
+M105,xy_blur_um,7.8,실효 약 3250 dpi → 7.8 µm,확인,7.0,9.5,https://www.filmscanner.info/en/PlustekOpticFilm8200i.html,filmscanner.info 시험값. 개체·초점 차이로 ±10~20 %
+M105,fov_mm,24,35 mm 프레임 24 × 36 mm(슬라이드 마운트),확인,23,24,https://www.filmscanner.info/en/PlustekOpticFilm8200i.html,짧은 변. 마운트 창 가림으로 약간 줄 수 있음
+M105,depth_mm,0.5,원문 값 없음(마운트 두께 최대 3 mm만),추정,0.3,1.0,md 추정 근거,고정 초점 필름용. 선명 범위 1 mm 미만 추정 타당
+M105,edge_loss_um,20,원문 값 없음,추정,10,40,md 추정 근거,얇은 PLA 가장자리 빛샘 2~3화소(실효 흐림 7.8 µm 기준)
+M105,max_slope_deg,NA,NA,확인,NA,NA,md 추정 근거,높이 측정 안 함
+M105,time_min,10,"7200 dpi: iSRD 끔 3분 59초, 켬 9분 16초",확인,4,15,https://www.filmscanner.info/en/PlustekOpticFilm8200i.html,리뷰는 모든 기능 켜면 거의 15분이라 함
+M105,cost_krw,600000,"다나와 최저가 840,360원(해외구매, 11번가). 나비엠알오 615,989원(VAT 포함, 단종)",불일치,600000,900000,https://prod.danawa.com/info/?pcode=9872754,"md의 597,860원은 현재 최저가와 다름 → 840,000원으로 수정 [CSV 600000 → 840000]"
+M105,measures_z,0,0,확인,,,https://www.filmscanner.info/en/PlustekOpticFilm8200i.html,맞음
+M105,mode,2d,2d,확인,,,md 추정 근거,맞음
+M105,cal_class,diy,diy,확인,,,md 추정 근거,맞음. 계량 교정 장비 아님
+M106,z_sigma_um,NA,NA,확인,NA,NA,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0224971,2D 투영으로 분류
+M106,xy_step_um,22,"검출기 화소 200 µm 이하, 400만 화소 이상(원문). 배율 9는 구성 가정",추정,18,25,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0224971,200 µm ÷ 9 ≈ 22 µm 계산 맞음. 화소가 200 µm보다 작으면 더 작아짐
+M106,xy_blur_um,40,원문 값 없음,추정,30,60,md 추정 근거,검출기 번짐 1.5화소 + 초점 반그림자 ≈ 2화소
+M106,fov_mm,45,원문 값 없음(배율 선택값),추정,40,50,md 추정 근거,시편 대각선 45 mm에 맞춘 구성
+M106,depth_mm,20,투과라 시편 높이 전체,확인,20,20,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0224971,투과 원리
+M106,edge_loss_um,50,원문 값 없음,추정,30,100,md 추정 근거,층 겹침 투영 + 반그림자
+M106,max_slope_deg,NA,NA,확인,NA,NA,md 추정 근거,높이 측정 안 함
+M106,time_min,30,원문 값 없음,추정,15,60,md 추정 근거,배치·노출·2방향 촬영
+M106,cost_krw,156000,"이용료 78,000원/시간(원문 확인). KITECH 원문은 404",추정,78000,234000,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0224971,2시간 가정(1~3시간 폭)
+M106,measures_z,0,0,확인,,,md 추정 근거,맞음(2D 투영)
+M106,mode,2d,2d,확인,,,md 추정 근거,맞음
+M106,cal_class,industrial,industrial,확인,,,md 추정 근거,"맞음. 비파괴검사 장비, 기준물로 배율 보정"
+M107,z_sigma_um,3,원문 반복성 값 없음(200× 측정 범위 3~100 µm만),추정,2,6,http://www.microscopy-uk.org.uk/mag/artdec22/fs-Zeiss-lsm.pdf,측정 범위 하한 3 µm를 판독 1σ로 본 실사용 보수값. PLA 띠 번짐으로 더 나빠질 수 있음
+M107,xy_step_um,1,원문 값 없음,추정,0.7,1.5,md 추정 근거,시야 1.4 mm ÷ 카메라 약 1500화소
+M107,xy_blur_um,5,"원문 값 없음(60× 대물 2.3 µm 사례, ResearchGate 403)",추정,2.5,10,md 추정 근거,PLA 띠 번짐 지배
+M107,fov_mm,1.4,200×: 시야 1.4 mm (400×: 0.7 mm),확인,1.4,1.4,http://www.microscopy-uk.org.uk/mag/artdec22/fs-Zeiss-lsm.pdf,원문 일치
+M107,depth_mm,0.1,200×: 측정 범위 3~100 µm,확인,0.1,0.1,http://www.microscopy-uk.org.uk/mag/artdec22/fs-Zeiss-lsm.pdf,원문 일치
+M107,edge_loss_um,100,원문 값 없음(45° 조명·90° 관찰은 원문 확인),추정,50,150,http://www.microscopy-uk.org.uk/mag/artdec22/fs-Zeiss-lsm.pdf,45° 조명이면 단차 높이만큼 그늘
+M107,max_slope_deg,30,원문 값 없음,추정,15,45,md 추정 근거,급경사에서 띠 끊김
+M107,time_min,30,원문 값 없음,추정,20,60,md 추정 근거,단면 10줄 × 약 3분
+M107,cost_krw,4500000,eBay 매물 원문 403(열지 못함),추정,1600000,5000000,https://www.ebay.com/itm/223233720962,"md 기록: 완품 2,999 USD, 부품용 900 USD + 카메라 30만 원. 매물 가격 변동 큼"
+M107,measures_z,1,1,확인,,,http://www.microscopy-uk.org.uk/mag/artdec22/fs-Zeiss-lsm.pdf,맞음(단면 높이)
+M107,mode,line_profiler,line_profiler,확인,,,http://www.microscopy-uk.org.uk/mag/artdec22/fs-Zeiss-lsm.pdf,맞음(한 번에 한 단면)
+M107,cal_class,industrial,industrial,확인,,,md 추정 근거,맞음. 중고라 교정 성적 없음
+M108,z_sigma_um,NA,NA,확인,NA,NA,md 추정 근거,2D
+M108,xy_step_um,13,"IMX477 화소 1.55 µm(원문), 배율 16/(150−16)=0.119",확인,12,14,https://www.raspberrypi.com/products/raspberry-pi-high-quality-camera/,계산 13.0 µm. 작업 거리 ±10 mm면 12~14 µm
+M108,xy_blur_um,40,원문 값 없음,추정,25,80,md 추정 근거,"f/4 Airy 지름 상면 6.0 µm → 물체면 50 µm, FWHM 약 21 µm. 수차·서브픽셀 맞춤 고려 40 µm 타당. PLA 경계 대비가 약하면 더 나빠짐"
+M108,fov_mm,40,3040 × 13 µm,확인,37,43,https://www.raspberrypi.com/products/raspberry-pi-high-quality-camera/,계산 39.5 mm
+M108,depth_mm,1.7,"계산 2Nc/m² = 1.73 mm, (1+m) 포함 1.94 mm",확인,1.5,2.0,md 추정 근거,c = 2화소 기준 계산 맞음
+M108,edge_loss_um,50,원문 값 없음,추정,25,150,md 추정 근거,같은 색 층 경계 대비 약함. 사례(Werkle)는 0.1 mm 해상도 검출 수준이라 폭을 넓게 둠
+M108,max_slope_deg,NA,NA,확인,NA,NA,md 추정 근거,높이 측정 안 함
+M108,time_min,0.5,원문 값 없음,추정,0.3,1,md 추정 근거,윗면 1회 촬영·처리 약 30 s
+M108,cost_krw,450000,"HQ 카메라 53.95 USD, 16 mm 렌즈 50~62 USD, Pi 5 4GB 85 / 8GB 125 USD(2026 인상)",추정,450000,550000,https://www.raspberrypi.com/news/more-memory-driven-price-rises/,"구성품 합 약 341~381 USD × 1,400 ≈ 48~53만 원. CSV 45만 원은 하한 쪽. 100만 원 조건엔 영향 없음"
+M108,measures_z,0,0,확인,,,md 추정 근거,맞음
+M108,mode,2d,2d,확인,,,md 추정 근거,맞음
+M108,cal_class,diy,diy,확인,,,md 추정 근거,맞음. 유리 격자 자작 보정
+M109,z_sigma_um,10,"제조사 '7 µm Lidar Resolution'(분해능, 반복성 아님). bambulab.com 403, 판매처·검색 결과로 확인",추정,7,30,https://bambulab.com/en-us/x1,반복성 자료 없음. 반투명·검은 PLA 실패 보고로 위쪽을 넓힘
+M109,xy_step_um,100,원문 값 없음,출처 없음,50,300,md 추정 근거,스캔 간격 공개 자료 없음 → 보수값 200 µm로 수정 [CSV 100 → 200]
+M109,xy_blur_um,100,원문 값 없음,출처 없음,50,300,md 추정 근거,선 폭·카메라 화소 모름 → 보수값 200 µm로 수정 [CSV 100 → 200]
+M109,fov_mm,5,원문 값 없음,출처 없음,2.5,15,md 추정 근거,선 길이 근거 없음 → 보수값 2.5 mm로 수정 [CSV 5 → 2.5]
+M109,depth_mm,1,원문 값 없음,추정,0.5,2,md 추정 근거,첫 층·노즐 높이 확인용 설계라 얕다는 추론 타당
+M109,edge_loss_um,200,원문 값 없음,추정,100,600,md 추정 근거,삼각측량 그늘 + 성긴 간격
+M109,max_slope_deg,30,원문 값 없음,추정,15,45,md 추정 근거,평평한 첫 층용
+M109,time_min,1,원문 값 없음,추정,0.5,3,md 추정 근거,사용자 경험 수준
+M109,cost_krw,1680000,"X1-Carbon 출시가 1,199 USD, 2026년 Combo 1,199 USD(검색 결과). 라이다 부품 56 GBP(원문)",추정,1400000,2000000,https://printpick.dev/printers/bambu-lab-x1-carbon-combo,2026년 4월 X2D로 대체돼 재고·할인 변동
+M109,measures_z,1,1,확인,,,https://www.additive-x.com/shop/bambu-lab-micro-lidar-dual-red-laser-x1-series-x1c-x1e.html,맞음(높이 측정). 다만 원시 데이터 반출 불가
+M109,mode,raster_point,raster_point,확인,,,md 추정 근거,맞음
+M109,cal_class,printer_axis,printer_axis,확인,,,md 추정 근거,맞음
+M110,z_sigma_um,4,"데이터시트 반복성 0.5 µm(2 kHz, 중앙값 9, 백색 세라믹)",추정,2,8,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,PLA 실사용 보정(산란 치우침·Z 흔들림·출력 중 진동) 유지. 원문 0.5 µm는 하한 아님(PLA 조건)
+M110,xy_step_um,50,"구성값: 줄 간격 50 µm, 선 방향 20 mm/s ÷ 2 kHz = 10 µm",확인,50,50,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,측정률 2 kHz 원문 확인(최대 8 kHz)
+M110,xy_blur_um,45,"스폿 MMR 45 × 40 µm(±10 %), SMR 90 × 120, EMR 140 × 160 µm",확인,40,90,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,거리 일정 운용이면 MMR 근처
+M110,fov_mm,0.05,점 센서 스폿 45 µm,확인,0.04,0.05,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,원문 일치
+M110,depth_mm,10,측정범위 10 mm(SMR 20 ~ EMR 30 mm),확인,10,10,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,원문 일치
+M110,edge_loss_um,150,원문 값 없음,추정,115,250,md 추정 근거,0.2 mm × tan30° ≈ 115 µm + 스폿 반경 계산 맞음
+M110,max_slope_deg,30,원문 값 없음,추정,15,45,md 추정 근거,M07과 같은 근거
+M110,time_min,20,원문 값 없음,추정,15,30,md 추정 근거,400줄 × 3 s = 20분 계산 맞음
+M110,cost_krw,2500000,eBay 원문 403(열지 못함),추정,2000000,3500000,https://www.ebay.com/itm/194590157137,"md 기록: 센서 1,450 USD + 변환기·지그"
+M110,measures_z,1,1,확인,,,https://www.micro-epsilon.com/fileadmin/download/products/dat--optoNCDT-1220-1320-1420--en.pdf,맞음
+M110,mode,raster_point,raster_point,확인,,,md 추정 근거,맞음
+M110,cal_class,printer_axis,printer_axis,확인,,,md 추정 근거,맞음
+M111,z_sigma_um,NA,NA,확인,NA,NA,md 추정 근거,2D
+M111,xy_step_um,180,"IFOV 0.18 mm(185 mm, 22.5°)",확인,170,200,https://pmc.ncbi.nlm.nih.gov/articles/PMC12736861/,원문 일치. 비스듬해 한 방향은 더 큼
+M111,xy_blur_um,360,"Optris: 17 µm 화소는 측정 정확도에 최소 3화소(3 × IFOV) 필요, 광학이 나쁘면 10화소까지",불일치,360,900,https://optris.com/us/knowledge-library/optical-resolution-mfov/,CSV는 2화소(34 µm 화소 기준)로 잡음 → 3화소 540 µm로 수정 [CSV 360 → 540]
+M111,fov_mm,69,FOV 약 69 mm,확인,65,70,https://pmc.ncbi.nlm.nih.gov/articles/PMC12736861/,원문 일치
+M111,depth_mm,5,원문 값 없음,추정,2,10,md 추정 근거,20 mm 렌즈·185 mm 피사계 심도
+M111,edge_loss_um,360,원문 값 없음,추정,180,720,md 추정 근거,경계 2화소 + 비스듬한 시선
+M111,max_slope_deg,NA,NA,확인,NA,NA,md 추정 근거,높이 측정 안 함
+M111,time_min,1,원문 값 없음,추정,0.5,2,md 추정 근거,출력 중 연속 촬영
+M111,cost_krw,7000000,"Xi 400 표준 렌즈 구성 2,995 USD, 구성에 따라 4,280 USD까지(판매처 검색 결과)",불일치,4200000,6000000,https://www.tequipment.net/optris/thermal-imagers/series_xi-400/,"CSV 700만 원은 가격 미확인 추정 → 2,995 USD × 1,400 + 부가세 10 % ≈ 460만 원으로 수정. 판매처 페이지 본문은 직접 못 엶 [CSV 7000000 → 4600000]"
+M111,measures_z,0,0,확인,,,md 추정 근거,맞음
+M111,mode,2d,2d,확인,,,md 추정 근거,맞음
+M111,cal_class,industrial,industrial,확인,,,md 추정 근거,맞음
+M112,z_sigma_um,NA,NA,확인,NA,NA,md 추정 근거,2D
+M112,xy_step_um,5,원문 값 없음(구성 계산),추정,5,7,md 추정 근거,20 mm ÷ 4056 = 4.9 µm 계산 맞음. 45° 시선 방향은 ÷cos45 → 7 µm
+M112,xy_blur_um,30,원문 값 없음,추정,20,50,md 추정 근거,움직임 번짐 25 µm(0.5 ms × 50 mm/s) + f/2.8 회절 물체면 약 16 µm → 합 약 30 µm 계산 맞음
+M112,fov_mm,15,원문 값 없음(구성 계산),추정,12,15,md 추정 근거,3040 × 5 µm = 15.2 mm
+M112,depth_mm,1,원문 값 없음,출처 없음,0.15,1.0,md 추정 근거,"계산: m = 6.29/20 = 0.31, M12 고정 조리개 f/2~2.8, c = 2화소 → 2Nc(1+m)/m² ≈ 0.17~0.23 mm. 1 mm 근거 없음 → 0.3 mm로 수정(c = 3화소 쪽) [CSV 1 → 0.3]"
+M112,edge_loss_um,50,원문 값 없음,추정,25,100,md 추정 근거,이웃 비드 쪽 대비 약함 + 옆면 섞임
+M112,max_slope_deg,NA,NA,확인,NA,NA,md 추정 근거,높이 측정 안 함
+M112,time_min,0.5,원문 값 없음,추정,0.2,1,md 추정 근거,"출력 중 촬영, 처리 시간만"
+M112,cost_krw,250000,"Arducam IMX477 보드 59.99 USD(공식 판매가), Pi 5 4GB 85 USD(2026)",추정,230000,350000,https://www.arducam.com/product/arducam-12mp-imx477-mini-high-quality-camera-module-for-raspberry-pi/,"렌즈 20·LED 20 USD는 미확인. 합 약 185 USD × 1,400 ≈ 26만 원"
+M112,measures_z,0,0,확인,,,md 추정 근거,맞음
+M112,mode,2d,2d,확인,,,md 추정 근거,맞음
+M112,cal_class,diy,diy,확인,,,md 추정 근거,맞음
+M113,z_sigma_um,15,원문 값 없음(LPBF 금속 사례 ±2.3~2.9 µm는 403. OSTI 공개본은 110 × 150 mm에서 40 µm 미만),추정,8,40,https://www.osti.gov/pages/servlets/purl/1977428,PLA 무스프레이 실사용 보정 유지. 위쪽 폭을 넓힘
+M113,xy_step_um,12,"IMX477 1.55 µm, 50 mm ÷ 4056",확인,12,13,https://www.raspberrypi.com/products/raspberry-pi-high-quality-camera/,계산 12.3 µm
+M113,xy_blur_um,50,원문 값 없음,추정,25,80,md 추정 근거,렌즈 흐림 2~3화소 + 위상 필터
+M113,fov_mm,37,3040 × 12.3 µm,확인,35,40,https://www.raspberrypi.com/products/raspberry-pi-high-quality-camera/,계산 37.5 mm
+M113,depth_mm,3,원문 값 없음,추정,1.7,3.5,md 추정 근거,"같은 16 mm 렌즈 f/4면 약 1.8 mm, f/8이면 3.5 mm. 조리개 미지정이라 추정 유지, 아래쪽 폭 넓힘"
+M113,edge_loss_um,120,원문 값 없음,추정,115,200,md 추정 근거,30°에서 0.2 mm 단차 그늘 115 µm 계산 맞음
+M113,max_slope_deg,60,원문 값 없음,추정,45,70,md 추정 근거,M11과 같음
+M113,time_min,1,원문 값 없음,추정,0.5,2,md 추정 근거,12장 촬영 + 계산
+M113,cost_krw,880000,"TI 299 USD(DigiKey 374 USD), HQ 53.95, 렌즈 50~62, Pi 5 85 USD",추정,880000,1020000,https://www.digikey.com/en/products/detail/texas-instruments/DLPDLCR230NPEVM/13531286,"합 약 630~725 USD × 1,400. 유통가로 사면 100만 원 근처"
+M113,measures_z,1,1,확인,,,md 추정 근거,맞음
+M113,mode,area,area,확인,,,md 추정 근거,맞음
+M113,cal_class,diy,diy,확인,,,md 추정 근거,맞음
+M114,z_sigma_um,NA,NA,확인,NA,NA,md 추정 근거,형상 측정 아님
+M114,xy_step_um,NA,NA,확인,NA,NA,md 추정 근거,형상 측정 아님
+M114,xy_blur_um,NA,NA,확인,NA,NA,md 추정 근거,형상 측정 아님
+M114,fov_mm,NA,NA,확인,NA,NA,md 추정 근거,형상 측정 아님
+M114,depth_mm,NA,NA,확인,NA,NA,md 추정 근거,형상 측정 아님
+M114,edge_loss_um,NA,NA,확인,NA,NA,md 추정 근거,형상 측정 아님
+M114,max_slope_deg,NA,NA,확인,NA,NA,md 추정 근거,형상 측정 아님
+M114,time_min,0,출력 중 연속 기록,확인,0,0,md 추정 근거,추가 시간 없음
+M114,cost_krw,30000,원문 값 없음(AS5600 원문 페이지는 회사 공지로 바뀜). 상용 BTT SFS V2 19.99~22.99 USD,추정,20000,50000,https://biqu.equipment/products/btt-sfs-v1-0-smart-filament-sensor-detection-stuck-blocking-filament-module,자작 부품 합 추정. 상용 센서가 약 3만 원이라 같은 자릿수
+M114,measures_z,0,0,확인,,,md 추정 근거,맞음
+M114,mode,indirect,indirect,확인,,,md 추정 근거,맞음
+M114,cal_class,diy,diy,확인,,,https://forum.duet3d.com/topic/39155/how-to-get-the-current-percent-of-filament-motion-using-sensor,맞음. 설정 2.88 vs 실측 3.101 mm/펄스(원문) → 직접 보정 필수

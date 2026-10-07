@@ -1,0 +1,12 @@
+id,field,old,new,reason,source_url
+M65,mode,line_profiler,area,불일치: 틀림. line_profiler는 촉침·윤곽기용(면 래스터 시간 재계산). 같은 구조인 M38 Keyence LJ-X(라인+Y 스테이지)는 area. area로 수정,https://kmk-instrument.se/20.0.0.0/9641/103839896843e6940708a2c6b11a5719.pdf
+M66,max_slope_deg,60,45,"출처 없음: md에 '공개값 없음'만 있고 근거 없음 → 보수값 45, 범위 ×0.5~(×3, 85° 상한)",https://www.keyence.com/products/3d-measure/roughness-measure/vr-6000/models/vr-6000/
+M67,max_slope_deg,60,45,출처 없음: 근거 없음 → 보수값 45,https://www.engineering.pitt.edu/globalassets/subsites/business/mmcl/vr-3200_datasheet.pdf
+M68,max_slope_deg,60,45,출처 없음: 근거 없음 → 보수값 45,https://www.lakewoodautomation.com/support/manuals/LMI/DATASHEET_Gocator_3504_US_WEB.pdf
+M69,max_slope_deg,60,45,출처 없음: 근거 없음 → 보수값 45,https://www.zivid.com/hubfs/User%20guides%20and%20datasheets/Zivid%202+%20M60%20Datasheet.pdf
+M70,max_slope_deg,60,45,출처 없음: 근거 없음 → 보수값 45,https://www.photoneo.com/products/phoxi-scan-s/
+M74,z_sigma_um,25,30,불일치: CSV는 의뢰처에 없는 BLACK Elite 값. 같은 보정 논리(정확도 값을 σ로)로 SILVER Elite 0.030 → 30,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0244163
+M74,xy_step_um,25,30,불일치: 의뢰 장비 기준으로 수정. 307로 가면 100,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0244163
+M74,xy_blur_um,100,200,불일치: BLACK Elite 0.1 → 의뢰 장비 0.2,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0244163
+M74,fov_mm,300,250,불일치: md도 HandySCAN 값 못 찾고 MetraSCAN BLACK 310 × 350 차용 → 의뢰 장비 짧은 변 250,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0215700
+M74,cal_class,calibrated,industrial,불일치: 틀림. 길이 항 60 ppm은 calibrated(20 ppm)보다 큼 → industrial(100)로 보수 수정,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0244163

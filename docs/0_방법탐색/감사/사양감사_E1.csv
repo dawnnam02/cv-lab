@@ -1,0 +1,121 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M24,z_sigma_um,2.0,E1Z=(1.5+4L/1000) µm (PRO); LAF 반복성 σ 0.4 µm,추정,0.8,4,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,카탈로그 상한 1.5 µm→1σ 0.8 µm. 반투명 PLA 이미지 AF 저하로 2.0 보수 추정. 상한 4는 대비 낮은 면 AF 2배 악화 가정
+M24,xy_step_um,4,화소 수 미기재(B&W CCD),추정,2,6,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,2.5 mm 시야 / 640~1280화소
+M24,xy_blur_um,3,QV-HR2.5X NA 0.21,추정,1.6,5,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,회절 0.61λ/NA≈1.6 µm + 화소. NA는 원문 확인
+M24,fov_mm,2.5,HR2.5X+1X: 2.5×1.88 mm,확인,1.88,2.5,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,짧은 변 1.88~긴 변 2.5
+M24,depth_mm,200,측정 범위 Z 200 mm(QV-APEX302),확인,200,200,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,
+M24,edge_loss_um,20,원문 값 없음,추정,5,60,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,둥근 비드 모서리·반투명 번짐 추정
+M24,max_slope_deg,30,원문 값 없음,추정,15,60,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,NA 0.21(수광 반각 12°)이나 확산면은 더 큰 경사도 초점 대비 가능
+M24,time_min,60,원문 값 없음,추정,30,120,,파트 프로그램 작성 30분+실행 30분 가정
+M24,cost_krw,60000,학내 이용료 공개값 없음,추정,30000,180000,,"1차 M02 수준 가정, 근거 약해 ×0.5~×3"
+M24,measures_z,1,이미지 AF로 Z 측정(E1Z 규정),확인,,,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,맞음
+M24,mode,point_probe,정해 둔 위치마다 Z 점 + 영상 에지,확인,,,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,point_probe 맞음(Z는 점 단위)
+M24,cal_class,calibrated,교정 스케일 0.1 µm 반사형 리니어 엔코더,확인,,,https://www2.mitutoyo.co.jp/eng/products/gazoukogaku/pdf/E4317.pdf,calibrated 맞음
+M25,z_sigma_um,1.0,"R0(반복성 범위)=1.2 µm, E0 1D=1.6+L/200 µm (3/2/2)",추정,0.6,2.0,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,"R0 2σ 간주 0.6 µm, PLA 결 보정 1.0"
+M25,xy_step_um,1000,점 측정(사용자 설정),추정,500,2000,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,40요소 세트 기준 점 간격
+M25,xy_blur_um,150,VAST XXT TL3 최소 팁 Ø0.3 mm(TL1은 Ø0.1),확인,50,150,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,TL1 Ø0.1 쓰면 50
+M25,fov_mm,200,측정 범위 300×200×200 mm,확인,200,300,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,짧은 변 200
+M25,depth_mm,200,Z 200 mm,확인,200,200,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,
+M25,edge_loss_um,150,볼 반경 150 µm,확인,50,150,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,xy_blur와 같은 근거
+M25,max_slope_deg,90,접촉 프로브(벽면 접촉 가능),추정,80,90,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,"원문 수치 없음, 접촉식 원리상"
+M25,time_min,90,원문 값 없음,추정,60,180,,설정 60분+측정 30분
+M25,cost_krw,250000,"KITECH 접촉식 CMM 기본 50,000원+5,000원/pt; Optiv 수수료 미기재; Leitz 200,000+10,000/pt",추정,150000,600000,https://mold.kitech.re.kr/tech/tech8.php,"40요소×5,000+50,000=250,000 계산 맞음. 상한은 Leitz 요율"
+M25,measures_z,1,접촉 프로브 Z,확인,,,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,맞음
+M25,mode,point_probe,점 측정 CMM,확인,,,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,point_probe 맞음
+M25,cal_class,calibrated,ISO 10360 MPE 보증 CMM,확인,,,https://www.optipro.com/wp-content/uploads/EN_TechnischeDaten_O-INSPECT_11_2019.pdf,calibrated 맞음
+M26,z_sigma_um,1.3,Z1 정확도 ±(2.5+|0.1H|) µm,확인,0.8,2.5,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,H=0.2 mm에서 ±2.5→÷2=1.26. H 최대 ±25 mm면 ±5 µm→2.5
+M26,xy_step_um,1,"X 분해능 0.1 µm, 데이터 간격은 설정값",추정,0.5,5,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,설정값
+M26,xy_blur_um,25,SPH-71 팁 반경 25 µm,확인,25,25,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,"카탈로그상 SPH-71은 '교차 깎음(intersecting cut)'형, 팁 각 20°"
+M26,fov_mm,100,X 100 mm,확인,100,100,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,
+M26,depth_mm,50,Z1 50 mm,확인,50,50,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,
+M26,edge_loss_um,60,원문 값 없음,추정,30,100,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,팁 반경 25 + 20° 측면 가림 계산
+M26,max_slope_deg,77,"오름 77°, 내림 87°(표면 상태 따라 다름)",확인,60,77,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,PLA 결에서 낮아질 수 있어 하한 60
+M26,time_min,40,측정 속도 0.5 mm/s 선택 가능,추정,25,80,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,80초/줄×10줄+정렬
+M26,cost_krw,50000,학내 이용료 공개값 없음,추정,25000,150000,,근거 약해 ×0.5~×3
+M26,measures_z,1,Z1 검출기,확인,,,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,맞음
+M26,mode,line_profiler,단면 촉침 윤곽,확인,,,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,line_profiler 맞음
+M26,cal_class,calibrated,X 정확도 ±(2.5+0.02L) µm,확인,,,https://www2.mitutoyo.co.jp/eng/support/service/catalog/03/E15020.pdf,calibrated 맞음(20 ppm 등급과 부합)
+M27,z_sigma_um,15,"PRIZM 반복성 30 µm(2σ), 정확도 ±30 µm",불일치,15,25,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,"md는 25 µm(2σ, BluHD 값)를 PRIZM으로 잘못 씀. 1σ 15 µm에 PLA 산란 보정 ×1.2 유지 → 18"
+M27,xy_step_um,40,PRIZM 최소 점 간격 40 µm(색/점 모드 모두),확인,40,80,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,값은 맞음. md의 '20 µm(색 없는 모드)'는 BluHD 값
+M27,xy_blur_um,60,공개값 없음,추정,40,120,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,선 폭+화소 추정
+M27,fov_mm,80,"유효 스캔 폭 근거리 80 mm, 원거리 150 mm",확인,80,150,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,
+M27,depth_mm,115,피사계 깊이 115 mm,확인,115,115,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,
+M27,edge_loss_um,100,원문 값 없음,추정,50,300,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,"삼각측량 가림, 손 각도로 변동"
+M27,max_slope_deg,60,원문 값 없음,추정,40,70,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,손으로 각도 변경 가능
+M27,time_min,30,원문 값 없음,추정,20,60,,스캔 10+정렬 20분
+M27,cost_krw,300000,"KITECH 레이저스캔 기본 50,000원/h+150,000원/개",추정,200000,600000,https://mold.kitech.re.kr/tech/tech8.php,"KITECH 요율 200,000원에 출장·셋업 가산"
+M27,measures_z,1,레이저 라인 삼각측량 점군,확인,,,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,맞음
+M27,mode,area,면 점군,확인,,,https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm,area 맞음
+M27,cal_class,calibrated,"ISO 10360-12/-8 MPE 보증(2.0 m 암 LDIA 42~60 µm, FAROBlu 자료)",확인,,,https://media.faro.com/-/media/Project/FARO/FARO/FARO/Resources/1_BROCHURE/2023/Scan-Arms/2794_TechSheet_FAROBlu_xE_LT_ENG.pdf?rev=6A5F9C74F06647E4AA2774E980334152,calibrated 맞음. 단 암 오차는 배율형이 아니라 길이 무관 수십 µm
+M28,z_sigma_um,1.0,"지시 정확도 2 µm(p-p), 분해능 0.5 µm",추정,0.5,2.0,https://www.keyence.com/products/measure/contact-distance-lvdt/gt2/models/gt2-h12/,앰프 반복성 0.1 µm은 원문에서 못 찾음. p-p 2 µm→1σ 0.5 + 끌기 영향 1.0
+M28,xy_step_um,500,줄 간격 설정값; 기계 응답 10 Hz,추정,200,1000,https://www.keyence.com/products/measure/contact-distance-lvdt/gt2/models/gt2-h12/,설정값
+M28,xy_blur_um,1500,표준 접촉점 OP-77678 SR1.5 (GT2 카탈로그 치수도),확인,1500,1500,https://www.plc-sensors.com/wp-content/uploads/2020/09/Keyence-sensor-GT2-datasheet_optimize.pdf,md는 '못 찾음'이었으나 카탈로그 치수도에 SR1.5
+M28,fov_mm,250,프린터 축 범위(가정),추정,180,300,,데스크톱 프린터
+M28,depth_mm,12,측정 범위 12 mm,확인,12,12,https://www.keyence.com/products/measure/contact-distance-lvdt/gt2/models/gt2-h12/,
+M28,edge_loss_um,1500,접촉점 SR1.5,확인,1500,1500,https://www.plc-sensors.com/wp-content/uploads/2020/09/Keyence-sensor-GT2-datasheet_optimize.pdf,볼 반경
+M28,max_slope_deg,30,원문 값 없음,추정,15,45,,끌기 방식 볼 타고 넘기
+M28,time_min,30,원문 값 없음,추정,20,60,,40줄×25초+설치
+M28,cost_krw,1000000,"2ufa 242,000원은 센서 헤드+앰프 세트(GT2-H12, GT2-75N), 품절",불일치,600000,1300000,https://2ufa.co.kr/store/goods_view.php?goodsno=4094&category=54,"md는 242,000원을 헤드 단가로 보고 앰프를 따로 더함. 세트값 242,000+통신 유닛(DL-RS1A 등) 약 USD 300×1,400=420,000+고정구 50,000 → 710,000. 신품 견적은 더 높을 수 있어 상한 130만"
+M28,measures_z,1,접촉 변위,확인,,,https://www.keyence.com/products/measure/contact-distance-lvdt/gt2/models/gt2-h12/,맞음
+M28,mode,raster_point,프린터 축 끌기 점 센서,확인,,,https://www.keyence.com/products/measure/contact-distance-lvdt/gt2/models/gt2-h12/,raster_point 맞음
+M28,cal_class,printer_axis,XY는 프린터 축,확인,,,https://www.keyence.com/products/measure/contact-distance-lvdt/gt2/models/gt2-h12/,printer_axis 맞음
+M29,z_sigma_um,1.5,"ID-C112CX(543-394B) 정확도 0.003 mm, 분해능 0.001 mm, 측정력 0.4–0.7 N",확인,0.9,2.5,https://www.mitutoyo.com/webfoo/wp-content/uploads/F_section.pdf,정확도 ±3 µm÷2 환산
+M29,xy_step_um,1000,격자 간격 설정값,추정,500,2000,,설정값
+M29,xy_blur_um,1500,표준 접촉점 901312 Ø3 mm 볼(미터 인디케이터 기본 부속),확인,1500,1500,https://www.mitutoyo.com/webfoo/wp-content/uploads/F_section.pdf,md는 '확인 못 함'이었으나 F 섹션 접촉점 표에 있음
+M29,fov_mm,250,프린터 축 범위(가정),추정,180,300,,
+M29,depth_mm,12.7,12.7 mm,확인,12.7,12.7,https://www.mitutoyo.com/webfoo/wp-content/uploads/F_section.pdf,
+M29,edge_loss_um,1500,Ø3 볼 반경,확인,1500,1500,https://www.mitutoyo.com/webfoo/wp-content/uploads/F_section.pdf,
+M29,max_slope_deg,30,원문 값 없음,추정,15,45,,M28과 같은 근거
+M29,time_min,45,원문 값 없음,추정,30,90,,861점×2.5초+설치
+M29,cost_krw,650000,"543-394B 미국 USD 715.35(TestEquipmentUSA); 국내 동급 543-700B(=543-390B) 약 360,000원(네오툴); USB-ITN USD 195~260",불일치,650000,1340000,https://testequipmentusa.com/mitutoyo-543-394b-digimatic-indicator-id-c112cxb/,"md의 '인디케이터 약 USD 300'은 근거 없음(원래 출처 tequipment 543-390B 페이지는 값 안 보임). 국내 기준 인디케이터 450,000+USB-ITN 약 290,000(USD 206×1,400)+고정구 50,000 → 800,000. 미국가 기준이면 1,340,000. 543-394B는 단종(후속 543-704B 계열)"
+M29,measures_z,1,인디케이터 높이,확인,,,https://www.mitutoyo.com/webfoo/wp-content/uploads/F_section.pdf,맞음
+M29,mode,raster_point,프린터 축 격자 점 측정,확인,,,https://www.mitutoyo.com/webfoo/wp-content/uploads/F_section.pdf,raster_point 맞음(정지 후 읽기)
+M29,cal_class,printer_axis,XY는 프린터 축,확인,,,https://www.mitutoyo.com/webfoo/wp-content/uploads/F_section.pdf,printer_axis 맞음
+M30,z_sigma_um,0.8,정확도 (0.8+L/50) µm,추정,0.4,1.5,https://testequipmentusa.com/mitutoyo-542-181-lgf-0110l-b/,"상한으로 보면 1σ 0.4, 끌기 영향 더해 0.8"
+M30,xy_step_um,500,줄 간격 설정값,추정,200,1000,,설정값
+M30,xy_blur_um,1500,접촉점 Ø3 mm 초경,확인,1500,1500,https://testequipmentusa.com/mitutoyo-542-181-lgf-0110l-b/,
+M30,fov_mm,250,프린터 축 범위(가정),추정,180,300,,
+M30,depth_mm,10,측정 범위 10 mm(542-181),확인,10,10,https://www.mitutoyo.com/webfoo/wp-content/uploads/G_section.pdf,
+M30,edge_loss_um,1500,Ø3 볼 반경,확인,1500,1500,https://testequipmentusa.com/mitutoyo-542-181-lgf-0110l-b/,
+M30,max_slope_deg,30,원문 값 없음,추정,15,45,,M28과 같은 근거
+M30,time_min,30,원문 값 없음,추정,20,60,,M28과 같은 주사 조건
+M30,cost_krw,1620000,"게이지 USD 1,020(단종 표기), 카운터 보드 가격 원문 없음",추정,1500000,2200000,https://testequipmentusa.com/mitutoyo-542-181-lgf-0110l-b/,"게이지 1,428,000 확인. USB 카운터 USD 100은 추정(Mitutoyo 카운터면 수십만 원 더)"
+M30,measures_z,1,리니어 게이지 높이,확인,,,https://testequipmentusa.com/mitutoyo-542-181-lgf-0110l-b/,맞음
+M30,mode,raster_point,프린터 축 끌기 점 센서,확인,,,https://testequipmentusa.com/mitutoyo-542-181-lgf-0110l-b/,raster_point 맞음
+M30,cal_class,printer_axis,XY는 프린터 축,확인,,,https://testequipmentusa.com/mitutoyo-542-181-lgf-0110l-b/,printer_axis 맞음
+M31,z_sigma_um,1.2,"반복성 2σ 1.8 µm, 정확도 ±(2.4+2.1L/600) µm",추정,0.9,2.5,https://www.mitutoyo.com/webfoo/wp-content/uploads/QM-Height-Series_21572.pdf,"1σ 0.9 확인, 손 이동·PLA 결로 1.2"
+M31,xy_step_um,5000,손으로 위치 지정,추정,2000,10000,,
+M31,xy_blur_um,1500,"Ø3 mm 볼(957262, 동축형)",확인,1500,1500,https://www.mitutoyo.com/webfoo/wp-content/uploads/QM-Height-Series_21572.pdf,"표준 부속은 Ø5 단차 프로브, Ø3은 옵션"
+M31,fov_mm,300,정반 크기(가정),추정,250,600,,
+M31,depth_mm,350,측정 범위 350 mm,확인,350,350,https://www.mitutoyo.com/webfoo/wp-content/uploads/QM-Height-Series_21572.pdf,
+M31,edge_loss_um,1500,Ø3 볼 반경,확인,1500,1500,https://www.mitutoyo.com/webfoo/wp-content/uploads/QM-Height-Series_21572.pdf,
+M31,max_slope_deg,15,원문 값 없음,추정,5,30,,수평면 높이용
+M31,time_min,30,원문 값 없음,추정,20,60,,20점×1분+영점
+M31,cost_krw,4695200,"SSCNS 현재 '영업문의'(가격 미표시); Willrich USD 4,452.84~5,548.38; 국내 다른 판매처 3,984,300원(검색 요약만)",추정,4284300,6530000,https://willrich.com/product/mitutoyo-qm-height-series-518-high-precision-absolute-digital-height-gage/,"md의 4,395,200원은 지금 재확인 불가. 국내가 범위 안이라 값 유지. 미국가×1,400+정반이면 653만 원으로 예산 500만 원 초과 가능"
+M31,measures_z,1,하이트게이지 높이,확인,,,https://www.mitutoyo.com/webfoo/wp-content/uploads/QM-Height-Series_21572.pdf,맞음
+M31,mode,point_probe,점 측정 게이지,확인,,,https://www.mitutoyo.com/webfoo/wp-content/uploads/QM-Height-Series_21572.pdf,point_probe 맞음
+M31,cal_class,calibrated,정확도 보증 게이지,확인,,,https://www.mitutoyo.com/webfoo/wp-content/uploads/QM-Height-Series_21572.pdf,calibrated 맞음(Z 기준). XY는 손 위치라 쓰지 않음
+M32,z_sigma_um,5,"Z 360 µm 범위 분해능 0.02 µm, 스키드형",추정,1,10,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,스키드 기준선 흔들림 추정
+M32,xy_step_um,2,"λs 2.5/8 µm, 샘플 간격 원문 없음",추정,0.5,5,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,
+M32,xy_blur_um,5,4 mN형: 5 µmR 90°,확인,5,5,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,
+M32,fov_mm,16,X 16.0 mm,확인,16,16,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,
+M32,depth_mm,0.36,Z 360 µm(−200~+160),확인,0.36,0.36,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,
+M32,edge_loss_um,200,원문 값 없음,추정,100,600,,스키드가 계단에서 떨어지거나 걸림
+M32,max_slope_deg,30,원문 값 없음,추정,15,45,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,팁 90°
+M32,time_min,30,측정 속도 0.25/0.5/0.75 mm/s,추정,20,60,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,
+M32,cost_krw,3180000,"SJ-220 £1,790(부가세 제외), 정가 £2,050",확인,2800000,3900000,https://www.hroberts-di.com/products/mitutoyo-178-561-12e-sj-210-portable-surface-roughness-tester-imperial-metric-measuring-range-16mm-resolution-0-001um-drive-unit-standard-stylus-tip-angle-90deg-radius-5mm,"£1,790≈USD 2,270×1,400 환산 맞음. 상한은 부가세 포함"
+M32,measures_z,1,스키드 기준 단면 높이,확인,,,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,맞음(스키드 기준)
+M32,mode,line_profiler,단면 촉침,확인,,,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,line_profiler 맞음
+M32,cal_class,calibrated,X축 정확도·스케일 규정 없음(구동 속도 기반),불일치,,,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf,calibrated(20 ppm) 근거 없음 → industrial(100 ppm)
+M33,z_sigma_um,2.0,"MPE_P 1.9 µm, MPE_E 1.9+L/300 µm; CONTURA MPE_THP 2.0~3.5 µm",추정,1.0,3.5,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0021053,
+M33,xy_step_um,20,VAST XT gold 최대 500점/s,추정,4,50,https://www.b4-print.com/wp-content/uploads/2021/06/ZEISS_CONTURA_Specifications_EN.pdf,"2~5 mm/s, 200~500점/s → 4~25 µm. 20은 보수"
+M33,xy_blur_um,500,Ø1 mm 볼(구성 선택값),추정,250,1500,,"장비 볼 지름은 원문 없음, Ø0.5~Ø3 범위"
+M33,fov_mm,1000,측정 범위 1000×1600×600 mm,확인,1000,1000,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0021053,
+M33,depth_mm,600,Z 600 mm,확인,600,600,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0021053,
+M33,edge_loss_um,500,볼 반경,추정,250,1500,,xy_blur와 같은 근거
+M33,max_slope_deg,90,접촉 스캐닝(벽면 가능),추정,80,90,https://www.b4-print.com/wp-content/uploads/2021/06/ZEISS_CONTURA_Specifications_EN.pdf,
+M33,time_min,90,원문 값 없음,추정,60,180,,
+M33,cost_krw,116000,"장비 사용료 1일 116,000원(2019), 연간 계약 58,000원",확인,58000,350000,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0021053,운영자 측정 대행비는 미공개라 상한 넓힘
+M33,measures_z,1,3축 좌표,확인,,,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0021053,맞음
+M33,mode,line_profiler,단면 연속 스캐닝 10줄,확인,,,https://www.b4-print.com/wp-content/uploads/2021/06/ZEISS_CONTURA_Specifications_EN.pdf,line_profiler 맞음
+M33,cal_class,calibrated,ISO 10360 MPE 보증 CMM,확인,,,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0021053,calibrated 맞음

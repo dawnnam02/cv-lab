@@ -1,0 +1,6 @@
+id,field,old,new,reason,source_url
+M01,z_sigma_um,1.5,2.5,불일치: 원문 반복정밀도 2.5 µm를 1σ로 보수 해석,https://mold.kitech.re.kr/tech/tech8.php
+M04,cost_krw,900000,1010000,"불일치: 다나와 현재가 마이크로미터 156,430·인디케이터 401,000원으로 재합산",https://prod.danawa.com/info/?pcode=3010714;https://prod.danawa.com/info/?pcode=3543383
+M20,cost_krw,650000,940000,"불일치: 다나와 현재가 931,970원, 나비엠알오 637,989원은 단종·주문불가",https://prod.danawa.com/info/?pcode=3498220
+M21,cost_krw,4300000,4350000,"불일치: 렌즈 현재가 1,714 USD(이전 1,653)로 재합산",https://machinevisionstore.com/catalog/details/69
+M23,cal_class,calibrated(id 목록),industrial,"불일치: 비파괴검사용 장비, 계량 교정 표시 없음. CSV에 열 없음 → 미반영, simulate.py CAL_CLASS 수정 필요",https://www.ppuritech.re.kr/popup/info_equipment.php?seq=141

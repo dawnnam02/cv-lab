@@ -1,0 +1,121 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M75,z_sigma_um,25,"정확도 up to 0.02 mm @100 mm(최선, 정의 없음)",추정,20,50,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT,"최선 조건 정확도 20 µm를 출발점, PLA 내부 산란·스프레이 두께(약 15 µm, Aniwaa AESUB) 감안"
+M75,xy_step_um,20,3D 해상도 0.02–2 mm,확인,20,100,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT,하한값 사용. 실사용 메시는 더 성길 수 있어 상한 100
+M75,xy_blur_um,100,레이저 선 폭 최대 0.1 mm,추정,100,200,https://www.3djake.com/creality-3d-printers-spare-parts/cr-scan-raptor,"선 폭 0.1 mm는 원문 확인, 메시 평활화로 상한 2배"
+M75,fov_mm,100,단일 촬영 범위 270 × 170 mm @300 mm,불일치,85,170,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT,원문에 촬영 범위가 있음. 최소 작업거리 150 mm로 비례 환산하면 짧은 변 약 85 mm → 100에서 85로 수정
+M75,depth_mm,250,작업거리 150–400 mm,확인,250,250,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT,폭 250 mm
+M75,edge_loss_um,150,없음,추정,75,300,,M12와 같은 근거(카메라 각도 그림자 + 평활화)
+M75,max_slope_deg,70,없음,추정,50,80,,다방향 합성 가정
+M75,time_min,20,없음,추정,10,40,,스프레이 + 2방향 스캔 + 합성
+M75,cost_krw,1540000,"$1,099(MatterHackers), €1,199(3DJake)",추정,1230000,1920000,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT,"환율 1,400원 가정. 하한 Best Buy 할인가 $879(md, 원문 시간 초과로 미확인), 상한 €1,199×1,600원"
+M75,measures_z,1,3D 메시,확인,,,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT,
+M75,mode,area,면 스캔(3D 메시),확인,,,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT,
+M75,cal_class,industrial,교정 성적서 없음 보급형,확인,,,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT,industrial 맞음
+M76,z_sigma_um,10,ISO 12836 정확도 4 µm,추정,4,20,https://www.3shape.com/en/scanners/e-series,4 µm × 2.5(PLA·스프레이). 정의(σ·평균) 미공개
+M76,xy_step_um,40,미공개,추정,30,60,,같은 급 Medit T710 0.040 mm 차용
+M76,xy_blur_um,80,미공개,추정,40,160,,위상 창 + 평활화 2화소
+M76,fov_mm,100,미공개,추정,70,120,,전악 모형 크기에서 추정
+M76,depth_mm,60,미공개,추정,40,80,,T710 60 mm 차용
+M76,edge_loss_um,100,없음,추정,50,200,,
+M76,max_slope_deg,75,없음,추정,60,85,,기울임 스캔
+M76,time_min,10,"전악 9 s(사양표), 11 s(보도자료)",추정,5,20,https://www.3shape.com/en/scanners/e-series,"스캔 자체는 초 단위, 준비 시간이 지배"
+M76,cost_krw,18200000,"판매가 $12,999, 정가 $19,999",추정,18200000,28000000,https://universadent.com/product/3shape-e4/,"가격 원문 확인, 환율 1,400원 가정. 상한은 정가"
+M76,measures_z,1,3D 메시,확인,,,https://www.3shape.com/en/scanners/e-series,
+M76,mode,area,면 스캔,확인,,,https://www.3shape.com/en/scanners/e-series,
+M76,cal_class,industrial,교정판 사용자 교정,확인,,,https://www.3shape.com/en/scanners/e-series,industrial 맞음
+M77,z_sigma_um,10,ISO 12836 정확도 4 µm,추정,4,20,https://www.straumann.com/content/dam/media-center/digital/en-us/documents/brochure/product-information/NAMLIT.1393-Medit-Scanner-Brochure.pdf,4 µm × 2.5(PLA·스프레이)
+M77,xy_step_um,40,Point spacing 0.040 mm,확인,40,50,https://www.straumann.com/content/dam/media-center/digital/en-us/documents/brochure/product-information/NAMLIT.1393-Medit-Scanner-Brochure.pdf,
+M77,xy_blur_um,80,미공개,추정,40,160,,위상 계산·평활화
+M77,fov_mm,73,Scan area 100 × 73 × 60 mm,확인,73,100,https://www.straumann.com/content/dam/media-center/digital/en-us/documents/brochure/product-information/NAMLIT.1393-Medit-Scanner-Brochure.pdf,짧은 변
+M77,depth_mm,60,Scan area 높이 60 mm,확인,60,60,https://www.straumann.com/content/dam/media-center/digital/en-us/documents/brochure/product-information/NAMLIT.1393-Medit-Scanner-Brochure.pdf,
+M77,edge_loss_um,100,없음,추정,50,200,,
+M77,max_slope_deg,75,없음,추정,60,85,,
+M77,time_min,10,전악 8 s(7cut),추정,5,20,https://www.straumann.com/content/dam/media-center/digital/en-us/documents/brochure/product-information/NAMLIT.1393-Medit-Scanner-Brochure.pdf,준비 시간이 지배
+M77,cost_krw,14400000,"$10,800(Pearson Dental); Articon $10,290은 403으로 미확인",추정,14400000,15120000,https://www.pearsondental.com/catalog/product.asp?majcatid=791&catid=7248&subcatid=42225&pid=99155,"환율 1,400원 가정"
+M77,measures_z,1,3D 메시,확인,,,https://www.straumann.com/content/dam/media-center/digital/en-us/documents/brochure/product-information/NAMLIT.1393-Medit-Scanner-Brochure.pdf,
+M77,mode,area,위상천이 광삼각측량 면 스캔,확인,,,https://www.straumann.com/content/dam/media-center/digital/en-us/documents/brochure/product-information/NAMLIT.1393-Medit-Scanner-Brochure.pdf,
+M77,cal_class,industrial,교정판 사용자 교정,확인,,,https://www.straumann.com/content/dam/media-center/digital/en-us/documents/brochure/product-information/NAMLIT.1393-Medit-Scanner-Brochure.pdf,industrial 맞음
+M78,z_sigma_um,35,Accuracy 35 microns(정의 없음),확인,35,70,https://polyga.com/download/brochures_en/s1.pdf,원문 값 그대로. PLA에서 나빠질 수 있어 상한 2배
+M78,xy_step_um,85,Point to point 0.085 mm,확인,85,102,https://polyga.com/download/brochures_en/s1.pdf,먼 쪽 시야(120 mm)면 약 1.2배
+M78,xy_blur_um,170,미공개,추정,85,255,,2점 간격
+M78,fov_mm,80,FOV 100 × 80 – 120 × 105 mm,확인,80,105,https://polyga.com/download/brochures_en/s1.pdf,
+M78,depth_mm,70,Standoff 165–235 mm(도면) = 70 mm,확인,70,70,https://polyga.com/download/brochures_en/s1.pdf,브로슈어 도면 환산
+M78,edge_loss_um,200,없음,추정,100,400,,
+M78,max_slope_deg,70,없음,추정,50,80,,
+M78,time_min,15,스캔 0.5 s,추정,8,30,https://polyga.com/download/brochures_en/s1.pdf,준비·합성이 지배
+M78,cost_krw,9790000,"출시가 $6,990",추정,4900000,9790000,https://www.aniwaa.com/product/3d-scanners/polyga-compact-s1/,단종 중고 가정이라 하한은 정가의 절반
+M78,measures_z,1,3D 메시,확인,,,https://polyga.com/download/brochures_en/s1.pdf,
+M78,mode,area,구조광 면 스캔,확인,,,https://polyga.com/download/brochures_en/s1.pdf,
+M78,cal_class,industrial,"공장 교정, 성적서 없음",확인,,,https://polyga.com/download/brochures_en/s1.pdf,industrial 맞음
+M79,z_sigma_um,5,"Repeatability σ 2 µm(표준 게이지, 23±1 °C)",추정,2,10,https://www.keyence.com/products/3d-measure/3d-scanner/vl/models/vl-500/,원문 σ 2 µm × 2.5(PLA)
+M79,xy_step_um,25,미공개(4M 점),추정,12,35,https://www.keyence.com/products/3d-measure/3d-scanner/vl/models/vl-500/,"4M 점 / 약 50 mm 폭 환산 약 24 µm, 16M 모드 약 12 µm"
+M79,xy_blur_um,50,미공개,추정,25,100,,
+M79,fov_mm,50,고배율 측정 범위 ø70 × H50 mm,추정,35,70,https://www.keyence.com/products/3d-measure/3d-scanner/vl/models/vl-500/,한 장 폭은 미공개
+M79,depth_mm,50,고배율 H50 mm,확인,50,50,https://www.keyence.com/products/3d-measure/3d-scanner/vl/models/vl-500/,
+M79,edge_loss_um,100,없음,추정,50,200,,
+M79,max_slope_deg,75,기울임 45° + 회전 360°,추정,60,85,https://www.keyence.com/products/3d-measure/3d-scanner/vl/models/vl-500/,
+M79,time_min,15,없음,추정,8,30,,
+M79,cost_krw,150000,성균관대 3D LSM 30분 교내 7만·교외 10만 원,추정,70000,400000,https://skb.skku.edu/_res/ccrf/etc/feeall221117.pdf,"요금 원문 확인. VL 장비 요금은 아님, 이용 시간 0.5–2 h"
+M79,measures_z,1,3D 점군,확인,,,https://www.keyence.com/products/3d-measure/3d-scanner/vl/models/vl-500/,
+M79,mode,area,구조광 면 스캔,확인,,,https://www.keyence.com/products/3d-measure/3d-scanner/vl/models/vl-500/,
+M79,cal_class,calibrated,"정확도 ±10 µm, 표준 게이지 보증",확인,,,https://www.keyence.com/products/3d-measure/3d-scanner/vl/models/vl-500/,calibrated 맞음(JIS B7440-8 표기는 md 기준)
+M80,z_sigma_um,1,5X 공초점 시스템 잡음 100 nm,추정,0.1,3,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,100 nm(거울 기준) × 10(PLA 산란)
+M80,xy_step_um,1.38,5X spatial sampling 1.38 µm,확인,1.38,1.38,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,
+M80,xy_blur_um,0.94,"5X optical resolution 0.94 µm(L&S, 청색 LED)",확인,0.94,1.5,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,PLA 산란으로 상한 여유
+M80,fov_mm,2.83,5X FOV 3370 × 2826 µm,확인,2.83,2.83,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,
+M80,depth_mm,23.5,"5X WD 23.5 mm(Z 주사 범위 미확인, 사양 페이지 403)",추정,10,40,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,작업거리를 주사 한계로 봄
+M80,edge_loss_um,10,없음,추정,5,30,,
+M80,max_slope_deg,45,"5X 최대 경사 9°(매끈), 산란 면 최대 86°",추정,20,70,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,
+M80,time_min,45,없음,추정,32,70,,126장 × 15–20 s
+M80,cost_krw,200000,성균관대 3D LSM 30분 7만 원; 노터데임 S neox 외부 assisted $195/h,추정,100000,400000,https://skb.skku.edu/_res/ccrf/etc/feeall221117.pdf,"노터데임 원문은 internal assisted $135/h, external assisted $195/h(md의 $139는 현재 페이지에 없음)"
+M80,measures_z,1,높이맵,확인,,,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,
+M80,mode,area,면 높이맵,확인,,,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,
+M80,cal_class,calibrated,단차 표준 U·σ 표,확인,,,https://www.nottingham.ac.uk/research/groups/advanced-manufacturing-technology-research-group/documents/manufacturing-metrology-team/data-sheets-2019/instrument-data-sheet-sensofar.pdf,calibrated 맞음
+M81,z_sigma_um,0.2,Step height repeatability <0.1% 1σ,추정,0.1,1,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,0.2 mm 단차 기준 환산 0.2 µm. PLA 산란·결측으로 상한 1 µm
+M81,xy_step_um,2.6,"5 MP, 1200 × 1000 data array(2.75X 시야 미공개)",추정,1.7,4.4,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,시야 추정에 따름
+M81,xy_blur_um,3.6,Lateral 0.38 µm min(고배율),추정,2.5,5,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,NA 0.08급 Sparrow 3.6 µm(Zygo 표와 같은 급)
+M81,fov_mm,2.6,미공개,추정,1.9,3.8,,
+M81,depth_mm,10,Max scan range ≤10 mm,확인,5,10,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,대물 작업거리에 따라 더 짧을 수 있음
+M81,edge_loss_um,20,없음,추정,10,60,,
+M81,max_slope_deg,20,"≤40°(광택), ≤87°(거친 면)",추정,10,40,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,저 NA·반투명 PLA로 낮춤
+M81,time_min,60,Max scan 37 µm/s,추정,45,90,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,170장 × 약 18 s
+M81,cost_krw,200000,성균관대 3D LSM 30분 7만 원,추정,100000,400000,https://skb.skku.edu/_res/ccrf/etc/feeall221117.pdf,
+M81,measures_z,1,높이맵,확인,,,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,
+M81,mode,area,WLI 면 높이맵,확인,,,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,
+M81,cal_class,calibrated,NIST/PTB traceable step height and lateral ruler,확인,,,https://www.epfl.ch/research/facilities/cmi/wp-content/uploads/2021/02/ContourX-200-3D-Optical-Profilometer-Datasheet-BRUKER.pdf,calibrated 맞음
+M82,z_sigma_um,3,미공개,추정,1,9,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,"확신 낮음. DSX1000 σ 1 µm(20X 이상) 대비 ×3, 범위는 ×0.33–×3"
+M82,xy_step_um,1.06,100배 시야 3050 µm / 2880 화소,확인,1.06,1.35,https://www.keyence.com/products/microscope/digital-microscope/vhx-7000/models/vh-zst/,"시야 표는 1/2"" 카메라 기준이라 1/1.7"" VHX-7100에서는 시야가 더 넓을 수 있음(상한 약 1.27배)"
+M82,xy_blur_um,4,NA 미공개,추정,2.5,8,,
+M82,fov_mm,2.28,100배 시야 3050 × 2280 µm,확인,2.28,2.9,https://www.keyence.com/products/microscope/digital-microscope/vhx-7000/models/vh-zst/,위와 같은 카메라 크기 단서
+M82,depth_mm,15,WD 15 mm,추정,10,30,https://www.keyence.com/products/microscope/digital-microscope/vhx-7000/models/vh-zst/,작업거리를 주사 한계로 봄
+M82,edge_loss_um,15,없음,추정,8,45,,
+M82,max_slope_deg,60,없음,추정,40,75,,
+M82,time_min,35,없음,추정,25,60,,
+M82,cost_krw,136000,"한국배터리산업협회 VHX-7000 시간당 68,000원",확인,68000,204000,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0215633,1–3시간
+M82,measures_z,1,깊이 합성 높이맵,확인,,,https://www.keyence.com/products/microscope/digital-microscope/vhx-7000/models/vhx-7000/,
+M82,mode,area,면 높이맵,확인,,,https://www.keyence.com/products/microscope/digital-microscope/vhx-7000/models/vhx-7000/,
+M82,cal_class,industrial,높이 정확도 보증 없음,확인,,,https://www.keyence.com/products/microscope/digital-microscope/vhx-7000/models/vhx-7000/,industrial 맞음
+M83,z_sigma_um,2,Z 반복성 σ 1 µm(20X 이상 대물),추정,1,4,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,10X(NA 0.30)는 조건 밖이라 ×2
+M83,xy_step_um,1.6,"1200 × 1200 모드, XLOB10X 시야 2,740 µm",확인,1.6,2.3,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,"2,740 µm를 대각으로 보면 1.6, 한 변으로 보면 2.3 µm/화소"
+M83,xy_blur_um,2,NA 0.30,추정,1.1,3.2,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,"회절 한계 1.1 µm, 화소 상한"
+M83,fov_mm,1.94,"XLOB10X 시야 2,740–270 µm(줌)",추정,1.94,2.74,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,원문이 대각인지 한 변인지 명시 안 됨. 대각 해석(1.94)이 보수적
+M83,depth_mm,30,XLOB10X WD 30.0 mm,추정,20,30,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,
+M83,edge_loss_um,10,없음,추정,5,30,,
+M83,max_slope_deg,60,없음,추정,40,75,,
+M83,time_min,50,없음,추정,35,80,,340장 × 약 8 s
+M83,cost_krw,150000,"VHX-7000 68,000원/h, 성균관대 3D LSM 30분 7만 원",추정,70000,300000,https://itube.or.kr/aplct/equipSrch/sharingView.do?g_menu_id=MNID210100&equip_no=EPN0215633,
+M83,measures_z,1,초점 합성 높이맵,확인,,,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,
+M83,mode,area,면 높이맵,확인,,,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,
+M83,cal_class,industrial,"XY ±3%, 3σ 2%, 서비스 기사 교정",확인,,,https://tekafos.com.tr/assets/katalog/olympus/olympus-evident-DSX1000.pdf,industrial 맞음
+M84,z_sigma_um,0.6,Step height repeatability ≤0.3% @1σ,확인,0.3,1.2,https://www.lambdaphoto.co.uk/pdfs/Zygo/ZYGO-ZeGagePro-Specs_LAMBDA.pdf,0.2 mm 단차 환산 0.6 µm. 상한은 PLA 신호 저하 여유
+M84,xy_step_um,3.13,"2.75X, 1.0X 줌 3.13 µm/pixel",확인,3.13,3.13,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,
+M84,xy_blur_um,3.56,2.75X optical res 3.56 µm(Sparrow),확인,3.56,4,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,
+M84,fov_mm,3.75,2.75X 1600 × 1200 시야 5.00 × 3.75 mm,확인,3.75,3.75,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,
+M84,depth_mm,20,"Vertical scan ≤20 mm(대물 WD 한계), 2.75X WD 4.5 mm",불일치,4,4.5,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,주사 범위는 대물 작업거리에 묶임. 2.75X WD 4.5 mm → 20에서 4.5로 수정
+M84,edge_loss_um,20,없음,추정,10,60,,
+M84,max_slope_deg,20,"2.75X 경사 한계 3.71°(매끈한 면), 거친 면은 더 큼",추정,5,45,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,
+M84,time_min,35,Data scan 32 µm/s @1600 × 1200,추정,25,55,https://www.lambdaphoto.co.uk/pdfs/Zygo/ZYGO-ZeGagePro-Specs_LAMBDA.pdf,70장 × 약 21 s
+M84,cost_krw,200000,성균관대 3D LSM 30분 7만 원,추정,100000,400000,https://skb.skku.edu/_res/ccrf/etc/feeall221117.pdf,
+M84,measures_z,1,높이맵,확인,,,https://www.lambdaphoto.co.uk/pdfs/Zygo/ZYGO-ZeGagePro-Specs_LAMBDA.pdf,
+M84,mode,area,CSI 면 높이맵,확인,,,https://www.lambdaphoto.co.uk/pdfs/Zygo/ZYGO-ZeGagePro-Specs_LAMBDA.pdf,
+M84,cal_class,calibrated,1.8 µm·24 µm NIST-traceable 단차 표준,확인,,,https://www.lambdaphoto.co.uk/pdfs/Zygo/ZYGO-ZeGagePro-Specs_LAMBDA.pdf,calibrated 맞음

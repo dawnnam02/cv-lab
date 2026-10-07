@@ -1,0 +1,3 @@
+id,field,old,new,reason,source_url
+M44,cost_krw,25200000,11600000,"CSV는 출처 없는 $18,000 추정. 센서 $2,595+그래버 $1,700+VisionPro 추정 $4,000=$8,295×1,400≈1,160만 원으로 수정",https://www.ebay.com/itm/355613441844;https://www.ebay.com/itm/405218791952
+M45,cost_krw,4900000,6720000,"CSV는 타사 모델가 기반 $3,500. 이 모델 게시가 하한 $4,360×1.1(부가세)≈$4,800×1,400≈672만 원으로 수정",https://www.alibaba.com/product-detail/HIKROBOT-MV-DP2060-01P-High-accuracy_1601573387555.html

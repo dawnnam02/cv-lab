@@ -1,0 +1,121 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M95,z_sigma_um,20,"PMD 리뷰: 거울면 국부 형상 µm–nm, 확산면 불가(FDM 값 없음)",추정,10,60,https://www.osti.gov/servlets/purl/1438323,"원문은 거울면 기준. 무광·반투명 PLA·불연속 단차 반영한 보수 추정, 폭 넓게"
+M95,xy_step_um,18,"카메라 화소 2.74 µm(IMX547), md의 3.45 µm는 틀림",추정,14,19,https://docs.baslerweb.com/a2a2448-75umbas,"시야 45 mm 유지하면 배율 0.149 → 18.4 µm(CSV 18 유지). md 계산식(3.45÷0.19)은 근거 오류, 값은 우연히 맞음"
+M95,xy_blur_um,40,원문 값 없음,추정,30,80,,"렌즈 흐림 1–2화소 + 위상 창, 기울기 적분 평활"
+M95,fov_mm,45,센서 6.71 × 5.61 mm → 배율 0.149에서 45 × 37.6 mm,추정,35,45,https://docs.baslerweb.com/a2a2448-75umbas,md의 배율 0.19를 그대로 쓰면 35.3 mm로 40 mm 시편이 안 들어옴. 작업거리 약 19 cm로 설계하면 45 mm
+M95,depth_mm,5,원문 값 없음,추정,2,10,,f/8 피사계 심도 + 무늬 동시 초점 범위 추정
+M95,measures_z,1,기울기 적분으로 높이(PMD 리뷰),확인,,,https://www.osti.gov/servlets/purl/1438323,맞음
+M95,edge_loss_um,100,원문 값 없음,추정,50,300,https://www.osti.gov/servlets/purl/1438323,"리뷰: 기울기 적분은 불연속에서 무너짐. 5화소 안팎 추정, 넓게"
+M95,max_slope_deg,15,원문 값 없음,추정,10,22,,반사 법칙상 모니터 시야각 ±45°의 절반 22°가 상한
+M95,time_min,10,원문 값 없음,추정,5,20,,32장 + 정렬
+M95,cost_krw,2600000,"카메라 €619–$945(판매처별), 나머지 추정",추정,2200000,3200000,https://www.baslerweb.com/en/shop/a2a2448-75umbas/,카메라 가격 폭과 모니터·지그 추정 폭
+M95,mode,area,area,확인,,,https://www.osti.gov/servlets/purl/1438323,맞음
+M95,cal_class,diy,diy,확인,,,,맞음(자작)
+M96,z_sigma_um,25,"원문 값 없음(Gladines 2021 원문 403, PMC 캡차)",추정,15,75,https://doi.org/10.3390/s21082574,"심도 0.5 mm/20 = 25 µm. md 인용 실측 약 50 µm를 상한 쪽 근거로, 휴대폰 영상 처리 반영해 ×3"
+M96,xy_step_um,2,원문 값 없음,추정,1.5,3,,4032화소 / 시야 6–12 mm
+M96,xy_blur_um,10,"Glowscope: iPhone 11 + 클립 렌즈 9.8 µm, 실배율 약 5배",확인,9.8,20,https://www.biorxiv.org/content/10.1101/2022.07.06.498871v1.full,원문 9.8 µm 확인. 초점 척도 창으로 실효는 더 커질 수 있어 상한 20
+M96,fov_mm,8,원문 값 없음(Glowscope 시야 미기재),추정,6,12,https://www.biorxiv.org/content/10.1101/2022.07.06.498871v1.full,
+M96,depth_mm,5,설정값,추정,3,10,,레일 이동 범위 안의 설정
+M96,measures_z,1,초점 적층으로 높이,확인,,,,맞음
+M96,edge_loss_um,60,원문 값 없음,추정,30,150,,초점 척도 창 + 넓은 초점 곡선
+M96,max_slope_deg,40,원문 값 없음,추정,25,50,,산란면 + 링 조명
+M96,time_min,40,원문 값 없음,추정,28,60,,21타일 × 40장 × 2초 = 28분이 하한
+M96,cost_krw,700000,"Glowscope 시스템 30–50 USD 확인, 레일·조명 추정",추정,500000,1000000,https://www.biorxiv.org/content/10.1101/2022.07.06.498871v1.full,전동 레일 가격 폭
+M96,mode,area,area,확인,,,,맞음
+M96,cal_class,printer_axis,printer_axis,확인,,,,맞음(타일 위치를 프린터 XY로)
+M97,z_sigma_um,8,"원문: 0.074X(화소 약 63 µm) 장비로 10 mm 게이지 10.031, 20 mm 19.838 mm(반복은 0.1 µm 단위로 일정, 체계 오차 큼)",추정,4,16,https://ciateq.repositorioinstitucional.mx/jspui/bitstream/1020/78/1/Accurate%203D%20reconstruction%20using%20a%20turntable.pdf,화소 14.9 µm(수정값)에서 서브픽셀 0.1–0.2화소 + 회전축·반투명 경계 편향
+M97,xy_step_um,18.8,카메라 화소 2.74 µm ÷ 0.184 = 14.9 µm,불일치,14.5,15.4,https://docs.baslerweb.com/a2a2448-75umbas,CSV 18.8은 3.45 µm 화소 기준 오류 → 14.9로 수정. 범위는 배율 공차 ±3%(원문 TitanTL 표기)
+M97,xy_blur_um,30,Edmund 70 lp/mm @36%(상측) → 물체면 약 39 µm/lp,추정,20,40,https://www.edmundoptics.com/imaging-lenses/telecentric-lenses/0.184x-23-c-mount-titantltrade-telecentric-lens/,"Edmund 직접 접속 403, 검색 결과의 사양값 사용"
+M97,fov_mm,46,"Edmund 0.184X: 2/3"" 센서 HFOV 47.8 mm. 이 카메라(6.71 mm)면 36.5 × 30.5 mm",불일치,35.4,37.6,https://www.edmundoptics.com/imaging-lenses/telecentric-lenses/0.184x-23-c-mount-titantltrade-telecentric-lens/,46 → 36.5. 시편 회전 시 실루엣 최대폭 44.7 mm가 시야를 넘음(설계 재검토 필요)
+M97,depth_mm,20,"Edmund DoF ±11.5 mm(개방, 20% @ 20 lp/mm) = 23 mm",확인,20,23,https://www.edmundoptics.com/imaging-lenses/telecentric-lenses/0.184x-23-c-mount-titantltrade-telecentric-lens/,CSV 20은 원문 23 mm보다 보수적
+M97,measures_z,1,외곽 형상 높이만,확인,,,https://ciateq.repositorioinstitucional.mx/jspui/bitstream/1020/78/1/Accurate%203D%20reconstruction%20using%20a%20turntable.pdf,맞음(오목부 불가)
+M97,edge_loss_um,500,원문 값 없음,추정,250,1000,,오목부 통째 손실을 폭으로 환산한 추정
+M97,max_slope_deg,90,원리상 수직 벽 윤곽,추정,80,90,,실루엣 원리
+M97,time_min,15,원문 값 없음,추정,10,30,,360장 × 약 2초 + 축 보정
+M97,cost_krw,5500000,"렌즈 2,015 USD(검색), 카메라 €619–$945, 나머지 추정",추정,4900000,6500000,https://www.edmundoptics.com/imaging-lenses/telecentric-lenses/0.184x-23-c-mount-titantltrade-telecentric-lens/,
+M97,mode,line_profiler,line_profiler,확인,,,,맞음(각도별 외곽 윤곽을 선 단면으로 근사)
+M97,cal_class,diy,diy,확인,,,,맞음
+M98,z_sigma_um,15,원문 값 없음,추정,8,45,https://www.researchgate.net/publication/4243960_Analysis_of_depth_from_defocus_measurements_for_micro-imaging_and_3D_micro-visual_reconstruction,"NA 0.042(f/6, 0.5X), 심도 0.3 mm/20. 자작 DFD 실측 문헌 없어 상한 ×3"
+M98,xy_step_um,6.9,카메라 화소 2.74 µm ÷ 0.5 = 5.5 µm,불일치,5.4,5.6,https://docs.baslerweb.com/a2a2448-75umbas,CSV 6.9는 3.45 µm 기준 오류 → 5.5
+M98,xy_blur_um,50,원문 값 없음,추정,38,70,,7×7 창 × 5.5 µm = 38 µm(재계산). CSV 50은 보수값으로 유지
+M98,fov_mm,16.9,"Edmund 0.5X: 2/3"" HFOV 17.6 mm. 이 카메라면 13.4 × 11.2 mm",불일치,13.0,13.8,https://www.edmundoptics.com/p/05x-23-c-mount-platinumtltrade-telecentric-lens/17562/,16.9 → 13.4. 20 × 40 mm는 약 12타일로 늘어남
+M98,depth_mm,0.6,Edmund DoF ±2.1 mm(f/10)는 결상 심도. DFD 범위 값은 없음,추정,0.4,1.0,https://www.edmundoptics.com/p/05x-23-c-mount-platinumtltrade-telecentric-lens/17562/,초점면 3곳 설계값
+M98,measures_z,1,흐림으로 높이,확인,,,,맞음
+M98,edge_loss_um,60,원문 값 없음,추정,40,120,,창 반폭 + 흐림 혼합
+M98,max_slope_deg,30,원문 값 없음,추정,20,40,,동축 조명
+M98,time_min,10,원문 값 없음,추정,8,20,,타일 약 12개 × 3장 + 이동(시야 축소 반영)
+M98,cost_krw,4400000,"렌즈 1,915 USD(검색), 카메라 €619–$945, 나머지 추정",추정,3900000,4800000,https://www.edmundoptics.com/p/05x-23-c-mount-platinumtltrade-telecentric-lens/17562/,
+M98,mode,area,area,확인,,,,맞음
+M98,cal_class,printer_axis,printer_axis,확인,,,,맞음
+M99,z_sigma_um,NA,NA(2D),확인,NA,NA,,measures_z=0
+M99,xy_step_um,5.3,4800 dpi = 5.29 µm,확인,5.29,5.29,https://epson.com/For-Work/Scanners/Photo-and-Graphics/Epson-Perfection-V850-Pro-Photo-Scanner/p/B11B224201,환산 일치
+M99,xy_blur_um,12,"filmscanner: 4800 ppi 실효 약 2300 ppi(EpsonScan), 2600 ppi(SilverFast) → 11.0 / 9.8 µm",확인,9.8,15,https://www.filmscanner.info/en/EpsonPerfectionV850Pro.html,투과 모드 시험. 반사 모드 여유로 상한 15
+M99,fov_mm,216,"Epson: 8.5 × 11.7"" (215.9 mm)",확인,216,216,https://epson.com/For-Work/Scanners/Photo-and-Graphics/Epson-Perfection-V850-Pro-Photo-Scanner/p/B11B224201,
+M99,depth_mm,1,원문: 고정 초점(필름 홀더 높이 0.5 mm 단위 조절),추정,0.5,2,https://www.filmscanner.info/en/EpsonPerfectionV850Pro.html,심도 수치는 없음
+M99,measures_z,0,2D,확인,,,,맞음
+M99,edge_loss_um,50,원문 값 없음,추정,25,150,,비스듬한 조명 그림자·코끼리 발
+M99,max_slope_deg,NA,NA(2D),확인,NA,NA,,
+M99,time_min,5,35 mm 슬라이드 4800 ppi 1분 16초(보정 없이),추정,2,10,https://www.filmscanner.info/en/EpsonPerfectionV850Pro.html,20 × 40 mm는 35 mm 필름과 면적 비슷 + 눈금판
+M99,cost_krw,1120000,"다나와 정품 최저가 1,490,000원(2026-10-08 조회), Epson 미국가 1,999 USD",불일치,1490000,1960000,https://prod.danawa.com/info/?pcode=11364381,"1,120,000 → 1,490,000. 상한은 해외구매가"
+M99,mode,2d,2d,확인,,,,맞음
+M99,cal_class,diy,diy,확인,,,,맞음
+M100,z_sigma_um,NA,NA(2D),확인,NA,NA,,
+M100,xy_step_um,10.6,Peña 외 2021: 600 dpi 4장 열 끼워 넣기 → 2400 × 2400 dpi(최대 4800 dpi),확인,10.6,10.6,https://digibuo.uniovi.es/dspace/bitstream/handle/10651/63090/A_Procedure_to_Integrate_a_CIS_Sensor_in_an_Additive_Manufacturing_Machine_for_In-Situ_Digitizing_of_Deposited_Material_Layers.pdf,25.4/2400 = 10.58 µm
+M100,xy_blur_um,42,센서 기본 600 dpi(원문),추정,21,60,https://digibuo.uniovi.es/dspace/bitstream/handle/10651/63090/A_Procedure_to_Integrate_a_CIS_Sensor_in_an_Additive_Manufacturing_Machine_for_In-Situ_Digitizing_of_Deposited_Material_Layers.pdf,600 dpi = 42 µm는 화소 기준. GRIN 렌즈 흐림 수치는 원문에 없음
+M100,fov_mm,216,"원문: Epson V39 CIS, 폭 값 없음",추정,210,216,https://digibuo.uniovi.es/dspace/bitstream/handle/10651/63090/A_Procedure_to_Integrate_a_CIS_Sensor_in_an_Additive_Manufacturing_Machine_for_In-Situ_Digitizing_of_Deposited_Material_Layers.pdf,V39 A4/레터 폭
+M100,depth_mm,0.5,원문: 초점 밖 영역을 집속 척도로 찾음(수치 없음),추정,0.3,1.0,https://digibuo.uniovi.es/dspace/bitstream/handle/10651/63090/A_Procedure_to_Integrate_a_CIS_Sensor_in_an_Additive_Manufacturing_Machine_for_In-Situ_Digitizing_of_Deposited_Material_Layers.pdf,
+M100,measures_z,0,2D,확인,,,https://digibuo.uniovi.es/dspace/bitstream/handle/10651/63090/A_Procedure_to_Integrate_a_CIS_Sensor_in_an_Additive_Manufacturing_Machine_for_In-Situ_Digitizing_of_Deposited_Material_Layers.pdf,맞음
+M100,edge_loss_um,50,원문 값 없음,추정,25,150,,그림자·코끼리 발·얕은 심도
+M100,max_slope_deg,NA,NA(2D),확인,NA,NA,,
+M100,time_min,3,원문 값 없음,추정,2,10,,40 mm × 4회 끼워 넣기
+M100,cost_krw,250000,"원문: 저가 사무용 스캐너, 가격 없음",추정,150000,500000,https://digibuo.uniovi.es/dspace/bitstream/handle/10651/63090/A_Procedure_to_Integrate_a_CIS_Sensor_in_an_Additive_Manufacturing_Machine_for_In-Situ_Digitizing_of_Deposited_Material_Layers.pdf,스캐너·보드 추정
+M100,mode,2d,2d,확인,,,,맞음
+M100,cal_class,printer_axis,printer_axis,확인,,,https://digibuo.uniovi.es/dspace/bitstream/handle/10651/63090/A_Procedure_to_Integrate_a_CIS_Sensor_in_an_Additive_Manufacturing_Machine_for_In-Situ_Digitizing_of_Deposited_Material_Layers.pdf,맞음(시험대 축 이동)
+M101,z_sigma_um,NA,NA(2D),확인,NA,NA,,
+M101,xy_step_um,10,화소 3.5 µm(원문) ÷ 0.35 = 10 µm,확인,9,11,https://docs.baslerweb.com/r2l4096-29gm,배율 설정 ±10%
+M101,xy_blur_um,20,원문 값 없음,추정,17,30,,f/8·배율 0.35 회절 반치폭 약 17 µm + 수차
+M101,fov_mm,41,선 길이 14.34 mm(원문) ÷ 0.35 = 41 mm,확인,37,45,https://docs.baslerweb.com/r2l4096-29gm,배율 설정 ±10%
+M101,depth_mm,1.2,원문 값 없음,추정,0.6,2.4,,"2Nc(1+m)/m², c = 1–2화소"
+M101,measures_z,0,2D,확인,,,,맞음
+M101,edge_loss_um,40,원문 값 없음,추정,20,100,,라인 조명 그림자
+M101,max_slope_deg,NA,NA(2D),확인,NA,NA,,
+M101,time_min,3,원문 값 없음,추정,2,6,,한 번 이동 + 보정판
+M101,cost_krw,2250000,"카메라 857 USD(판매처), Basler €779; 나머지 추정",추정,2000000,2800000,https://www.baslerweb.com/en-us/shop/r2l4096-29gm/,
+M101,mode,2d,2d,확인,,,,맞음
+M101,cal_class,printer_axis,printer_axis,확인,,,,맞음
+M102,z_sigma_um,NA,NA(2D),확인,NA,NA,,
+M102,xy_step_um,1.7,카메라 화소 2.74 µm ÷ 2 = 1.37 µm,불일치,1.37,1.37,https://docs.baslerweb.com/a2a2448-75umbas,1.7 → 1.37(3.45 µm 기준 오류)
+M102,xy_blur_um,5,"Mitutoyo 2X 분해능 5.0 µm, NA 0.055",확인,5,6.1,https://www.edmundoptics.com/p/2x-mitutoyo-plan-apo-infinity-corrected-long-wd-objective/6620/,상한은 0.61λ/NA 계산
+M102,fov_mm,4.2,센서 6.71 mm ÷ 2 = 3.36 mm,불일치,3.36,3.36,https://docs.baslerweb.com/a2a2448-75umbas,4.2 → 3.4. 타일 수 약 96 → 약 150
+M102,depth_mm,0.09,Mitutoyo 2X 초점심도 91 µm,확인,0.09,0.09,https://www.edmundoptics.com/p/2x-mitutoyo-plan-apo-infinity-corrected-long-wd-objective/6620/,
+M102,measures_z,0,2D,확인,,,,맞음
+M102,edge_loss_um,15,원문 값 없음,추정,8,40,,"동축 조명, 모서리 둥금·초점 밖"
+M102,max_slope_deg,NA,NA(2D),확인,NA,NA,,
+M102,time_min,15,원문 값 없음,추정,10,30,,타일 약 150개 × 2초 + 초점·이어 붙이기
+M102,cost_krw,5700000,"카메라 €619–$945, 대물·스테이지 추정",추정,5000000,6500000,https://www.edmundoptics.com/p/2x-mitutoyo-plan-apo-infinity-corrected-long-wd-objective/6620/,
+M102,mode,2d,2d,확인,,,,맞음
+M102,cal_class,diy,diy,확인,,,,맞음
+M103,z_sigma_um,NA,NA(2D),확인,NA,NA,,
+M103,xy_step_um,12,원문 값 없음,추정,10,15,,4032화소 / 시야 40–55 mm
+M103,xy_blur_um,35,원문 값 없음(Glowscope 9.8 µm는 좁은 시야 조건),추정,20,60,https://www.biorxiv.org/content/10.1101/2022.07.06.498871v1.full,약 3화소 + 휴대폰 처리
+M103,fov_mm,48,원문 값 없음,추정,40,55,,촬영 거리 5–6 cm
+M103,depth_mm,0.5,원문 값 없음,추정,0.3,1.5,,근접 촬영 심도
+M103,measures_z,0,2D,확인,,,,맞음
+M103,edge_loss_um,100,원문 값 없음,추정,50,300,https://www.researchgate.net/publication/263710439_Accurate_determination_of_distortion_for_smartphone_cameras,원근 1.8 %/mm 계산 근거
+M103,max_slope_deg,NA,NA(2D),확인,NA,NA,,
+M103,time_min,5,원문 값 없음,추정,3,10,,
+M103,cost_krw,50000,원문 값 없음(휴대폰 보유 가정),추정,30000,100000,,클립 렌즈·삼각대
+M103,mode,2d,2d,확인,,,,맞음
+M103,cal_class,diy,diy,확인,,,,맞음
+M104,z_sigma_um,NA,NA(2D),확인,NA,NA,,
+M104,xy_step_um,7.8,a6400 23.5 mm / 6000 = 3.92 µm ÷ 0.5 = 7.8 µm,확인,7.8,7.8,https://www.precision-camera.com/sony-alpha-a6400-mirrorless-camera-body/,
+M104,xy_blur_um,16,원문 MTF 서술만(f/8 매우 좋음),추정,13,24,https://opticallimits.com/sony/sony-fe-full-format/sony-fe-90mm-f-2-8-g-oss-macro-sel90m28g-review/,유효 f/12 회절 반치폭 약 13.6 µm(물체면) + 수차
+M104,fov_mm,47,센서 23.5 mm ÷ 0.5 = 47 mm,확인,47,47,https://www.precision-camera.com/sony-alpha-a6400-mirrorless-camera-body/,
+M104,depth_mm,0.75,원문 값 없음,추정,0.37,1.5,,"2Nc(1+m)/m², c = 1–2화소"
+M104,measures_z,0,2D,확인,,,,맞음
+M104,edge_loss_um,60,원문 값 없음,추정,30,120,,비텔레센트릭 시선각 약 5°
+M104,max_slope_deg,NA,NA(2D),확인,NA,NA,,
+M104,time_min,5,원문 값 없음,추정,3,10,,
+M104,cost_krw,3100000,"본체 899.99 USD, 렌즈 948–1,048 USD(확인), 거치·눈금판 추정",추정,3000000,3300000,https://www.precision-camera.com/sony-alpha-a6400-mirrorless-camera-body/,"참고: OpticalLimits 왜곡 0.9 %(RAW), md의 −0.5 %와 다름(CSV 열 밖)"
+M104,mode,2d,2d,확인,,,,맞음
+M104,cal_class,diy,diy,확인,,,,맞음

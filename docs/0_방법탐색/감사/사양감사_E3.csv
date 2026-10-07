@@ -1,0 +1,131 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M38,z_sigma_um,3,"반복성 0.3 µm (4,096회 평균, 표준 타깃)",추정,1.5,10,https://www.keyence.com/products/measure/laser-2d/lj-x8000/specs/,사양은 평균값. PLA 실사용 보정 유지. Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm
+M38,xy_step_um,2.5,X 데이터 간격 2.5 µm (2 µm~),확인,2,2.5,https://www.keyence.com/products/measure/laser-2d/lj-x8000/specs/,
+M38,xy_blur_um,32,스폿 약 16 mm × 32 µm (기준거리),확인,28,40,https://www.keyence.com/products/measure/laser-2d/lj-x8000/specs/,근·원거리 초점 이탈 폭 추정 포함
+M38,fov_mm,7,X 7 / 7.5 / 8 mm (근/기준/원),확인,7,8,https://www.keyence.com/products/measure/laser-2d/lj-x8000/specs/,
+M38,depth_mm,4.4,±2.2 mm (F.S. 4.4 mm),확인,4.4,4.4,https://www.keyence.com/products/measure/laser-2d/lj-x8000/specs/,
+M38,edge_loss_um,120,없음,추정,60,250,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M38,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M38,time_min,3,샘플링 최대 1 kHz,추정,1,6,https://www.keyence.com/products/measure/laser-2d/lj-x8000/specs/,"40 mm/10 µm=4,000 프로파일=4 s/회 × 3회 + 정렬"
+M38,cost_krw,19320000,"eBay 신품 헤드 $7,515 (검색 요약), 중고 컨트롤러 $2,999; 컨트롤러 신품가 미확인",추정,14700000,30000000,,"eBay 403. 헤드가는 WebSearch 요약으로 확인, 컨트롤러 $6,300은 미확인(hdautomation 가격 비공개). Radwell 정비품 $16,078 이상"
+M38,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M38,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M38,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M38,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M39,z_sigma_um,3.5,"반복성 0.2 µm (4,096회 평균, 표준 타깃)",추정,1.5,10,https://www.keyence.com/products/measure/laser-2d/lj-v/models/lj-v7020/,PLA 실사용 보정 유지. Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm
+M39,xy_step_um,10,X 데이터 간격 10 µm,확인,10,10,https://www.keyence.com/products/measure/laser-2d/lj-v/models/lj-v7020/,
+M39,xy_blur_um,35,스폿 약 14 mm × 35 µm (기준거리),확인,30,45,https://www.keyence.com/products/measure/laser-2d/lj-v/models/lj-v7020/,
+M39,fov_mm,6.5,X 6.5 / 7.5 mm (근/원),확인,6.5,7.5,https://www.keyence.com/products/measure/laser-2d/lj-v/models/lj-v7020/,
+M39,depth_mm,5.2,±2.6 mm (F.S. 5.2 mm),확인,5.2,5.2,https://www.keyence.com/products/measure/laser-2d/lj-v/models/lj-v7020/,
+M39,edge_loss_um,120,없음,추정,60,250,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M39,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M39,time_min,4,없음,추정,1.5,8,,40 mm × 4회 + 정렬
+M39,cost_krw,3800000,"eBay 중고 헤드 $295~2,192 (검색 요약); 컨트롤러 원문 미확인",추정,1100000,6500000,,eBay 403. 하한=헤드 $295+컨트롤러 $275+케이블 $200
+M39,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M39,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M39,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M39,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M40,z_sigma_um,3,"Repeatability Z 0.2 µm (95 %, 4,096 프레임 평균, 평평한 타깃)",추정,1.5,8,https://em.lmi3d.com/manuals/gopxl/gopxl-1.1/LMILaserLineProfiler/Content/Specs/G2/Gocator2500Series/Gocator2500Series.htm,1σ≈0.1 µm. PLA 실사용 보정 유지. Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm
+M40,xy_step_um,8,Resolution X 8.0 µm,확인,8,8,https://acrovision.co.uk/wp-content/uploads/2022/10/DATASHEET_Gocator_2510_2520_US_WEB.pdf,
+M40,xy_blur_um,30,없음,추정,20,60,,선 두께 공개값 없음. 같은 CD급 LJ-X8020 32 µm 참고
+M40,fov_mm,13,FOV 13.0~14.5 mm,확인,13,14.5,https://acrovision.co.uk/wp-content/uploads/2022/10/DATASHEET_Gocator_2510_2520_US_WEB.pdf,
+M40,depth_mm,6,MR 6 mm,확인,6,6,https://acrovision.co.uk/wp-content/uploads/2022/10/DATASHEET_Gocator_2510_2520_US_WEB.pdf,
+M40,edge_loss_um,120,없음,추정,60,250,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M40,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M40,time_min,2,전체 시야 2.4 kHz,추정,1,4,https://acrovision.co.uk/wp-content/uploads/2022/10/DATASHEET_Gocator_2510_2520_US_WEB.pdf,"4,000 프로파일=1.7 s/회 × 2회 + 정렬"
+M40,cost_krw,3220000,"eBay 중고 2510A $990~2,000 (검색 요약)",확인,1800000,3220000,,"eBay 403, WebSearch 요약으로 확인. CSV는 상한 $2,000+케이블 $300"
+M40,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M40,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M40,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M40,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M41,z_sigma_um,5,"Repeatability Z 0.4 µm (95 %, 4,096 프레임 평균)",추정,2,12,https://em.lmi3d.com/manuals/gopxl/gopxl-1.1/LMILaserLineProfiler/Content/Specs/G2/Gocator2500Series/Gocator2500Series.htm,PLA 실사용 보정 유지. Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm
+M41,xy_step_um,13,Resolution X 13.0~17.0 µm,확인,13,17,https://acrovision.co.uk/wp-content/uploads/2022/10/DATASHEET_Gocator_2510_2520_US_WEB.pdf,
+M41,xy_blur_um,45,없음,추정,30,90,,공개값 없음. LJ-X8060 49 µm 참고
+M41,fov_mm,25,FOV 25~32.5 mm,확인,25,32.5,https://acrovision.co.uk/wp-content/uploads/2022/10/DATASHEET_Gocator_2510_2520_US_WEB.pdf,
+M41,depth_mm,25,MR 25 mm,확인,25,25,https://acrovision.co.uk/wp-content/uploads/2022/10/DATASHEET_Gocator_2510_2520_US_WEB.pdf,
+M41,edge_loss_um,100,없음,추정,50,200,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M41,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M41,time_min,1,전체 시야 1.6 kHz,추정,0.5,2,https://acrovision.co.uk/wp-content/uploads/2022/10/DATASHEET_Gocator_2510_2520_US_WEB.pdf,"4,000 프로파일=2.5 s + 정렬"
+M41,cost_krw,12200000,"eBay 신품 $8,714, AxisNE $15,000, 중고 $2,820/$9,277 (검색 요약)",확인,12200000,21000000,,"eBay 403·AxisNE 본문 없음, WebSearch 요약으로 확인. 신품 구성 기준"
+M41,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M41,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M41,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M41,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M42,z_sigma_um,6,"반복성 표기 없음; 선형성 2 µm(±0.013 %, 표준 물체, 1,024점 1회 평균)",추정,2,15,https://www.micro-epsilon.com/fileadmin/download/products/cat--scanCONTROL--en.pdf,반복성 미공개라 폭을 넓힘. Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm
+M42,xy_step_um,23,"1,024점/프로파일, X 23~26.8 mm → 22.5~26.2 µm",확인,22.5,26.2,https://www.micro-epsilon.com/fileadmin/download/products/cat--scanCONTROL--en.pdf,환산
+M42,xy_blur_um,50,없음,추정,30,100,,선 두께 공개값 없음
+M42,fov_mm,23,X 23 / 25 / 26.8 mm,확인,23,26.8,https://www.micro-epsilon.com/fileadmin/download/products/cat--scanCONTROL--en.pdf,
+M42,depth_mm,15,"Z 77.5~92.5 mm, 높이 15 mm",확인,15,15,https://www.micro-epsilon.com/fileadmin/download/products/cat--scanCONTROL--en.pdf,
+M42,edge_loss_um,100,없음,추정,50,200,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M42,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M42,time_min,1,프로파일 최대 10 kHz,추정,0.5,2,https://www.micro-epsilon.com/fileadmin/download/products/cat--scanCONTROL--en.pdf,Y 스캔 1회
+M42,cost_krw,12600000,공개 가격 없음 (WebSearch에서도 없음),추정,6300000,25000000,,동급 신품 가격 유추. 근거 폭 ×0.5~×2
+M42,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M42,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M42,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M42,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M43,z_sigma_um,8,"반복성 없음; Z 분해능 2~4.9 µm, 선형성 15 µm",추정,3,20,https://www.wenglor.com/en/Machine-Vision/2D3D-Sensors/MLWL/2D3D-Profile-Sensor/p/MLWL131,Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm
+M43,xy_step_um,17,Resolution X 17~26 µm,확인,17,26,https://www.wenglor.com/en/Machine-Vision/2D3D-Sensors/MLWL/2D3D-Profile-Sensor/p/MLWL131,
+M43,xy_blur_um,60,없음,추정,35,120,,"작업거리 70 mm 이상, 공개값 없음"
+M43,fov_mm,30,Measuring range X 30~52 mm,확인,30,52,https://www.wenglor.com/en/Machine-Vision/2D3D-Sensors/MLWL/2D3D-Profile-Sensor/p/MLWL131,
+M43,depth_mm,60,Measuring range Z 60 mm (작업 70~130 mm),확인,60,60,https://www.wenglor.com/en/Machine-Vision/2D3D-Sensors/MLWL/2D3D-Profile-Sensor/p/MLWL131,
+M43,edge_loss_um,100,없음,추정,50,200,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M43,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M43,time_min,1,"최대 6,000 프로파일/s",추정,0.5,2,https://www.wenglor.com/en/Machine-Vision/2D3D-Sensors/MLWL/2D3D-Profile-Sensor/p/MLWL131,
+M43,cost_krw,37950000,"Famaga $27,109.06",확인,30000000,38000000,https://famaga.com/catalog/wenglor/2d3d-datchiki/wenglor-mlwl131,"대리점가는 더 낮을 수 있음. Famaga 레이저 등급 2M, 제조사 2"
+M43,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M43,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M43,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M43,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M44,z_sigma_um,7,반복성 없음; Resolution Z 2.5~2.8 µm,추정,2.5,15,https://www.rrfloody.com/Documents/cognex/machine%20vision%20product%20guide%202020.pdf,"PLA 보정 유지. 파장: WebSearch 요약은 520 nm(녹색), 원문 미확인(Cognex 429). Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm"
+M44,xy_step_um,14.6,Resolution XY 14.6~15.4 µm,확인,14.6,15.4,https://www.rrfloody.com/Documents/cognex/machine%20vision%20product%20guide%202020.pdf,
+M44,xy_blur_um,45,없음,추정,30,90,,공개값 없음
+M44,fov_mm,30,Near 30 mm / Far 31.5 mm (매뉴얼 30.2/33.3),확인,30,33.3,https://www.rrfloody.com/Documents/cognex/machine%20vision%20product%20guide%202020.pdf,
+M44,depth_mm,10.9,"MR 10.9 mm, CD 51.4~62.3 mm",확인,10.9,10.9,https://www.rrfloody.com/Documents/cognex/machine%20vision%20product%20guide%202020.pdf,
+M44,edge_loss_um,100,없음,추정,50,200,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M44,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M44,time_min,1,최대 18 kHz,추정,0.5,2,https://www.rrfloody.com/Documents/cognex/machine%20vision%20product%20guide%202020.pdf,
+M44,cost_krw,25200000,"eBay 신품 DSMax32T $2,595, 중고 $1,590~1,734; DSMAX-DRMO 프레임 그래버 약 $1,700 (검색 요약)",불일치,7400000,25200000,https://www.ebay.com/itm/355613441844;https://www.ebay.com/itm/405218791952,"CSV는 출처 없는 $18,000 추정. 센서 $2,595+그래버 $1,700+VisionPro 추정 $4,000=$8,295×1,400≈1,160만 원으로 수정 (CSV 25200000→11600000)"
+M44,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M44,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M44,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M44,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M45,z_sigma_um,5,"반복성 0.49 µm (실험실 게이지 블록, 4,096회 평균)",추정,2,12,https://5.imimg.com/data5/SELLER/Doc/2025/1/481748980/IW/CO/RR/52134736/1-mp-hikrobot-mv-dp2060-3d-camera.pdf,PLA 보정 유지. Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm
+M45,xy_step_um,13.2,Profile data interval 13.2~18.5 µm,확인,13.2,18.5,https://5.imimg.com/data5/SELLER/Doc/2025/1/481748980/IW/CO/RR/52134736/1-mp-hikrobot-mv-dp2060-3d-camera.pdf,
+M45,xy_blur_um,45,없음,추정,30,90,,공개값 없음
+M45,fov_mm,27,X 27 / 31.5 / 36 mm,확인,27,36,https://5.imimg.com/data5/SELLER/Doc/2025/1/481748980/IW/CO/RR/52134736/1-mp-hikrobot-mv-dp2060-3d-camera.pdf,
+M45,depth_mm,26,Z 26 mm (기준 64 mm),확인,26,26,https://5.imimg.com/data5/SELLER/Doc/2025/1/481748980/IW/CO/RR/52134736/1-mp-hikrobot-mv-dp2060-3d-camera.pdf,
+M45,edge_loss_um,100,없음,추정,50,200,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M45,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M45,time_min,1,전체 범위 660 Hz,추정,0.5,2,https://5.imimg.com/data5/SELLER/Doc/2025/1/481748980/IW/CO/RR/52134736/1-mp-hikrobot-mv-dp2060-3d-camera.pdf,"4,000 프로파일≈6 s + 정렬"
+M45,cost_krw,4900000,"Alibaba MV-DP2060-01P $4,360~6,587 (검색 요약); IndiaMART ₹45,000(신뢰 낮음)",불일치,6100000,10100000,https://www.alibaba.com/product-detail/HIKROBOT-MV-DP2060-01P-High-accuracy_1601573387555.html,"CSV는 타사 모델가 기반 $3,500. 이 모델 게시가 하한 $4,360×1.1(부가세)≈$4,800×1,400≈672만 원으로 수정 (CSV 4900000→6720000)"
+M45,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M45,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M45,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M45,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M46,z_sigma_um,4,"반복성 0.2 µm (표준 알루미늄 시편 4,100회 연속 스캔)",추정,1.5,10,https://www.sodavision.com/product/smartray-ecco-95-020/,"md의 ""조건 미확인""을 원문 조건으로 보완. PLA 보정 유지. Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm"
+M46,xy_step_um,11.5,Lateral 11.5~14.5 µm,확인,11.5,14.5,https://www.sodavision.com/product/smartray-ecco-95-020/,
+M46,xy_blur_um,40,없음,추정,25,80,,공개값 없음
+M46,fov_mm,22,22 / 25 / 28 mm,확인,22,28,https://www.sodavision.com/product/smartray-ecco-95-020/,
+M46,depth_mm,16,Z range 16 mm,확인,16,16,https://www.sodavision.com/product/smartray-ecco-95-020/,"제조사 페이지는 본문 잘림, Soda Vision 사양으로 확인"
+M46,edge_loss_um,100,없음,추정,50,200,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M46,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M46,time_min,1,없음,추정,0.5,2,,Y 스캔 1회
+M46,cost_krw,12600000,공개 가격 없음 (WebSearch에서도 없음),추정,6300000,25000000,,동급 신품 유추
+M46,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M46,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M46,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M46,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)
+M47,z_sigma_um,7,"반복성 없음; Z 분해능 0.01 %×25 mm=2.5 µm, 선형성 ±0.05 %",추정,2.5,15,https://riftek.com/upload/iblock/708/RF627-Series-Manual.pdf,Faes 외 원문 표2: 405 nm에서 PLA 확산 평균오차 4.43~8.42 µm
+M47,xy_step_um,16,"648 또는 1,296점, X 20~22 mm → 15.4~17 µm",확인,15.4,17,https://riftek.com/upload/iblock/708/RF627-Series-Manual.pdf,환산
+M47,xy_blur_um,50,없음,추정,30,100,,공개값 없음
+M47,fov_mm,20,Xsmr 20 mm / Xemr 22 mm,확인,20,22,https://riftek.com/upload/iblock/708/RF627-Series-Manual.pdf,
+M47,depth_mm,25,"MR 25 mm (SMR 65, EMR 90)",확인,25,25,https://riftek.com/upload/iblock/708/RF627-Series-Manual.pdf,
+M47,edge_loss_um,100,없음,추정,50,200,,삼각측량 각 가정(25~30°)×단차 0.2 mm. 각 공개값 없음 → 각 15~50° 폭
+M47,max_slope_deg,45,없음,추정,30,60,,확산면 일반 한계. 제조사 공개값 없음
+M47,time_min,1,전체 범위 484 프로파일/s,추정,0.5,3,https://riftek.com/upload/iblock/708/RF627-Series-Manual.pdf,"4,000 프로파일≈8 s, 2회면 2분"
+M47,cost_krw,7700000,eBay UK RF627 £991.75(구성 미상) 외 공개가 없음,추정,1800000,15000000,,견적 방식. 하한은 eBay UK 게시가
+M47,measures_z,1,높이 프로파일 출력,확인,,,,맞음
+M47,mode,area,레이저 라인 + Y 스캔 = 면 높이맵,확인,,,,area 맞음
+M47,cal_class,industrial,공장 교정 상용 센서,확인,,,,industrial 맞음(이음 시 스테이지 정합 오차는 별도)
+M47,probe,optical,비접촉 레이저,확인,,,,optical (신규 열)

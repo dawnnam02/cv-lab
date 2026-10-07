@@ -1,0 +1,4 @@
+id,field,old,new,reason,source_url
+M58,cost_krw,870000,920000,"439.60×1,400=615,440 + ADC·전원·장착 30만 = 915,440 → 920,000. 상한은 예산선 100만 원을 넘음",https://www.digikey.com/en/products/detail/panasonic-industrial-automation-sales/HG-C1030/5215054
+M62,cost_krw,28500000,6630000,"기존 2,850만 원은 가정값. 4,375×1,400=6,125,000 + 장착 50만 = 6,630,000. 정가 비공개라 상한 여유",https://spwindustrial.com/keyence-spectrum-interferometer-controller-infared-laser-si-f10u3-si-f10-new/
+M64,cost_krw,70000000,101600000,"기존 7,000만 원은 $50,000 가정. 72,580×1,400=101,612,000 → 101,600,000",https://www.fiberoptics4sale.com/products/t-gan612c1-spectral-domain-oct-system-880-nm-6-0-m-resolution-5-to-248-khz

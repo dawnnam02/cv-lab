@@ -1,0 +1,8 @@
+id,field,old,new,reason,source_url
+M105,cost_krw,600000,840000,"다나와 현재 최저가 840,360원(md의 597,860원과 다름)",https://prod.danawa.com/info/?pcode=9872754
+M109,xy_step_um,100,200,출처 없음: 스캔 간격 비공개 → 보수값(×2),md 추정 근거
+M109,xy_blur_um,100,200,출처 없음: 선 폭·화소 비공개 → 보수값(×2),md 추정 근거
+M109,fov_mm,5,2.5,출처 없음: 선 길이 비공개 → 보수값(×0.5),md 추정 근거
+M111,xy_blur_um,360,540,Optris: 17 µm 화소 열화상은 최소 3화소 필요(CSV는 2화소),https://optris.com/us/knowledge-library/optical-resolution-mfov/
+M111,cost_krw,7000000,4600000,"Xi 400 판매가 2,995 USD × 1,400 + 부가세 10 %(CSV 700만 원은 가격 미확인 추정)",https://www.tequipment.net/optris/thermal-imagers/series_xi-400/
+M112,depth_mm,1,0.3,"출처 없음: 피사계 심도 계산 0.17~0.23 mm(f/2~2.8, m 0.31) → 보수값 0.3 mm",md 추정 근거

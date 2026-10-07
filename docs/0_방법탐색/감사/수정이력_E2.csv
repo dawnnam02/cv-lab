@@ -1,0 +1,2 @@
+id,field,old,new,reason,source_url
+M34,depth_mm,0.5,0.02,10× 투영 렌즈 N.A. 0.16(카탈로그) → 초점 심도 λ/NA² ≈ 0.021 mm. 기존 0.5는 근거 없는 추정,https://detercoonline.com/wp-content/uploads/2021/10/Mitutoyo_PJ-H30.pdf

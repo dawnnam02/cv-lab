@@ -1,0 +1,5 @@
+id,field,old,new,reason,source_url
+M27,z_sigma_um,15,18,"PRIZM 반복성 원문 30 µm(2σ)→1σ 15 µm, 원래 보정(×1.2 PLA 산란) 유지",https://farotechnologies.mcoutput.com/quantum-max/Content/FaroArms/Product_Specifications.htm
+M28,cost_krw,1000000,710000,"2ufa 242,000원은 헤드+앰프 세트. 세트+통신 유닛 약 420,000(추정)+고정구 50,000",https://2ufa.co.kr/store/goods_view.php?goodsno=4094&category=54
+M29,cost_krw,650000,800000,"인디케이터 USD 300 근거 없음. 543-394B 미국 USD 715, 국내 동급 약 36만~45만 원 기준 450,000+USB-ITN 약 290,000+고정구 50,000",https://testequipmentusa.com/mitutoyo-543-394b-digimatic-indicator-id-c112cxb/
+M32,cal_class,calibrated,industrial,SJ-210 사양에 X축 정확도·스케일 규정 없음(구동 속도 기반) → calibrated 근거 없음,https://www.microscopeworld.com/product_images/images/Surftest_SJ-210_Spec_Sheet.pdf

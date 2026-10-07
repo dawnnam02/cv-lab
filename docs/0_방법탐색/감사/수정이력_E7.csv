@@ -1,0 +1,3 @@
+id,field,old,new,reason,source_url
+M75,fov_mm,100,85,불일치: 원문에 촬영 범위가 있음. 최소 작업거리 150 mm로 비례 환산하면 짧은 변 약 85 mm → 100에서 85로 수정,https://www.matterhackers.com/store/l/creality3d-cr-scan-raptor-3d-scanner/sk/MX425GDT
+M84,depth_mm,20,4.5,불일치: 주사 범위는 대물 작업거리에 묶임. 2.75X WD 4.5 mm → 20에서 4.5로 수정,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf

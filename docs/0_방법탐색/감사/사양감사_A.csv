@@ -1,0 +1,97 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M01,z_sigma_um,1.5,반복정밀도 2.5 µm; 측정정밀도 3.0+L/250 µm (L=20 → 3.1),불일치,1.25,2.5,https://mold.kitech.re.kr/tech/tech8.php,원문 반복정밀도 2.5 µm(σ 표기 없음)를 md는 쓰지 않았음. 1σ로 보수 해석해 2.5로 수정. 2σ 해석이면 1.25
+M01,xy_step_um,1000,없음(점 위치는 의뢰자가 지정),추정,500,5000,,40점 세트 가정. 면당 4점이면 간격 수 mm
+M01,xy_blur_um,500,없음(스타일러스는 구성 선택),추정,250,1000,,Ø1 mm 볼 반경. 센터 보유 스타일러스 Ø0.5–2 mm 범위로 둠
+M01,fov_mm,1000,"측정범위 1,200×1,500×1,000 mm",확인,1000,1500,https://mold.kitech.re.kr/tech/tech8.php,가장 작은 축 1000
+M01,depth_mm,1000,"Z 범위 1,000 mm",확인,1000,1000,https://mold.kitech.re.kr/tech/tech8.php,
+M01,edge_loss_um,500,없음,추정,250,1000,,볼 반경과 같게 둠(xy_blur와 같은 폭)
+M01,max_slope_deg,90,없음(원리상 벽면 측면 접촉 가능),추정,90,90,,3축 CMM 일반 성질
+M01,time_min,60,없음,추정,30,120,,설정 20분+40점 측정·보고 40분. 대기·운송 제외
+M01,cost_krw,250000,"기본료 50,000원 + 5,000원/pt",확인,200000,300000,https://mold.kitech.re.kr/tech/tech8.php,"40점 → 250,000원. 범위는 30–50점"
+M01,measures_z,1,3축 좌표 측정,확인,,,https://mold.kitech.re.kr/tech/tech8.php,맞음
+M01,mode,(빈칸→point_probe),점 측정 CMM,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),"CSV에 열 없음, simulate.py POINT_IDS로 판정. 맞음"
+M01,cal_class,(빈칸→calibrated),공공기관 정밀측정지원 장비,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음(20 ppm)
+M02,z_sigma_um,0.5,Step Height Repeatability <5 Å 1σ (0.1 µm 단차),추정,0.1,1.0,https://mmrc.caltech.edu/DektakXT/Manuals/DektakXT%20specifications.pdf,원문 0.0005 µm는 짧은 주사·작은 단차 조건. 40 mm 주사 직진도·드리프트·PLA 결을 넣은 보수 추정
+M02,xy_step_um,1,"Data points per scan 120,000 max, 주사 55 mm",확인,0.5,5,https://mmrc.caltech.edu/DektakXT/Manuals/DektakXT%20specifications.pdf,"40 mm에 1 µm 간격 = 40,000점으로 설정 가능 범위 안"
+M02,xy_blur_um,12.5,Stylus radius options 50 nm–25 µm,확인,2,25,https://mmrc.caltech.edu/DektakXT/Manuals/DektakXT%20specifications.pdf,12.5 µm는 선택지 안. 범위는 선택 가능한 팁
+M02,fov_mm,55,Scan Length Range 55 mm (stitching 200 mm),확인,55,55,https://mmrc.caltech.edu/DektakXT/Manuals/DektakXT%20specifications.pdf,
+M02,depth_mm,1,Vertical Range 1 mm,확인,1,1,https://mmrc.caltech.edu/DektakXT/Manuals/DektakXT%20specifications.pdf,
+M02,edge_loss_um,200,없음,추정,100,400,,벽 높이 0.2 mm × tan45°. 1 mm 계단 전체면 더 큼
+M02,max_slope_deg,45,없음(팁 원뿔각 원문에 없음),추정,30,60,,원뿔 반각 기준
+M02,time_min,60,없음,추정,40,120,,줄당 4분×10줄+고정 20분. 시뮬레이터는 line_profiler 시간 재계산
+M02,cost_krw,50000,"연세대 DektakXT 15,000원/60분; POSTECH Alpha-step 50,000(회당으로 보임)",확인,15000,50000,https://ycrf.yonsei.ac.kr/device.php?mid=m03&act=view&uid=303,"높은 쪽 50,000원. POSTECH 페이지 글자 깨짐"
+M02,measures_z,1,2D 표면 단면 측정,확인,,,https://mmrc.caltech.edu/DektakXT/Manuals/DektakXT%20specifications.pdf,맞음
+M02,mode,(빈칸→line_profiler),Stylus profilometry 2D profile,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M02,cal_class,(빈칸→calibrated),학내 공동기기 계측기,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M03,z_sigma_um,5,Standard Deviation in repeatability around 0.005 mm,확인,3,8,https://www.antclabs.com/bltouch-v3,상한 8 = Klipper 허용 range 25 µm/약 3.1(10회 범위→σ)
+M03,xy_step_um,1000,없음(격자 간격은 설정값),추정,500,2000,,
+M03,xy_blur_um,1000,"없음(핀 지름 공식 자료 없음, 검색도 실패)",추정,500,1500,https://www.antclabs.com/bltouch-v3,핀 끝 지름 약 2 mm 가정의 반경
+M03,fov_mm,200,없음,추정,150,300,,일반 프린터 베드 폭
+M03,depth_mm,250,없음,추정,180,300,,일반 프린터 Z 범위
+M03,edge_loss_um,1000,없음,추정,500,2000,,핀 반경
+M03,max_slope_deg,30,없음,추정,15,45,,
+M03,time_min,40,없음,추정,25,90,,861점×2.5 s≈36분. 배치·핀 전개(약 100 ms×2) 포함 시 늘 수 있음
+M03,cost_krw,50000,"손도리 45,500원 (G마켓 403)",확인,45500,56000,https://www.sondori.com/goods/goods_view.php?goodsNo=1000002089,"md의 G마켓 55,940원은 재확인 못 함"
+M03,measures_z,1,Z 프로빙,확인,,,https://www.antclabs.com/bltouch-v3,맞음
+M03,mode,(빈칸→raster_point),프린터 축으로 끄는 점 센서,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M03,cal_class,(빈칸→printer_axis),프린터 축 배율,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M04,z_sigma_um,2,"543-390B 반복성 R MPE 0.002 mm, MPE 0.003 mm; 마이크로미터 ±1 µm",확인,1,3,https://www.tequipment.net/Mitutoyo/543-390B/Digital-Indicators/,"tequipment 본문은 빈 응답, 검색 결과 요약으로 확인"
+M04,xy_step_um,5000,없음,추정,2000,10000,,손으로 고르는 점 간격
+M04,xy_blur_um,1500,초경 볼 접촉점(지름 원문 없음); 앤빌 Ø6.35 mm,추정,1000,3175,https://www.tequipment.net/Mitutoyo/543-390B/Digital-Indicators/,Ø3 mm 볼 가정 반경. 상한은 앤빌 반경
+M04,fov_mm,150,캘리퍼 측정 범위 150 mm,확인,150,150,https://prod.danawa.com/info/?pcode=12142874,
+M04,depth_mm,25,마이크로미터 0–25 mm,확인,12.7,25,https://mrmmetrology.com/product/293-240-30-mitutoyo-digimatic-micrometer/,인디케이터 행정은 12.7 mm
+M04,edge_loss_um,1500,없음,추정,1000,3175,,접촉점 반경
+M04,max_slope_deg,15,없음,추정,5,30,,
+M04,time_min,20,없음,추정,10,40,,20여 값×약 1분
+M04,cost_krw,900000,"마이크로미터 156,430원 + 인디케이터 401,000원 (다나와 현재 최저가)",불일치,900000,1200000,https://prod.danawa.com/info/?pcode=3010714,"md의 139,700·327,910원에서 올랐음. 156,430+401,000+캘리퍼 15만(추정)+정반·스탠드 30만(추정)=1,007,430 → 1,010,000"
+M04,measures_z,1,높이·단차 측정 계측기,확인,,,https://mrmmetrology.com/product/293-240-30-mitutoyo-digimatic-micrometer/,맞음
+M04,mode,(빈칸→point_probe),점 측정 게이지,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M04,cal_class,(빈칸→calibrated),교정성적서 가능 계측기,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음(팀장 결정)
+M20,z_sigma_um,NA,높이 측정 불가,확인,,,,해당 없음
+M20,xy_step_um,5.3,4800 dpi → 25.4/4800 = 5.29 µm,확인,5.3,5.3,https://www.filmscanner.info/en/EpsonPerfectionV600Photo.html,환산
+M20,xy_blur_um,16,실효 해상도 1560 ppi(USAF) → 16.3 µm,확인,16,25,https://www.filmscanner.info/en/EpsonPerfectionV600Photo.html,필름 투과 시험값. 반사 스캔은 더 나쁠 수 있어 상한 25
+M20,fov_mm,216,출처 URL에 판 크기 없음(A4 216×297 mm),추정,216,216,,Epson V600 원고대 A4/레터 폭
+M20,depth_mm,1,없음,추정,0.5,3,,CCD 방식이라 CIS보다 심도가 깊음(Sensors 2020 요지). 공식 심도 없음
+M20,edge_loss_um,50,없음,추정,20,150,,비스듬한 조명 그림자·코끼리 발
+M20,max_slope_deg,NA,높이를 재지 않음,확인,,,,해당 없음
+M20,time_min,5,3200 ppi 35 mm 필름(24×36 mm) ICE 없이 3:35분,추정,2,10,https://www.filmscanner.info/en/EpsonPerfectionV600Photo.html,면적이 비슷. 4800 dpi 반사면 더 걸릴 수 있음
+M20,cost_krw,650000,"다나와 해외구매 931,970원; 나비엠알오 637,989원(단종·주문불가)",불일치,640000,940000,https://prod.danawa.com/info/?pcode=3498220,"살 수 있는 쪽 기준 940,000원으로 수정. 100만 원 미만은 유지"
+M20,measures_z,0,2D 영상,확인,,,https://www.filmscanner.info/en/EpsonPerfectionV600Photo.html,맞음
+M20,mode,(빈칸→2d),2D 스캐너,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M20,cal_class,(빈칸→diy),"비계측 스캐너, 격자 보정 필수(Sensors 2020)",확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M21,z_sigma_um,NA,높이 측정 불가,확인,,,,해당 없음
+M21,xy_step_um,19,화소 3.45 µm / 0.184 = 18.75 µm,확인,18.75,18.75,https://docs.baslerweb.com/aca2440-20gm,환산
+M21,xy_blur_um,28,"Object-side resolution 28 µm (Rayleigh, 520 nm)",확인,28,28,https://www.opto-e.com/en/products/tc-series/TC23048,
+M21,fov_mm,46,"Object FOV 46.20×38.53 mm (2/3"")",확인,38.5,46.2,https://www.opto-e.com/en/products/tc-series/TC23048,
+M21,depth_mm,12.2,Depth of field 12.20 mm (판매처 표기 20 mm),확인,12.2,20,https://www.opto-e.com/en/products/tc-series/TC23048,정의 차이. 제조사 값 유지
+M21,edge_loss_um,30,없음,추정,20,60,,분해능 수준. 반투명 PLA 가장자리 새는 빛은 미포함
+M21,max_slope_deg,NA,높이를 재지 않음,확인,,,,해당 없음
+M21,time_min,5,없음,추정,2,10,,1회 촬영
+M21,cost_krw,4300000,"렌즈 1,714 USD, 카메라 879 USD (Machine Vision Store 현재가)",불일치,4100000,4600000,https://machinevisionstore.com/catalog/details/69,"렌즈가 1,653→1,714 USD. (1,714+879+300)×1,400+300,000 = 4,350,200 → 4,350,000"
+M21,measures_z,0,백라이트 그림자 2D,확인,,,https://www.opto-e.com/en/products/tc-series/TC23048,맞음
+M21,mode,(빈칸→2d),2D,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M21,cal_class,(빈칸→industrial),"상용 텔레센트릭, 왜곡 <0.05(0.10)%",확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M22,z_sigma_um,NA,높이 측정 불가,확인,,,,해당 없음
+M22,xy_step_um,3,50배 시야 7.8 mm / 2592 화소 = 3.0 µm,확인,3,3,https://www.dinolite-uk.com/index.php/microscopes/item/176-am7915mzt,환산
+M22,xy_blur_um,8,없음(NA 자료 없음),추정,6,15,,화소 2–3개 가정. 상한은 5배
+M22,fov_mm,7.8,50배 FOV 7.8×5.8 mm,확인,7.8,7.8,https://www.dinolite-uk.com/index.php/microscopes/item/176-am7915mzt,md의 세로 6.3 mm는 원문 5.8 mm(CSV 열 아님)
+M22,depth_mm,0.5,"표에 50배 심도 없음; 40배 1.5 mm, 70배 1.0 mm",추정,0.5,1.5,https://www.dinolite-uk.com/index.php/microscopes/item/176-am7915mzt,보간하면 약 1.3 mm. CSV 0.5는 보수값이라 유지
+M22,edge_loss_um,20,없음,추정,10,50,,
+M22,max_slope_deg,NA,높이를 재지 않음,확인,,,,해당 없음
+M22,time_min,30,없음,추정,20,60,,세로 시야 5.8 mm로 다시 세면 타일 약 35장
+M22,cost_krw,1800000,"디노라이트코리아 1,633,000원",확인,1700000,1900000,https://dino-lite.co.kr/product/am7915mzt/143/,스탠드 약 17만 원은 추정
+M22,measures_z,0,2D(EDOF는 높이 값 아님),확인,,,https://www.dinolite-uk.com/index.php/microscopes/item/176-am7915mzt,맞음
+M22,mode,(빈칸→2d),2D,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M22,cal_class,(빈칸→diy),"교정판 보정 필요, 50배 1.3MP 예시 ±0.192 mm",확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음
+M23,z_sigma_um,5,METROTOM 1500 MPE(SD) 4.5+L/50 µm; 복셀 20 % 논문은 403,추정,3,10,https://www.zeiss.com/metrology/us/systems/ct_x-ray/industrial-ct/metrotom-1500.html,복셀 25 µm×0.2. 비계량 CT면 더 나쁠 수 있어 상한 10
+M23,xy_step_um,25,없음(복셀은 배율 설정),추정,15,40,,시편 회전 지름 45 mm ÷ 검출기 약 2000 화소
+M23,xy_blur_um,40,없음,추정,25,60,,복셀 1–2.5개
+M23,fov_mm,45,없음,추정,40,60,,
+M23,depth_mm,20,없음(시편 높이 전체를 한 번에 봄),추정,20,20,,
+M23,edge_loss_um,50,없음,추정,25,100,,복셀 1–4개
+M23,max_slope_deg,90,"없음(투과 방식, 가림 없음)",추정,90,90,,
+M23,time_min,120,없음,추정,60,240,,
+M23,cost_krw,310000,"미소초점 3D CT(Nikon XTH320LC) 155,000원/hr",확인,155000,465000,https://www.ppuritech.re.kr/popup/info_equipment.php?seq=141,"웹진 URL은 404, 뿌리기술 장비 페이지에서 확인. 2시간 기준, 범위 1–3시간"
+M23,measures_z,1,3D 체적,확인,,,https://www.ppuritech.re.kr/popup/info_equipment.php?seq=141,맞음
+M23,mode,(빈칸→area),3D 표면 추출,확인,,,scripts/method_screening/simulate.py (CAL_CLASS·POINT_IDS·RASTER_POINT·LINE_PROFILER_IDS),맞음(면 높이맵 모델)
+M23,cal_class,(빈칸→calibrated),"비파괴검사 분석장비(주물·용접 검사용), 계량 교정 표시 없음",불일치,,,https://www.ppuritech.re.kr/popup/info_equipment.php?seq=141,"계량 CT가 아니므로 industrial(100 ppm)이 맞음. CSV에 열이 없어 simulate.py CAL_CLASS 수정 필요(이 작업 범위 밖, 미반영)"

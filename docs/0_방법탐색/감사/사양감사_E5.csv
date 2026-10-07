@@ -1,0 +1,121 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M55,z_sigma_um,3,반복성 0.005 µm(평균 기준); PLA 확산 평균오차 4.43~8.42 µm(Faes),추정,1,8,https://www.keyence.com/products/measure/laser-1d/lk-g5000/models/lk-h008/,사양값은 기준 타깃·평균값. PLA 보정 논리 유지. Faes 값은 다른 센서의 평균 치우침이라 상한 근거로만 씀
+M55,xy_step_um,20,설정값(래스터 20 µm),추정,20,20,,구성 선택값
+M55,xy_blur_um,20,스폿 ø20 µm(기준거리),확인,20,30,https://www.keyence.com/products/measure/laser-1d/lk-g5000/models/lk-h008/,기준거리 밖에서 스폿 커짐
+M55,fov_mm,0.02,점 센서 = 스폿 0.02 mm,확인,0.02,0.03,https://www.keyence.com/products/measure/laser-1d/lk-g5000/models/lk-h008/,스폿에서 환산
+M55,depth_mm,1,범위 ±0.5 mm,확인,1,1,https://www.keyence.com/products/measure/laser-1d/lk-g5000/models/lk-h008/,
+M55,edge_loss_um,120,원문 값 없음; 0.2 mm 단차 × tan30° ≈ 115 µm,추정,60,240,,"두 방향 측정이면 하한, 송수광 각이 크면 상한"
+M55,max_slope_deg,30,원문 값 없음,추정,15,45,https://www.keyence.com/products/measure/laser-1d/lk-g5000/models/lk-h008/,데이터시트에 허용 경사 없음
+M55,time_min,45,"계산 1,000줄 × 2.7 s ≈ 45분",추정,40,90,,범위 1 mm라 Z 옮겨 두 번 재면 2배
+M55,cost_krw,8200000,"eBay 헤드 $4,242.70 + 컨트롤러 $1,268.01 (403으로 원문 미확인)",추정,7100000,9000000,(eBay 403),"하한은 중고 컨트롤러 $499 조합. 환율 1,400 프로젝트 관례"
+M55,measures_z,1,높이 측정 센서,확인,,,,맞음
+M55,mode,raster_point,raster_point,확인,,,,맞음
+M55,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M56,z_sigma_um,1,"선형성 ±0.49 µm(기준)/±0.41 µm(고정밀), 분해능 0.25 µm",추정,0.5,3,https://www.keyence.com/products/measure/laser-1d/cl-3000/models/cl-p015n/,PLA 산란 보정 논리 유지. md의 분해능 0.015 µm는 원문 0.25 µm와 다름(z_sigma에는 영향 작음)
+M56,xy_step_um,20,설정값(래스터 20 µm),추정,20,20,,구성 선택값
+M56,xy_blur_um,25,스폿 ø25 µm,확인,25,35,https://www.keyence.com/products/measure/laser-1d/cl-3000/models/cl-p015n/,기준거리 밖 스폿 증가 여유
+M56,fov_mm,0.025,점 센서 = 스폿 0.025 mm,확인,0.025,0.035,https://www.keyence.com/products/measure/laser-1d/cl-3000/models/cl-p015n/,
+M56,depth_mm,2.6,"범위 ±1.3 mm(기준), ±0.5 mm(고정밀)",확인,1,2.6,https://www.keyence.com/products/measure/laser-1d/cl-3000/models/cl-p015n/,고정밀 구간만 쓰면 1.0 mm
+M56,edge_loss_um,30,원문 값 없음(동축),추정,10,60,,
+M56,max_slope_deg,25,원문 값 없음(사양·모델 페이지 모두),추정,15,35,https://www.keyence.com/products/measure/laser-1d/cl-3000/specs/,"같은 원리 Omron ±25°, ME ±24° 유추"
+M56,time_min,45,"계산 1,000줄 × 2.7 s; 샘플링 100~1,000 µs",추정,40,60,https://www.keyence.com/products/measure/laser-1d/cl-3000/specs/,
+M56,cost_krw,7600000,"eBay 컨트롤러 $4,085 + 헤드 중고 $1,008 (403으로 원문 미확인)",추정,4700000,15700000,(eBay 403),"하한 중고 컨트롤러 조합, 상한 신품 세트 $10,862.50"
+M56,measures_z,1,높이 측정 센서,확인,,,,맞음
+M56,mode,raster_point,raster_point,확인,,,,맞음
+M56,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M57,z_sigma_um,1,"동적 분해능 126 nm RMS(1 kHz), 선형성 < ±0.75 µm(광학 평판)",추정,0.5,3,https://scigate.com.sg/images/stories/scigate/products/Micro-Epsilon/dax--confocalDT-IFS2405--en-us.pdf,원문 확인. PLA 보정 논리 유지
+M57,xy_step_um,20,설정값(래스터 20 µm),추정,20,20,,구성 선택값
+M57,xy_blur_um,9,광점 지름 9 µm,확인,9,12,https://scigate.com.sg/images/stories/scigate/products/Micro-Epsilon/dax--confocalDT-IFS2405--en-us.pdf,
+M57,fov_mm,0.009,점 센서 = 스폿 0.009 mm,확인,0.009,0.012,https://scigate.com.sg/images/stories/scigate/products/Micro-Epsilon/dax--confocalDT-IFS2405--en-us.pdf,
+M57,depth_mm,3,측정 범위 3 mm(시작 약 20 mm),확인,3,3,https://scigate.com.sg/images/stories/scigate/products/Micro-Epsilon/dax--confocalDT-IFS2405--en-us.pdf,
+M57,edge_loss_um,30,"원문 값 없음(동축, NA 0.45)",추정,10,60,https://scigate.com.sg/images/stories/scigate/products/Micro-Epsilon/dax--confocalDT-IFS2405--en-us.pdf,NA 0.45 원문 확인
+M57,max_slope_deg,24,"최대 기울기 ±24°(반사면, 한계 가까이서 정확도 저하)",확인,20,40,https://scigate.com.sg/images/stories/scigate/products/Micro-Epsilon/dax--confocalDT-IFS2405--en-us.pdf,확산면은 더 넓을 수 있음
+M57,time_min,45,"계산 1,000줄 × 2.7 s",추정,40,60,,
+M57,cost_krw,3430000,"eBay 중고 묶음 $2,090 (403으로 원문 미확인)",추정,3000000,10300000,(eBay 403),신품가 비공개 → 상한 ×3
+M57,measures_z,1,높이 측정 센서,확인,,,,맞음
+M57,mode,raster_point,raster_point,확인,,,,맞음
+M57,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M58,z_sigma_um,15,반복성 10 µm; PLA 확산 4.43~8.42 µm(Faes),추정,10,30,https://industry.panasonic.com/global/en/products/fasys/sensor/photoelectric/number/hg-c1030,"사양 하한, PLA·1.5 ms 잡음 보정 논리 유지"
+M58,xy_step_um,50,"설정값(줄 간격 50 µm, 선 방향 30 µm)",추정,50,50,,구성 선택값
+M58,xy_blur_um,50,빔 지름 약 ø50 µm(측정 중심),확인,40,70,https://industry.panasonic.com/global/en/products/fasys/sensor/photoelectric/number/hg-c1030,"'approx.' 표기, 중심 밖에서 커짐"
+M58,fov_mm,0.05,점 센서 = 빔 0.05 mm,확인,0.04,0.07,https://industry.panasonic.com/global/en/products/fasys/sensor/photoelectric/number/hg-c1030,
+M58,depth_mm,10,범위 ±5 mm,확인,10,10,https://industry.panasonic.com/global/en/products/fasys/sensor/photoelectric/number/hg-c1030,
+M58,edge_loss_um,150,원문 값 없음; 115 µm 그늘 + 빔 반경,추정,80,300,,
+M58,max_slope_deg,30,원문 값 없음,추정,15,45,https://industry.panasonic.com/global/en/products/fasys/sensor/photoelectric/number/hg-c1030,
+M58,time_min,20,계산 400줄 × 3 s ≈ 20분,추정,15,30,,
+M58,cost_krw,870000,DigiKey $439.60 (md의 $407과 다름),불일치,870000,1100000,https://www.digikey.com/en/products/detail/panasonic-industrial-automation-sales/HG-C1030/5215054,"439.60×1,400=615,440 + ADC·전원·장착 30만 = 915,440 → 920,000. 상한은 예산선 100만 원을 넘음"
+M58,measures_z,1,높이 측정 센서,확인,,,,맞음
+M58,mode,raster_point,raster_point,확인,,,,맞음
+M58,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M59,z_sigma_um,1.5,"정적 분해능 0.25 µm, 선형성 ±1.3 µm(ZW-S8030)",추정,0.8,4,https://assets.omron.eu/downloads/latest/datasheet/en/q261_zw-8000_7000_5000_series_datasheet_en.pdf,원문 확인. PLA 보정 논리 유지
+M59,xy_step_um,20,설정값(래스터 20 µm),추정,20,20,,구성 선택값
+M59,xy_blur_um,10,스폿 10 µm dia.(전 범위),확인,10,12,https://assets.omron.eu/downloads/latest/datasheet/en/q261_zw-8000_7000_5000_series_datasheet_en.pdf,
+M59,fov_mm,0.01,점 센서 = 스폿 0.01 mm,확인,0.01,0.012,https://assets.omron.eu/downloads/latest/datasheet/en/q261_zw-8000_7000_5000_series_datasheet_en.pdf,
+M59,depth_mm,4,측정 범위 ±2 mm(중심 30 mm),확인,4,4,https://assets.omron.eu/downloads/latest/datasheet/en/q261_zw-8000_7000_5000_series_datasheet_en.pdf,
+M59,edge_loss_um,30,원문 값 없음(동축),추정,10,60,,
+M59,max_slope_deg,25,"표지 '광택면 ±25°', 각도 특성은 모델별로 다르다고 명시",추정,15,30,https://assets.omron.eu/downloads/latest/datasheet/en/q261_zw-8000_7000_5000_series_datasheet_en.pdf,S8030 개별 값 없음
+M59,time_min,45,"계산 1,000줄 × 2.7 s; 측정 주기 60~7,500 µs",추정,40,60,https://assets.omron.eu/downloads/latest/datasheet/en/q261_zw-8000_7000_5000_series_datasheet_en.pdf,
+M59,cost_krw,47300000,"Hartfiel 컨트롤러 $23,386 + S8010 $10,012 (403으로 원문 미확인)",추정,40000000,55000000,https://shop.hartfiel.com/products/ZW-8000T,헤드가는 S8010 값 차용. EtherCAT 마스터 추가 가능
+M59,measures_z,1,높이 측정 센서,확인,,,,맞음
+M59,mode,raster_point,raster_point,확인,,,,맞음
+M59,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M60,z_sigma_um,1,"3 mm 탐침: 축 분해능 8 nm, 선형성 400 nm",추정,0.5,3,https://www.precitec.com/fileadmin/products/3d-metrology/chr-2s/Overview_chromatic_confocal_sensors_probes_datasheet.pdf,원문 확인. PLA 보정 논리 유지
+M60,xy_step_um,20,설정값(래스터 20 µm),추정,20,20,,구성 선택값
+M60,xy_blur_um,12,"가로 분해능 6 µm, 스폿 = 2 × 가로 분해능 = 12 µm",확인,12,15,https://www.precitec.com/fileadmin/products/3d-metrology/chr-2s/Overview_chromatic_confocal_sensors_probes_datasheet.pdf,
+M60,fov_mm,0.012,점 센서 = 스폿 0.012 mm,확인,0.012,0.015,https://www.precitec.com/fileadmin/products/3d-metrology/chr-2s/Overview_chromatic_confocal_sensors_probes_datasheet.pdf,
+M60,depth_mm,3,"측정 범위 3 mm(LED), 작동거리 18 mm",확인,3,3,https://www.precitec.com/fileadmin/products/3d-metrology/chr-2s/Overview_chromatic_confocal_sensors_probes_datasheet.pdf,
+M60,edge_loss_um,30,원문 값 없음(동축),추정,10,60,https://www.precitec.com/fileadmin/products/3d-metrology/chr-2s/Overview_chromatic_confocal_sensors_probes_datasheet.pdf,원문 '동축이라 그늘 없음'
+M60,max_slope_deg,30,측정 각 ±30°(반사면) ~ ±85°(확산면),확인,30,60,https://www.precitec.com/fileadmin/products/3d-metrology/chr-2s/Overview_chromatic_confocal_sensors_probes_datasheet.pdf,"확산 PLA는 더 넓음, 광택 PLA 고려해 상한 60"
+M60,time_min,45,"계산 1,000줄 × 2.7 s",추정,40,60,https://www.precitec.com/optical-3d-metrology/products/point-sensors/chrocodile-2s-2se-2s-hs-distance-sensors/,"제품 페이지 최대 66 kHz(구성 열의 70 kHz와 다름, 시간에는 영향 없음)"
+M60,cost_krw,8870000,"eBay 중고 $5,982 (403), Labexchange €8,300 (페이지에 매물 없음)",추정,8400000,13500000,(eBay 403),"상한은 €8,300 × 약 1,510 + 장착"
+M60,measures_z,1,높이 측정 센서,확인,,,,맞음
+M60,mode,raster_point,raster_point,확인,,,,맞음
+M60,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M61,z_sigma_um,4,"25 mm 렌즈 정밀도 3 µm(Optimet FAQ, 사이트 접속 불가·검색 발췌); 시리즈 최고 0.5 µm(LFW)",추정,3,10,https://www.optimet.com/faq.php,결맞음 레이저 PLA 산란 보정 논리 유지
+M61,xy_step_um,25,설정값(래스터 25 µm),추정,25,25,,구성 선택값
+M61,xy_blur_um,27,원문 값 없음(27 µm는 검색 요약값),추정,20,50,https://www.laserfocusworld.com/test-measurement/test-measurement/article/16564421/optimet-laser-sensor-designed-for-2d-and-3d-measurements,LFW는 '작은 스폿'만 언급
+M61,fov_mm,0.027,점 센서 = 스폿,추정,0.02,0.05,,xy_blur와 같은 근거
+M61,depth_mm,1.8,"25 mm 렌즈 작업 범위 1.8 mm, 스탠드오프 17 mm(FAQ 검색 발췌)",확인,1.8,1.8,https://www.optimet.com/faq.php,구성 열의 작동거리 18 mm는 원문 17 mm(판정 영향 없음)
+M61,edge_loss_um,30,원문 값 없음(동축),추정,10,60,,
+M61,max_slope_deg,60,'모든 방향 150° 각도 범위'(LFW),추정,30,75,https://www.laserfocusworld.com/test-measurement/test-measurement/article/16564421/optimet-laser-sensor-designed-for-2d-and-3d-measurements,"150°=±75°가 상한, 정확도 저하로 보수값 60"
+M61,time_min,36,계산 800줄 × 2.7 s ≈ 36분; 최대 9 kHz(IPF),추정,30,50,,
+M61,cost_krw,4050000,"eBay 중고 $2,535 (403으로 원문 미확인)",추정,3500000,12000000,(eBay 403),"신품가 없음, 지원 불확실 → 상한 ×3"
+M61,measures_z,1,높이 측정 센서,확인,,,,맞음
+M61,mode,raster_point,raster_point,확인,,,,맞음
+M61,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M62,z_sigma_um,2,"선형성 ±0.3 µm, 분해능 0.25 µm",추정,0.5,6,https://www.keyence.com/products/measure/spectral/si-f/models/si-f10/,원문 확인. 스펙클·PLA 보정 논리 유지
+M62,xy_step_um,40,설정값(줄 간격 40 µm),추정,40,40,,구성 선택값
+M62,xy_blur_um,40,스폿 ø40 µm,확인,40,50,https://www.keyence.com/products/measure/spectral/si-f/models/si-f10/,
+M62,fov_mm,0.04,점 센서 = 스폿 0.04 mm,확인,0.04,0.05,https://www.keyence.com/products/measure/spectral/si-f/models/si-f10/,
+M62,depth_mm,1.05,측정 범위 11.3~12.35 mm = 1.05 mm(개체차 ±0.2 mm),확인,1.05,1.05,https://www.keyence.com/products/measure/spectral/si-f/models/si-f10/,
+M62,edge_loss_um,20,원문 값 없음(동축),추정,10,60,,
+M62,max_slope_deg,10,원문 값 없음,추정,2,20,https://www.keyence.com/products/measure/spectral/si-f/models/si-f10/,간섭계 ±2°(ME)~확산면 여유
+M62,time_min,23,계산 500줄 × 2.7 s ≈ 23분; 샘플링 200 µs,추정,20,46,https://www.keyence.com/products/measure/spectral/si-f/models/si-f10/,범위 1.05 mm라 Z 옮겨 다시 재면 2배
+M62,cost_krw,28500000,"SI-F10U3 + SI-F10 신품 $4,375(SPW Industrial); 중고 조합 $1,680, 헤드 신품 $1,878.90(검색 요약)",불일치,2850000,10000000,https://spwindustrial.com/keyence-spectrum-interferometer-controller-infared-laser-si-f10u3-si-f10-new/,"기존 2,850만 원은 가정값. 4,375×1,400=6,125,000 + 장착 50만 = 6,630,000. 정가 비공개라 상한 여유"
+M62,measures_z,1,높이 측정 센서,확인,,,,맞음
+M62,mode,raster_point,raster_point,확인,,,,맞음
+M62,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M63,z_sigma_um,2,"분해능 < 1 nm(2σ, 유리판), 선형성 < ±50 nm(ND 필터); 불투명체는 840 nm에서 광학적으로 조밀한 면 필요",추정,0.5,10,https://www.micro-epsilon.com/fileadmin/download/excerpts/dax--interferoMETER-5400DS--en-us.pdf,PLA는 적용 조건 밖 → 넓은 범위
+M63,xy_step_um,20,설정값(래스터 20 µm),추정,20,20,,구성 선택값
+M63,xy_blur_um,10,광점 지름 10 µm(범위 가운데),확인,10,15,https://www.micro-epsilon.com/fileadmin/download/excerpts/dax--interferoMETER-5400DS--en-us.pdf,
+M63,fov_mm,0.01,점 센서 = 스폿 0.01 mm,확인,0.01,0.015,https://www.micro-epsilon.com/fileadmin/download/excerpts/dax--interferoMETER-5400DS--en-us.pdf,
+M63,depth_mm,2.1,"IMP-DS19 범위 2.1 mm, 시작 19 mm",확인,2.1,2.1,https://www.micro-epsilon.com/fileadmin/download/excerpts/dax--interferoMETER-5400DS--en-us.pdf,
+M63,edge_loss_um,50,원문 값 없음; ±2° 한계로 결측 폭 큼,추정,20,150,,
+M63,max_slope_deg,2,"측정 각 ±2°(연마 유리, 범위 가운데)",확인,2,5,https://www.micro-epsilon.com/fileadmin/download/excerpts/dax--interferoMETER-5400DS--en-us.pdf,확산면 근거 없음
+M63,time_min,45,"계산 1,000줄 × 2.7 s; 100 Hz~6 kHz",추정,40,90,https://www.micro-epsilon.com/fileadmin/download/excerpts/dax--interferoMETER-5400DS--en-us.pdf,±2° 재정렬·결측 재측정 여유
+M63,cost_krw,35500000,가격 공개 자료 없음(검색에서도 견적 문의만),출처 없음,17750000,106500000,,"$25,000 가정은 근거 없음. 값은 이미 높은 쪽(예산 탈락 쪽)이라 보수값으로 유지, 범위 ×0.5~×3. 하한도 예산 초과"
+M63,measures_z,1,높이 측정 센서,확인,,,,맞음
+M63,mode,raster_point,raster_point,확인,,,,맞음
+M63,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음
+M64,z_sigma_um,2,"축 분해능 6.0 µm(공기, GAN612)",추정,1,5,https://media.thorlabs.com/globalassets/family-pages/sharedassets/g/ga/ganymedeseries_mindmap14-900.pdf,봉우리 맞춤 + PLA 산란·타일 어긋남 보정 논리 유지
+M64,xy_step_um,10,"설정값(10 mm / 1,000 A-scan)",추정,10,10,,구성 선택값
+M64,xy_blur_um,8,"가로 분해능 8.0 µm(OCT-LK3-BB, GAN612C1 포함)",확인,8,10,https://www.fiberoptics4sale.com/products/t-gan612c1-spectral-domain-oct-system-880-nm-6-0-m-resolution-5-to-248-khz,
+M64,fov_mm,10,OCT-LK3-BB 시야 10 × 10 mm(검색 요약),확인,6,10,https://www.thorlabs.com/thorproduct.cfm?partnumber=OCT-LK3-BB,검색에 '스캔 영역 6 × 2.9 mm' 표기도 있어 하한 6
+M64,depth_mm,3.4,"영상 깊이 3.4 mm(공기, GAN612)",확인,3.4,3.4,https://media.thorlabs.com/globalassets/family-pages/sharedassets/g/ga/ganymedeseries_mindmap14-900.pdf,"GAN632면 1.6 mm. GAN611은 단종, 후속 GAN612 기준"
+M64,edge_loss_um,20,원문 값 없음(동축),추정,10,60,,
+M64,max_slope_deg,30,원문 값 없음,추정,15,45,,M10과 같은 추정
+M64,time_min,8,계산 8타일 × (10 s + 30 s) ≈ 6~8분; A-scan 5~248 kHz,추정,5,15,https://media.thorlabs.com/globalassets/family-pages/sharedassets/g/ga/ganymedeseries_mindmap14-900.pdf,
+M64,cost_krw,70000000,"GAN612C1 $72,580(fiberoptics4sale), $72,276.87(검색 요약)",불일치,101000000,110000000,https://www.fiberoptics4sale.com/products/t-gan612c1-spectral-domain-oct-system-880-nm-6-0-m-resolution-5-to-248-khz,"기존 7,000만 원은 $50,000 가정. 72,580×1,400=101,612,000 → 101,600,000"
+M64,measures_z,1,높이 측정 센서,확인,,,,맞음
+M64,mode,area,area,확인,,,,맞음
+M64,cal_class,printer_axis,printer_axis (XY는 G코드 좌표),확인,,,,맞음

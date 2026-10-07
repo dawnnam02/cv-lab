@@ -1,0 +1,8 @@
+id,field,old,new,reason,source_url
+M97,xy_step_um,18.8,14.9,"카메라 a2A2448-75umBAS 화소는 2.74 µm(IMX547). 3.45 µm 가정 오류, 2.74/0.184",https://docs.baslerweb.com/a2a2448-75umbas
+M97,fov_mm,46,36.5,"센서 폭 6.71 mm ÷ 0.184 (Edmund 47.8 mm는 2/3"" 8.8 mm 센서 기준)",https://docs.baslerweb.com/a2a2448-75umbas
+M98,xy_step_um,6.9,5.5,화소 2.74 µm ÷ 0.5,https://docs.baslerweb.com/a2a2448-75umbas
+M98,fov_mm,16.9,13.4,"센서 폭 6.71 mm ÷ 0.5 (Edmund 17.6 mm는 2/3"" 기준)",https://docs.baslerweb.com/a2a2448-75umbas
+M99,cost_krw,1120000,1490000,"다나와 정품 최저가 1,490,000원(2026-10-08 조회)",https://prod.danawa.com/info/?pcode=11364381
+M102,xy_step_um,1.7,1.37,화소 2.74 µm ÷ 2,https://docs.baslerweb.com/a2a2448-75umbas
+M102,fov_mm,4.2,3.4,센서 폭 6.71 mm ÷ 2 = 3.36 mm,https://docs.baslerweb.com/a2a2448-75umbas

@@ -1,0 +1,109 @@
+id,field,csv_value,source_value,status,low,high,source_url,note
+M11,z_sigma_um,5,"텔레센트릭 FPP 복원 정확도 5 µm(FOV 28.43×21.33 mm, WD 110 mm); MFPP 리뷰 1.2–17 µm",추정,2,17,https://pubmed.ncbi.nlm.nih.gov/26832505/,"정확도를 1σ로 전용. 리뷰 범위 상단 17 µm까지 열어 둠(리뷰 원문 403, PubMed 초록으로 5 µm 확인)"
+M11,xy_step_um,18.8,3.45 µm ÷ 0.184 = 18.75 µm,확인,18.75,18.75,https://www.edmundoptics.com/p/0184x-23-c-mount-titantltrade-telecentric-lens/3435/,계산. 배율 0.184X는 Edmund 제품명
+M11,xy_blur_um,40,원문 값 없음(약 2화소 + 3×3 필터),추정,20,80,후보/M11.md,1–4화소 폭
+M11,fov_mm,38,"2048×18.75 µm = 38.4 mm(짧은 변); 렌즈 최대 시야 47.8×35.9 mm(2/3"")",확인,35.9,38.4,https://www.edmundoptics.com/p/0184x-23-c-mount-titantltrade-telecentric-lens/3435/,"센서 1/1.8""라 렌즈 2/3"" 시야 안"
+M11,depth_mm,5,"원문 값 없음(TitanTL f/8–22, 심도 미공개)",추정,2,10,후보/M11.md,근접 투사 심도 포함
+M11,edge_loss_um,120,0.2 mm × tan30° = 115 µm(계산),추정,60,350,후보/M11.md,삼각 각 15–60° 범위
+M11,max_slope_deg,60,원문 값 없음,추정,45,75,후보/M11.md,
+M11,time_min,3,원문 값 없음(36장 × 0.1 s + 계산),추정,1,10,후보/M11.md,스프레이 건조 제외
+M11,cost_krw,4800000,"TI $299(현재 유통가 $358–374, 품절); Basler €619/$669–945; TitanTL $2,015; 기타 $400 → $3,383–3,659 × 1,400",확인,4700000,5300000,https://www.edmundoptics.com/p/0184x-23-c-mount-titantltrade-telecentric-lens/3435/,합계 환산이 CSV와 맞음. TI 유통가·품절 반영하면 상단 530만
+M11,measures_z,1,높이맵,확인,,,후보/M11.md,
+M11,mode,(열 없음),area,추정,,,후보/M11.md,C·D CSV에 mode 열이 없음. 구성상 area
+M11,cal_class,(열 없음),diy,추정,,,후보/M11.md,C·D CSV에 cal_class 열 없음. 자작 보정 → diy
+M12,z_sigma_um,20,"단일 프레임 정밀도 up to 0.02 mm, 정확도 up to 0.05 mm",확인,10,50,https://3dprintingindustry.com/news/a-closer-look-at-revopoints-new-mini-2-3d-scanner-technical-specifications-and-pricing-227920/,"'up to'는 최선값, σ/범위 정의 미공개 → 정확도 50 µm까지 열어 둠"
+M12,xy_step_um,20,합성 점간격 up to 0.02 mm,확인,20,100,https://3dprintingindustry.com/news/a-closer-look-at-revopoints-new-mini-2-3d-scanner-technical-specifications-and-pricing-227920/,최선값. 실제 메시는 더 성길 수 있음
+M12,xy_blur_um,100,원문 값 없음,추정,50,200,후보/M12.md,매칭창 + 메시 평활화
+M12,fov_mm,52,120 mm에서 52 × 64 mm,확인,52,64,https://3dprintingindustry.com/news/a-closer-look-at-revopoints-new-mini-2-3d-scanner-technical-specifications-and-pricing-227920/,
+M12,depth_mm,130,작업거리 120–250 mm,확인,130,130,https://3dprintingindustry.com/news/a-closer-look-at-revopoints-new-mini-2-3d-scanner-technical-specifications-and-pricing-227920/,
+M12,edge_loss_um,150,원문 값 없음,추정,80,300,후보/M12.md,
+M12,max_slope_deg,70,원문 값 없음,추정,50,80,후보/M12.md,다방향 합성
+M12,time_min,20,원문 값 없음,추정,10,40,후보/M12.md,
+M12,cost_krw,1200000,"표준 패키지 $829(Revopoint), 액세서리 키트 포함 $912(3DPI)",확인,1160000,1350000,https://www.revopoint3d.com/products/industry-3d-scanner-mini,"× 1,400 + 스프레이. 한국 판매가 미확인"
+M12,measures_z,1,3D 메시,확인,,,https://3dprintingindustry.com/news/a-closer-look-at-revopoints-new-mini-2-3d-scanner-technical-specifications-and-pricing-227920/,
+M12,mode,(열 없음),area,추정,,,후보/M12.md,C·D CSV에 mode 열 없음
+M12,cal_class,(열 없음),diy,추정,,,https://3dprintingindustry.com/news/a-closer-look-at-revopoints-new-mini-2-3d-scanner-technical-specifications-and-pricing-227920/,"보급형, 정확도 0.05 mm 수준이라 industrial(100 ppm) 근거 없음 → diy 제안"
+M13,z_sigma_um,25,배율 1.86–2.05×(Canon 400D + 60 mm 매크로)에서 기준 대비 표준편차 8–11 µm,추정,10,50,https://iopscience.iop.org/article/10.1088/0957-0233/26/9/095203,GSD 비례 환산(×2.7)으로 23–31 µm. 하한은 원문 배율 그대로의 값
+M13,xy_step_um,16,"원문 값 없음(GSD 7.8 µm × 2, Metashape High 가정)",추정,8,32,후보/M13.md,GSD 계산은 센서 23.5 mm/6000 ÷ 0.5
+M13,xy_blur_um,50,원문 값 없음(매칭창 6–7화소),추정,25,100,후보/M13.md,
+M13,fov_mm,47,"23.5 mm ÷ 0.5 = 47 mm(긴 변), 짧은 변 31 mm",확인,31,47,후보/M13.md,계산. 다른 행은 짧은 변을 쓰는 경우가 많아 범위 하한 31
+M13,depth_mm,20,초점 적층으로 설정(한 장 심도 약 0.8 mm 계산),추정,10,20,후보/M13.md,
+M13,edge_loss_um,100,원문 값 없음,추정,50,200,후보/M13.md,
+M13,max_slope_deg,80,원문 값 없음,추정,60,85,후보/M13.md,
+M13,time_min,90,원문 값 없음,추정,45,180,후보/M13.md,
+M13,cost_krw,3900000,"a6400 $899.99; Metashape Pro 교육용 $549; 렌즈 $948–1,048(B&H 403, 미확인); 기타 $400",추정,3800000,4200000,https://www.precision-camera.com/sony-alpha-a6400-mirrorless-camera-body/,확인된 두 값은 md와 일치. 렌즈가는 원문을 못 열어 추정
+M13,measures_z,1,3D 점군,확인,,,https://iopscience.iop.org/article/10.1088/0957-0233/26/9/095203,
+M13,mode,(열 없음),area,추정,,,후보/M13.md,C·D CSV에 mode 열 없음
+M13,cal_class,(열 없음),diy,추정,,,후보/M13.md,스케일 바로 축척 보정. 인증 스케일 바면 industrial 가능
+M14,z_sigma_um,1,"5x: 측정 잡음 120 nm, 수직 분해능 410 nm, 1 mm 단차 σ 0.1 µm(G5); 노팅엄 'Min. repeatability (Z)' 5× 3.49 µm",추정,0.2,3.5,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,노팅엄 3.49 µm를 열 표기 오류로 본 md 판단은 확실하지 않아 범위 상단에 포함
+M14,xy_step_um,1.76,5x 측정 점간격 1.76 µm,확인,1.76,1.76,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,노팅엄 자료도 1.76
+M14,xy_blur_um,3.5,5x finest lateral topographic resolution 3.51 µm(광학 한계 2.18 µm),확인,2.18,3.51,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,
+M14,fov_mm,2.8,5x lateral range 2.82 mm(G5); 노팅엄 2.858 × 2.176 mm,확인,2.18,2.82,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,노팅엄 표의 짧은 변 2.18 mm를 하한
+M14,depth_mm,22.5,5x 수직 측정 범위 22.5 mm,확인,22,22.5,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,노팅엄 22 mm
+M14,edge_loss_um,10,원문 값 없음,추정,5,30,후보/M14.md,
+M14,max_slope_deg,80,최대 측정 경사 87°,추정,45,87,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,반투명 PLA 감안 80°로 낮춘 값
+M14,time_min,45,주사 속도 5x 3000 µm/s(G5); 타일 수는 겹침 20 %면 162장,추정,30,90,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,md의 130장은 겹침 약 10 % 기준. 162장 × 15 s = 41분 + 이어 붙이기라 45분 유지
+M14,cost_krw,200000,"POSTECH 나노 표면 프로파일러(NanoScan-E1000) 교내 40,000원/시간",추정,80000,400000,https://retina.postech.ac.kr/center/equipment/view.jsp?eqid=10010151,2시간 × 4만–10만 원. 외부 요금·소속 기관 요금 미확인. 참고 장비가 Alicona가 아님
+M14,measures_z,1,높이맵,확인,,,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,
+M14,mode,(열 없음),area,추정,,,후보/M14.md,C·D CSV에 mode 열 없음
+M14,cal_class,(열 없음),calibrated,추정,,,https://www.uphf.fr/sites/default/files/media/2024-04/alicona_if_g5.pdf,"ISO 10360-8 MPE 표기, 엔코더 스테이지"
+M15,z_sigma_um,0.2,"단차 반복성 0.1 %(0.2 mm → 0.2 µm), 표면 반복성 0.08 nm",추정,0.05,1,https://www.lambdaphoto.co.uk/pdfs/Zygo/LAMBDA_NewView9000_OEM_Optical_Profiler_Head_Specs.pdf,단차 반복성은 1.8·24 µm 표준으로 검증한 값이라 0.2 mm(확장 주사)에 그대로 적용한 것은 추정
+M15,xy_step_um,3.13,2.75X·1.0X 줌 화소 간격 3.13 µm,확인,3.13,3.13,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,
+M15,xy_blur_um,3.56,2.75X 광학 분해능 3.56 µm(Sparrow),확인,3.56,3.56,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,
+M15,fov_mm,3.75,"1600×1200, 1.0X 줌에서 5.00 × 3.75 mm",확인,3.75,3.75,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,
+M15,depth_mm,20,"피에조 150 µm, Z 스테이지 확장 주사 20 mm",확인,20,20,https://www.lambdaphoto.co.uk/pdfs/Zygo/LAMBDA_NewView9000_OEM_Optical_Profiler_Head_Specs.pdf,
+M15,edge_loss_um,20,원문 값 없음,추정,10,60,후보/M15.md,
+M15,max_slope_deg,20,"2.75X 경면 경사 한계 3.71°, 산란면 최대 85°",추정,4,60,https://img01.71360.com/file/read/www/M00/26/49/wKj0iWB2jo2AF3ZVAAPJwbMIxLc767.pdf,PLA 산란 정도에 따라 폭이 큼
+M15,time_min,30,최대 데이터 주사 속도 53 µm/s @1600×1200(md는 69 µm/s @1000×1000 인용),추정,15,60,https://www.lambdaphoto.co.uk/pdfs/Zygo/LAMBDA_NewView9000_OEM_Optical_Profiler_Head_Specs.pdf,53 µm/s로 다시 계산해도 70장 × 12–25 s ≈ 15–30분 + 이어 붙이기라 30분 유지
+M15,cost_krw,200000,"POSTECH NanoScan-E1000 교내 40,000원/시간",추정,80000,400000,https://retina.postech.ac.kr/center/equipment/view.jsp?eqid=10010151,2시간 × 4만–10만 원
+M15,measures_z,1,높이맵,확인,,,https://www.lambdaphoto.co.uk/pdfs/Zygo/LAMBDA_NewView9000_OEM_Optical_Profiler_Head_Specs.pdf,
+M15,mode,(열 없음),area,추정,,,후보/M15.md,C·D CSV에 mode 열 없음
+M15,cal_class,(열 없음),calibrated,추정,,,https://www.lambdaphoto.co.uk/pdfs/Zygo/LAMBDA_NewView9000_OEM_Optical_Profiler_Head_Specs.pdf,"ISO 25178-604 기준 성능, 인증 단차 표준"
+M16,z_sigma_um,1.0,"OLS5100 높이 반복성 5X 0.45 µm, 10X 0.1 µm, 20X 0.03 µm",추정,0.45,3,https://evidentscientific.com/en/products/digital-imaging/lext-ols5100,표준 시편값 ×2(PLA 하부 산란). 상한은 산란이 더 클 경우
+M16,xy_step_um,2.5,"측정당 최대 4096 × 4096 화소, 시야 16–5,120 µm",추정,0.6,2.5,https://evidentscientific.com/en/products/digital-imaging/lext-ols5100,1024 화소 모드 가정. 원문에 화소 모드별 값 없음
+M16,xy_blur_um,1.7,"0.61 × 0.405 / 0.15 = 1.65 µm(계산); 5X NA 0.15, 405 nm",확인,1.1,2.5,https://evidentscientific.com/en/products/digital-imaging/lext-ols5100,계산식 확인. 공초점이면 0.4λ/NA ≈ 1.1 µm까지 좋아질 수 있음
+M16,fov_mm,2.56,"시야 범위 16–5,120 µm(최저 배율 기준)",추정,2.56,5.12,https://evidentscientific.com/en/products/digital-imaging/lext-ols5100,5X가 최대 시야 5.12 mm일 가능성 있음 → 타일 수·시간·비용이 1/4로 줄 수 있음
+M16,depth_mm,10,원문 Z 범위 미기재,추정,5,20,https://evidentscientific.com/en/products/digital-imaging/lext-ols5100,대물 WD 20 mm 안
+M16,edge_loss_um,10,원문 값 없음,추정,5,30,후보/M16.md,
+M16,max_slope_deg,40,정반사 한계 asin(0.15) ≈ 9°,추정,9,70,후보/M16.md,"산란광 기준 추정, 폭 큼"
+M16,time_min,120,VK-X3000 면 주사 125 Hz; 162타일 × 40 s 추정,추정,40,180,후보/M16.md,시야가 5.12 mm면 약 40타일
+M16,cost_krw,350000,"성균관대 3D LSM 교내 70,000원/30분, 교외 100,000원/30분(2022-11-17 요금표)",추정,140000,500000,https://skb.skku.edu/_res/ccrf/etc/feeall221117.pdf,요금 단가 확인. 2.5시간은 추정. 교외면 50만 원
+M16,measures_z,1,높이맵,확인,,,https://evidentscientific.com/en/products/digital-imaging/lext-ols5100,
+M16,mode,(열 없음),area,추정,,,후보/M16.md,C·D CSV에 mode 열 없음
+M16,cal_class,(열 없음),calibrated,추정,,,https://evidentscientific.com/en/products/digital-imaging/lext-ols5100,"폭 측정 정확도 ±1.5 %, 이어 붙이기 5.0+L/100 µm는 긴 길이에서 calibrated(20 ppm)보다 나쁨 — 시뮬레이션에서 이어 붙이기 항 별도 고려 권장"
+M17,z_sigma_um,700,"D405 RMS 오차(공간 잡음) ≤ 1 %(≤ 0.5 m, 80 % ROI, HD, 무늬 시편) → 70 mm에서 ≤ 0.7 mm",확인,50,1000,https://realsenseai.com/wp-content/uploads/2025/09/Intel-RealSense-D400-Series-Datasheet-October-2025.pdf,"사양은 HD(1280×720, Min-Z 100 mm) 조건. 848×480·70 mm는 조건 밖이라 상한 1.0 mm. 하한은 md 이론값 50 µm"
+M17,xy_step_um,157,HFOV 87° → 70 mm에서 폭 133 mm ÷ 848 = 157 µm,확인,104,157,https://www.realsenseai.com/products/stereo-depth-camera-d405/,1280 화소면 104 µm(단 Min-Z 100 mm)
+M17,xy_blur_um,500,원문 값 없음,추정,300,1000,후보/M17.md,
+M17,fov_mm,133,87° × 58° FOV → 70 mm에서 133 × 78 mm,확인,78,133,https://www.realsenseai.com/products/stereo-depth-camera-d405/,짧은 변 78 mm
+M17,depth_mm,430,권장 거리 7–50 cm; 848×480 Min-Z 70 mm,확인,430,430,https://realsenseai.com/wp-content/uploads/2025/09/Intel-RealSense-D400-Series-Datasheet-October-2025.pdf,
+M17,edge_loss_um,500,원문 값 없음,추정,300,1500,후보/M17.md,
+M17,max_slope_deg,60,원문 값 없음,추정,40,75,후보/M17.md,
+M17,time_min,1,원문 값 없음,추정,0.5,3,후보/M17.md,
+M17,cost_krw,500000,"다나와 최저가 479,940원 + 배송 3,500원; 정가 $325",확인,480000,550000,https://prod.danawa.com/info/?pcode=17831243,거치대 포함 반올림
+M17,measures_z,1,깊이 영상,확인,,,https://www.realsenseai.com/products/stereo-depth-camera-d405/,
+M17,mode,(열 없음),area,추정,,,후보/M17.md,C·D CSV에 mode 열 없음
+M17,cal_class,(열 없음),diy,추정,,,https://realsenseai.com/wp-content/uploads/2025/09/Intel-RealSense-D400-Series-Datasheet-October-2025.pdf,Z 절대 오차 ±2 % — diy(500 ppm)보다도 나쁨
+M18,z_sigma_um,5,"Mitutoyo 5X 심도 14 µm(보간 1/10 → 1.5–2 µm); 자작 SFF 문헌 실측 약 50 µm(3X, 가변 초점)",추정,2,50,https://www.microscopeworld.com/mitutoyo-m-plan-apo-5x-objective/,µm 단위 자작 실측 문헌 없음 → 상한을 넓게
+M18,xy_step_um,1.1,IMX547 2.74 µm ÷ 5 × 2 묶음 = 1.10 µm,확인,1.1,1.1,후보/M18.md,계산
+M18,xy_blur_um,8,Mitutoyo 5X 분해능 2.0 µm; 초점 척도 창 7×7 묶음 화소,추정,2,15,https://www.microscopeworld.com/mitutoyo-m-plan-apo-5x-objective/,
+M18,fov_mm,1.35,"2448×2.74/5 = 1.34 mm(긴 변), 짧은 변 1.12 mm",확인,1.12,1.35,후보/M18.md,계산. 긴 변 기준이라 하한은 짧은 변
+M18,depth_mm,2,설정값(프린터 Z),추정,1,5,후보/M18.md,
+M18,edge_loss_um,20,원문 값 없음,추정,10,50,후보/M18.md,
+M18,max_slope_deg,45,정반사 한계 asin(0.14) ≈ 8°(NA 0.14 확인),추정,8,70,https://www.microscopeworld.com/mitutoyo-m-plan-apo-5x-objective/,
+M18,time_min,180,원문 값 없음(660타일 × 14 s),추정,120,300,후보/M18.md,타일 수 계산은 맞음
+M18,cost_krw,2900000,Basler a2A2448-23gmPRO $809–863 / €739(md는 $719 = 75umBAS 가격); Mitutoyo 5X $850(Edmund),불일치,2900000,3300000,https://www.sodavision.com/product/basler-a2a2448-23gmpro/,"카메라가를 $863으로 바꿔 합계 $2,213 × 1,400 = 3,098,000 → 3,100,000"
+M18,measures_z,1,높이맵,확인,,,후보/M18.md,
+M18,mode,(열 없음),area,추정,,,후보/M18.md,C·D CSV에 mode 열 없음
+M18,cal_class,(열 없음),printer_axis,추정,,,후보/M18.md,Z 초점·XY 이어 붙이기 모두 프린터 축
+M19,z_sigma_um,30,"원문 값 없음(저주파 왜곡·단차 불연속 논리, 문헌 실측 없음)",추정,10,100,후보/M19.md,md 논리는 맞으나 수치 근거가 약해 폭을 넓게 둠
+M19,xy_step_um,5.5,2.74 µm ÷ 0.5 = 5.48 µm,확인,5.48,5.48,https://www.edmundoptics.com/p/05x-23-c-mount-platinumtltrade-telecentric-lens/17562/,계산
+M19,xy_blur_um,15,f/6 → 물체 NA ≈ 0.042 → 회절 약 8 µm(계산),추정,8,30,https://www.edmundoptics.com/p/05x-23-c-mount-platinumtltrade-telecentric-lens/17562/,하부 산란 가산
+M19,fov_mm,13.5,"2448×2.74/0.5 = 13.4 mm(긴 변), 짧은 변 11.2 mm",확인,11.2,13.4,https://www.edmundoptics.com/p/05x-23-c-mount-platinumtltrade-telecentric-lens/17562/,
+M19,depth_mm,4,심도 ±2.1 mm @ f/10(Edmund),확인,4.2,4.2,https://www.edmundoptics.com/p/05x-23-c-mount-platinumtltrade-telecentric-lens/17562/,"제품 페이지 403, 검색 요약으로 확인"
+M19,edge_loss_um,50,원문 값 없음,추정,25,150,후보/M19.md,
+M19,max_slope_deg,45,조명 고도 45°(설계값),추정,30,60,후보/M19.md,
+M19,time_min,10,원문 값 없음,추정,5,20,후보/M19.md,
+M19,cost_krw,4180000,"PlatinumTL 0.5X $1,915; Basler a2A2448-23gmPRO $809–863/€739(md는 $719)",불일치,4250000,4600000,https://www.sodavision.com/product/basler-a2a2448-23gmpro/,"카메라가 $863으로 합계 $3,128 × 1,400 = 4,379,200 → 4,400,000"
+M19,measures_z,1,상대 높이(적분),확인,,,후보/M19.md,절대 높이는 원리상 불가. 시뮬레이션에서 단차 지표는 z_sigma 30으로 이미 불리하게 반영
+M19,mode,(열 없음),area,추정,,,후보/M19.md,C·D CSV에 mode 열 없음
+M19,cal_class,(열 없음),printer_axis,추정,,,후보/M19.md,8타일 이어 붙이기가 프린터 XY
