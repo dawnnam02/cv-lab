@@ -1,0 +1,442 @@
+[
+ {
+  "seq": 1,
+  "id": "0675f297-6628-461e-ad29-51ae096af565",
+  "name_at_check": "[M0][C0W001][RES] A1. 오차의 정의 — \"무엇을 오차라고 부를 것인가\"",
+  "state": "Todo",
+  "start_date": "2027-02-02",
+  "target_date": "2027-02-05",
+  "module": "A. 목표·요구사항",
+  "description": "<div><h2>목표</h2><p>무엇을 오차라고 부를지 정합니다. 오차 종류, 부호 규칙, 요약 통계를 문서로 고정하고, 단계 마무리 때 시뮬레이션 데이터 결과에 맞춰 다시 정리합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>오차 종류를 나누고 주요 결과로 보고할 종류를 고르기 (높이 단차 중심)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>부호 규칙 고정: 오차 = 측정값 − 기준값, +는 재료 과다, −는 재료 부족</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>종류별 요약 통계(치우침·흩어짐·최악값)와 단위 정하기</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>오차 종류 ↔ 시편 형상 ↔ 지표 대응표 작성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 데이터로 정의가 맞는지 확인</p></li></ul><h2>완료 기준</h2><ul><li><p>주요 오차 종류마다 지표·단위·소수 자릿수가 표에 있음</p></li><li><p>부호 규칙이 정의서 첫 줄에 있고 부호 테스트 3/3 통과</p></li><li><p>합성 데이터에서 넣은 오차를 0.001 mm 안으로 되찾음</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/A-goals/A1-error-definition.md\" rel=\"noopener noreferrer\">A1-error-definition.md</a></p></div>"
+ },
+ {
+  "seq": 2,
+  "id": "3f35790d-6873-4468-8d5d-e460626af70d",
+  "name_at_check": "[M0][C0W002][RES] A2. 요구 정밀도와 센서 사양 도출",
+  "state": "Todo",
+  "start_date": "2027-02-02",
+  "target_date": "2027-02-05",
+  "module": "A. 목표·요구사항",
+  "description": "<div><h2>목표</h2><p>잴 대상은 높이 차이 0.2–0.4 mm인 단차입니다. 0.2 mm 기준으로 4:1이면 Q ≤ 50 µm, 10:1이면 Q ≤ 20 µm를 요구 정밀도로 둡니다 (Q = |치우침| + 2σ). 실제 장비 대신 시뮬레이션 데이터로 진행하고, 단계 마무리 때 결과로 사양표를 갱신합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>측정 목표를 0.2 / 0.3 / 0.4 mm 단차로 정리</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>4:1·10:1 규칙으로 Q 한계(50 µm·20 µm) 계산 근거 기록</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>선정 구성(노즐 장착 라인 레이저)의 사양을 표로 정리: 시야 약 20 mm, 심도 약 8 mm, σ 약 15 µm, 단차 Q 약 22 µm</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시뮬레이션 종단 결과의 Q와 사양표 비교</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>실측으로 다시 확인할 항목 표시</p></li></ul><h2>완료 기준</h2><ul><li><p>사양표에 단차별 Q 한계(50 µm 필수, 20 µm 목표)가 숫자와 단위로 있음</p></li><li><p>시뮬레이션 결과 Q와의 비교가 기록됨</p></li><li><p>\"가상 데이터 결과는 하드웨어 성능의 증거가 아니다\"라는 해석 주의가 문서에 있음</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/A-goals/A2-precision-spec.md\" rel=\"noopener noreferrer\">A2-precision-spec.md</a></p></div>"
+ },
+ {
+  "seq": 4,
+  "id": "010a3666-c8c9-4091-b748-6039cb1f76d0",
+  "name_at_check": "[M0][C0W004][RES] B1. 레이저 삼각측량 원리와 핵심 공식",
+  "state": "Todo",
+  "start_date": "2026-11-04",
+  "target_date": "2026-11-24",
+  "module": "B. 측정 원리 (가상 센서 모델)",
+  "description": "<div><h2>목표</h2><p>레이저 삼각측량 공식을 계산기로 만들고, 선정 구성의 값을 가상 센서 시뮬레이터의 입력으로 넘깁니다. 실제 장비 대신 시뮬레이션 데이터로 진행합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>배율, δx, δz, 시야, Z 범위 공식을 같은 기호·단위로 정리</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>Python 사양 계산기 작성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>선정 구성 값 계산: 화소 3 µm, 작동거리 50 mm, 배율 0.19, 카메라 30°</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>핀홀 모델로 근사식이 맞는 범위 확인</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시뮬레이터 입력값 표로 넘기기</p></li></ul><h2>완료 기준</h2><ul><li><p>공식과 핀홀 모델의 감도 차이 &lt; 0.5 %</p></li><li><p>계산기 단위 테스트 통과</p></li><li><p>선정 구성의 시야·높이 분해능이 방법 선정 문서 값과 일치</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/B-optics/B1-triangulation-principle.md\" rel=\"noopener noreferrer\">B1-triangulation-principle.md</a></p></div>"
+ },
+ {
+  "seq": 5,
+  "id": "016610fa-e38c-4c89-a405-375ce3f33145",
+  "name_at_check": "[M0][C0W005][RES] B2. 기하 배치 — 각도, 거리, 초점",
+  "state": "Todo",
+  "start_date": "2026-11-04",
+  "target_date": "2026-11-24",
+  "module": "B. 측정 원리 (가상 센서 모델)",
+  "description": "<div><h2>목표</h2><p>카메라·레이저·시편의 배치(각도, 거리, 초점)를 숫자로 고정하고, 가림·초점 심도·스펙클 사이의 맞교환을 계산해 시뮬레이터에 넘깁니다. 실제 장비 대신 시뮬레이션 데이터로 진행합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>배치 기준값 정리: 레이저 수직, 카메라 30°, 작동거리 50 mm</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>각도·조리개별 맞교환 표 작성 (분해능, 가림, 초점 심도, 스펙클)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가림 한계 h·tanθ 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>배치도 1장 작성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시뮬레이터 기하 입력으로 넘기기</p></li></ul><h2>완료 기준</h2><ul><li><p>맞교환 표: 각도 3수준 × 조리개 3수준 이상, 단위 표기</p></li><li><p>가림 모델과 근사식 차이 ≤ 2 %p</p></li><li><p>배치도의 모든 거리·각도에 치수 표기</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/B-optics/B2-geometry.md\" rel=\"noopener noreferrer\">B2-geometry.md</a></p></div>"
+ },
+ {
+  "seq": 14,
+  "id": "56cdca04-4ac8-451d-b5e6-028ee0e77d3b",
+  "name_at_check": "[M0][C0W014][SW] C4. 좌표계 체계 정의",
+  "state": "Todo",
+  "start_date": "2026-11-25",
+  "target_date": "2026-12-04",
+  "module": "C. 좌표계",
+  "description": "<div><h2>목표</h2><p>카메라 {C}, 센서 {S}, 측정 {M}, G코드 {G} 좌표계의 이름·원점·축·단위를 고정하고 변환 규칙을 정합니다. 실제 장비 대신 시뮬레이션 데이터로 검증합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>좌표계 정의서 작성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>변환 행렬 이름 규칙(T_G_M)과 저장 형식 정하기</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>높이맵 배열 인덱스 ↔ mm 좌표 규칙 고정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 L자 시편으로 축 뒤집힘·뒤바뀜 검사</p></li></ul><h2>완료 기준</h2><ul><li><p>왕복 변환 최대 오차 &lt; 1e-9 mm</p></li><li><p>이름이 맞지 않는 곱과 거울 반전 입력을 모두 오류로 잡음</p></li><li><p>L자 시편 축 검사 통과</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-5 B2. 기하 배치</p></li><li><p>LTGE-63 F0. 하드웨어 데이터 명세</p></li><li><p>LTGE-64 J0. 가상 센서 시뮬레이터</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/C-mechanics/C4-coordinate-frames.md\" rel=\"noopener noreferrer\">C4-coordinate-frames.md</a></p></div>"
+ },
+ {
+  "seq": 19,
+  "id": "ef3e6ccf-d277-4b49-b48b-9ac3d886729a",
+  "name_at_check": "[M0][C0W019][SW] D1. 카메라 내부 캘리브레이션 (가상 체커보드)",
+  "state": "Todo",
+  "start_date": "2026-11-25",
+  "target_date": "2026-12-01",
+  "module": "D. 캘리브레이션 (가상 데이터)",
+  "description": "<div><h2>목표</h2><p>카메라 내부 값(초점거리, 영상 중심, 렌즈 왜곡)을 구해 픽셀을 광선으로 바꿀 수 있게 합니다. 실제 장비 대신 가상 체커보드 영상으로 개발하고, 시뮬레이터가 넣은 참값과 비교합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 체커보드 영상 세트 준비</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>코너 검출과 1차 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>이상 영상을 빼고 다시 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>계산에 안 쓴 영상으로 검증하고 참값과 비교</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>camera_intrinsics.yaml 저장</p></li></ul><h2>완료 기준</h2><ul><li><p>재투영 오차 RMS &lt; 0.2 px</p></li><li><p>검증용 영상 재투영 ≤ 교정 RMS × 1.5</p></li><li><p>참값 대비 파라미터 오차 표가 있음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-63 F0. 하드웨어 데이터 명세</p></li><li><p>LTGE-64 J0. 가상 센서 시뮬레이터</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/D-calibration/D1-camera-intrinsics.md\" rel=\"noopener noreferrer\">D1-camera-intrinsics.md</a></p></div>"
+ },
+ {
+  "seq": 20,
+  "id": "dc205fa7-3cdb-47e5-87de-6b8a98898b94",
+  "name_at_check": "[M0][C0W020][SW] D2. 레이저 평면 캘리브레이션 (가상 데이터)",
+  "state": "Todo",
+  "start_date": "2026-12-02",
+  "target_date": "2026-12-08",
+  "module": "D. 캘리브레이션 (가상 데이터)",
+  "description": "<div><h2>목표</h2><p>카메라 좌표계에서 레이저 평면 방정식을 구합니다. 광선과 이 평면의 교점이 3D 점이 되므로, 높이 정확도의 상한이 여기서 정해집니다. 실제 장비 대신 가상 레이저 선 영상으로 개발하고 참값 평면과 비교합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>여러 자세의 가상 레이저 선 영상 준비</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>평면 맞춤 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 평판 높이로 독립 검사</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>참값 평면과 비교하고 결과 저장</p></li></ul><h2>완료 기준</h2><ul><li><p>평면 맞춤 잔차 RMS &lt; 5 µm</p></li><li><p>가상 평판 0 / 5 / 10 mm 높이에서 |오차| &lt; 5 µm</p></li><li><p>단위 테스트 통과</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-14 C4. 좌표계 체계 정의</p></li><li><p>LTGE-63 F0. 하드웨어 데이터 명세</p></li><li><p>LTGE-64 J0. 가상 센서 시뮬레이터</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/D-calibration/D2-laser-plane.md\" rel=\"noopener noreferrer\">D2-laser-plane.md</a></p></div>"
+ },
+ {
+  "seq": 21,
+  "id": "615430ec-2e2b-4e92-b9f5-b5c505b6bfc8",
+  "name_at_check": "[M0][C0W021][SW] D3. 스캔 축 캘리브레이션 (가상 데이터)",
+  "state": "Todo",
+  "start_date": "2026-12-09",
+  "target_date": "2026-12-12",
+  "module": "D. 캘리브레이션 (가상 데이터)",
+  "description": "<div><h2>목표</h2><p>층마다 스캔할 때 프린터 축이 실제로 움직이는 방향과 간격을 구해, 단면들을 하나의 면으로 이어 붙입니다. 실제 장비 대신 가상 위치 로그와 영상으로 개발합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 위치 로그와 프레임 준비</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>스캔 방향 s와 배율 k를 동시에 맞춤 (v = k·s)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>두 위치 이동으로 교차 확인</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>측정 좌표계 {M} 정의와 저장</p></li></ul><h2>완료 기준</h2><ul><li><p>맞춤 잔차 RMS &lt; 5 µm</p></li><li><p>잔차 구간 평균 &lt; 2 µm, 주기 패턴 없음</p></li><li><p>참값 대비 스캔 벡터 오차가 기록됨</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-20 D2. 레이저 평면 캘리브레이션</p></li><li><p>LTGE-63 F0. 하드웨어 데이터 명세</p></li><li><p>LTGE-64 J0. 가상 센서 시뮬레이터</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/D-calibration/D3-scan-axis.md\" rel=\"noopener noreferrer\">D3-scan-axis.md</a></p></div>"
+ },
+ {
+  "seq": 22,
+  "id": "087a7b8d-65ac-447e-878c-a8fc7be4768b",
+  "name_at_check": "[M0][C0W022][SW] D4. 센서 ↔ 기계(G코드) 좌표 변환 (가상 데이터)",
+  "state": "Todo",
+  "start_date": "2026-12-09",
+  "target_date": "2026-12-13",
+  "module": "D. 캘리브레이션 (가상 데이터)",
+  "description": "<div><h2>목표</h2><p>측정 좌표계 {M}의 점을 G코드 좌표계 {G}로 옮기는 변환을 구합니다. 센서가 노즐에 붙어 있으므로 노즐–센서 XY 거리도 함께 정합니다. 실제 장비 대신 가상 십자 표식 스캔으로 개발합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 십자 표식·교정 판 스캔 준비</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>노즐–센서 오프셋 추정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>변환 행렬 T_G_M 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>L자 시편으로 축 방향 검증</p></li></ul><h2>완료 기준</h2><ul><li><p>표식 정합 잔차(FRE) ≤ 10 µm</p></li><li><p>표식 하나씩 빼고 예측한 오차 ≤ 25 µm</p></li><li><p>det(R) = +1, 축 방향 일치</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-21 D3. 스캔 축 캘리브레이션</p></li><li><p>LTGE-23 D5. 캘리브레이션 검증 · 이력 관리</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/D-calibration/D4-sensor-to-gcode.md\" rel=\"noopener noreferrer\">D4-sensor-to-gcode.md</a></p></div>"
+ },
+ {
+  "seq": 23,
+  "id": "2abd117f-9cc5-40d7-a895-68ab093eb463",
+  "name_at_check": "[M0][C0W023][SW] D5. 캘리브레이션 검증 · 이력 관리 (가상 필러게이지)",
+  "state": "Todo",
+  "start_date": "2026-12-13",
+  "target_date": "2026-12-15",
+  "module": "D. 캘리브레이션 (가상 데이터)",
+  "description": "<div><h2>목표</h2><p>교정 결과로 잰 단차가 얼마나 정확한지 확인하고, 교정 ID와 이력을 남깁니다. 게이지 블록 대신 가상 필러게이지 0.2 / 0.3 / 0.4 mm 단차로 검증합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 필러게이지 단차 스캔 준비</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>단차 높이 계산과 Q 판정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>불합격일 때 원인 조사 순서 정리</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>교정 ID·이력 파일 구조 만들기</p></li></ul><h2>완료 기준</h2><ul><li><p>0.2 / 0.3 / 0.4 mm 단차 모두 Q ≤ 50 µm (필수), ≤ 20 µm (목표)</p></li><li><p>결과 CSV·YAML·그림·이력 4개 파일이 같은 교정 ID로 저장됨</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-19 D1. 카메라 내부 캘리브레이션</p></li><li><p>LTGE-20 D2. 레이저 평면 캘리브레이션</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/D-calibration/D5-calibration-verification.md\" rel=\"noopener noreferrer\">D5-calibration-verification.md</a></p></div>"
+ },
+ {
+  "seq": 25,
+  "id": "448618e1-ae3f-4017-b7b4-41e9f457bc62",
+  "name_at_check": "[M0][C0W025][SW] E2. 가림(Occlusion)과 엣지 효과",
+  "state": "Todo",
+  "start_date": "2026-11-04",
+  "target_date": "2026-11-24",
+  "module": "E. 측정 대상(시편)",
+  "description": "<div><h2>목표</h2><p>비스듬히 보는 삼각측량은 볼 수 없는 곳(가림)과 값이 부정확한 곳(엣지)을 만듭니다. 이를 미리 예측하고, 시뮬레이터와 분석 코드에 같은 규칙으로 반영합니다. 실제 장비 대신 시뮬레이션 데이터로 진행합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>기준 높이맵과 각도 θ로 가림 영역 예측 코드 작성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 데이터의 결측과 비교해 예상된 결측과 예상 밖 결측 구분</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>단차 경계에서 뺄 엣지 띠 폭 확정 (출발값 0.25 mm)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>평가 영역이 전체의 몇 %인지 늘 보고하게 만들기</p></li></ul><h2>완료 기준</h2><ul><li><p>그림자 계산이 이론값 ±1칸(0.02 mm) 안</p></li><li><p>가상 단차의 그림자 폭이 h·tanθ와 max(0.05 mm, 10 %) 안에서 일치</p></li><li><p>모든 결과 행에 평가 영역 %가 있음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-33 G4. 비교 영역(마스킹) 정의</p></li><li><p>LTGE-23 D5. 캘리브레이션 검증 · 이력 관리</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/E-specimen/E2-occlusion-edges.md\" rel=\"noopener noreferrer\">E2-occlusion-edges.md</a></p></div>"
+ },
+ {
+  "seq": 26,
+  "id": "0ee6a746-ab11-45f6-b8fd-405a51b0b6fa",
+  "name_at_check": "[M0][C0W026][SW] E3. 시편(테스트 아티팩트) 설계 — G코드까지",
+  "state": "Todo",
+  "start_date": "2026-11-02",
+  "target_date": "2026-11-06",
+  "module": "E. 측정 대상(시편)",
+  "description": "<div><h2>목표</h2><p>0.2 / 0.3 / 0.4 mm 단차를 담은 가상 시편을 설계하고 G코드까지 만듭니다. 출력은 하지 않고, 시뮬레이터가 이 시편을 층마다 스캔한 데이터를 생성합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>형상 목록 CSV 작성 (단차, 면 폭, 위치)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시편 G코드 생성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>어느 층에서 어떤 단차를 스캔할지 표시</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>면마다 BLTouch 측정점 위치와 필러게이지 배치 정하기</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시야·그림자·샘플링 점검</p></li></ul><h2>완료 기준</h2><ul><li><p>형상 목록 CSV, G코드, 면별 BLTouch 점 위치가 같은 버전으로 저장됨</p></li><li><p>단차 면 폭 ≥ 3 mm, 모든 형상이 시야 20 mm 안</p></li><li><p>형상 사이 간격 ≥ h·tanθ + 2 × 엣지 띠</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-1 A1. 오차의 정의</p></li><li><p>LTGE-33 G4. 비교 영역(마스킹) 정의</p></li><li><p>LTGE-22 D4. 센서 ↔ 기계(G코드) 좌표 변환</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/E-specimen/E3-test-artifact.md\" rel=\"noopener noreferrer\">E3-test-artifact.md</a></p></div>"
+ },
+ {
+  "seq": 27,
+  "id": "c0dbd444-85e8-49ae-aa56-b3346827fab8",
+  "name_at_check": "[M0][C0W027][SW] F1. 레이저 라인 중심 추출 (서브픽셀)",
+  "state": "Todo",
+  "start_date": "2026-11-25",
+  "target_date": "2026-12-04",
+  "module": "F. 데이터 명세·획득",
+  "description": "<div><h2>목표</h2><p>카메라 영상의 각 열에서 레이저 선 중심을 1픽셀보다 정밀하게 찾습니다. 여기서 생긴 오차는 그대로 높이 오차가 됩니다. 실제 장비 대신 시뮬레이터 영상으로 개발합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 영상으로 중심 추출 방법 비교 (무게중심부터)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>문턱값·창 크기 등 파라미터 확정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>포화·다중 피크·반사 처리</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>점마다 신뢰도(밝기, 선 폭, 포화 수) 함께 출력</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 정지 평판 100장으로 반복성 측정</p></li></ul><h2>완료 기준</h2><ul><li><p>합성 영상에서 무게중심 |치우침| &lt; 0.02 px, RMS &lt; 0.15 px</p></li><li><p>레이저가 없는 열은 모두 NaN (가짜 값 0개)</p></li><li><p>정지 평판 100장 반복성 표와 참값 대비 프로파일 오차 표가 있음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-63 F0. 하드웨어 데이터 명세</p></li><li><p>LTGE-64 J0. 가상 센서 시뮬레이터</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/F-acquisition/F1-line-extraction.md\" rel=\"noopener noreferrer\">F1-line-extraction.md</a></p></div>"
+ },
+ {
+  "seq": 29,
+  "id": "849532ec-167f-4d23-a917-3280902849d3",
+  "name_at_check": "[M0][C0W029][SW] F3. 데이터 저장 형식 · 메타데이터",
+  "state": "Todo",
+  "start_date": "2026-11-04",
+  "target_date": "2026-11-10",
+  "module": "F. 데이터 명세·획득",
+  "description": "<div><h2>목표</h2><p>스캔 결과를 나중에 누가 봐도 무엇을, 언제, 어떤 상태로, 어떤 G코드와 비교하려고 쟀는지 알 수 있게 저장하는 규칙과 코드를 만듭니다. 데이터 명세를 자동으로 검사하는 검증기도 여기서 만듭니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>폴더·파일 이름 규칙 확정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>메타데이터 필수 항목과 자동 검증</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>저장·불러오기 함수 (지문 검증 포함)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>실험 총괄표 experiments.csv</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>데이터 명세 검증기 작성</p></li></ul><h2>완료 기준</h2><ul><li><p>저장 후 불러온 배열이 비트 단위로 같음 (NaN 위치 포함)</p></li><li><p>필수 항목 누락·형식 오류 사례 5개 이상을 모두 오류로 잡음</p></li><li><p>검증기가 고장 표본(필드 누락·단위 오류)을 100 % 잡음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-27 F1. 레이저 라인 중심 추출</p></li><li><p>LTGE-47 J2. 설정 · 재현성 관리</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/F-acquisition/F3-data-storage.md\" rel=\"noopener noreferrer\">F3-data-storage.md</a></p></div>"
+ },
+ {
+  "seq": 30,
+  "id": "e815d0f3-82ed-4c34-b8f8-1e266257b2e9",
+  "name_at_check": "[M0][C0W030][SW] G1. G코드 파싱",
+  "state": "Todo",
+  "start_date": "2026-11-04",
+  "target_date": "2026-11-08",
+  "module": "G. G코드 기준 모델 (마스킹)",
+  "description": "<div><h2>목표</h2><p>G코드를 읽어 노즐이 어느 층에서, 어디서 어디로, 어떤 경로로, 재료를 얼마나 내며 움직였는지 담은 선분 표로 바꿉니다. 이 표가 기준 모델의 유일한 입력입니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>손으로 쓴 짧은 G코드로 시작</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>단위 테스트 작성 (단위, 상대좌표, 원호 방향)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>슬라이서 G코드 읽기</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>슬라이서 미리보기와 층별 그림 비교</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>전체 압출량 검증</p></li></ul><h2>완료 기준</h2><ul><li><p>단위 테스트 8개 이상 전부 통과</p></li><li><p>10 mm 정사각형 둘레 40.000 ± 0.001 mm</p></li><li><p>전체 압출량이 슬라이서 보고값과 ±1 % 안</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-63 F0. 하드웨어 데이터 명세</p></li><li><p>LTGE-46 J1. 소프트웨어 구조 설계</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/G-reference/G1-gcode-parsing.md\" rel=\"noopener noreferrer\">G1-gcode-parsing.md</a></p></div>"
+ },
+ {
+  "seq": 31,
+  "id": "9951d0d6-cbb0-48ea-8a8e-f632e94779b3",
+  "name_at_check": "[M0][C0W031][SW] G2. 비드(선) / 공구 형상 모델",
+  "state": "Todo",
+  "start_date": "2026-11-09",
+  "target_date": "2026-11-11",
+  "module": "G. G코드 기준 모델 (마스킹)",
+  "description": "<div><h2>목표</h2><p>두께가 없는 G코드 선분에 폭과 높이(비드 단면)를 입혀 실제 출력물과 비교할 수 있게 합니다. 여기서 정한 선폭과 층 높이는 기준 높이맵과 경계 띠 폭에 그대로 쓰입니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>비드 단면 모델(사각형 + 양 끝 반원)과 단면적 공식 코드화</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>명목 선폭과 압출량 기반 선폭(w_eff) 두 가지 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 G코드로 역산 검증</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시편 G코드에 적용하고 선폭 모델 정하기</p></li></ul><h2>완료 기준</h2><ul><li><p>단면적(선폭 0.42 mm, 층 0.2 mm) = 0.0754159 ± 1e-6 mm²</p></li><li><p>합성 G코드에서 w_eff 평균 0.420 ± 0.001 mm</p></li><li><p>시편 G코드의 경로 종류별 비율 0.95–1.05, 벗어나면 이유 기록</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-30 G1. G코드 파싱</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/G-reference/G2-bead-model.md\" rel=\"noopener noreferrer\">G2-bead-model.md</a></p></div>"
+ },
+ {
+  "seq": 32,
+  "id": "53a383b1-72fe-4a57-b57d-d53ee0ed4e3f",
+  "name_at_check": "[M0][C0W032][SW] G3. 층별 마스크 · 기준 높이맵 생성",
+  "state": "Todo",
+  "start_date": "2026-11-12",
+  "target_date": "2026-11-15",
+  "module": "G. G코드 기준 모델 (마스킹)",
+  "description": "<div><h2>목표</h2><p>선분 표와 비드 폭으로, 측정 높이맵과 같은 격자 위에 층별 마스크와 기준 높이맵을 만듭니다. 층마다 측정하므로 층별 기준이 비교의 정답이 됩니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>격자 규칙(원점, 간격, 칸 중심) 합의</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>층별 마스크와 기준 높이맵·경로 종류·층 번호 배열 생성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 시편으로 확인</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시편 G코드에 적용하고 저장·읽기 확인</p></li></ul><h2>완료 기준</h2><ul><li><p>단위 테스트 4개 모두 통과</p></li><li><p>칸 경계에 걸친 8×8 mm 정사각형 면적 64.000 mm²</p></li><li><p>같은 G코드·설정으로 두 번 만들면 결과가 완전히 같음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-30 G1. G코드 파싱</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/G-reference/G3-mask-heightmap.md\" rel=\"noopener noreferrer\">G3-mask-heightmap.md</a></p></div>"
+ },
+ {
+  "seq": 33,
+  "id": "1a1bda39-78a6-4469-966a-dc9629317064",
+  "name_at_check": "[M0][C0W033][SW] G4. 비교 영역(마스킹) 정의",
+  "state": "Todo",
+  "start_date": "2026-11-16",
+  "target_date": "2026-11-17",
+  "module": "G. G코드 기준 모델 (마스킹)",
+  "description": "<div><h2>목표</h2><p>어디를 비교하고 어디를 빼는지 칸 단위 마스크로 정합니다. 평가 영역을 어떻게 잡느냐에 따라 RMS가 크게 달라지므로, 정의를 코드와 숫자로 고정하고 평가 영역 비율을 늘 함께 보고합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>마스크 모듈 작성 (기준·유효·경로 종류·경계 띠)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 측정 데이터로 확인</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>평가 영역 비율 표 자동화</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가림 예측 검증과 시각화</p></li></ul><h2>완료 기준</h2><ul><li><p>1 mm 단차에서 경계 띠 폭 0.52 ± 0.02 mm</p></li><li><p>1 mm 단차, θ = 30°에서 가림 그림자 0.577 ± 0.011 mm</p></li><li><p>모든 스캔의 보고서에 평가 영역 %가 있음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-30 G1. G코드 파싱</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/G-reference/G4-evaluation-masks.md\" rel=\"noopener noreferrer\">G4-evaluation-masks.md</a></p></div>"
+ },
+ {
+  "seq": 34,
+  "id": "28713e43-8739-41ee-8057-a02db02adc84",
+  "name_at_check": "[M0][C0W034][SW] G5. CAD 기준과의 관계 — 오차 원인 분리",
+  "state": "Backlog",
+  "start_date": "2026-11-03",
+  "target_date": "2026-11-16",
+  "module": "G. G코드 기준 모델 (마스킹)",
+  "description": "<div><h2>목표</h2><p>CAD 기준을 함께 계산해 전체 오차를 슬라이싱 차이와 공정 오차로 나눕니다. 이번 단계에서는 보류하고, 필요해지면 다시 엽니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>해석식 CAD 높이맵 함수 (원기둥 같은 단순 형상)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 데이터로 분해 검증</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시편 설계에 반영할 점 정리</p></li></ul><h2>완료 기준</h2><ul><li><p>슬라이싱 + 공정 − 전체 오차의 절댓값 &lt; 1e-9 mm</p></li><li><p>합성 공정 오차 복원: 높이 −0.030 ± 0.001 mm</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-30 G1. G코드 파싱</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/G-reference/G5-cad-relation.md\" rel=\"noopener noreferrer\">G5-cad-relation.md</a></p></div>"
+ },
+ {
+  "seq": 35,
+  "id": "27549758-4b4e-49cd-b2da-44df439a3cde",
+  "name_at_check": "[M0][C0W035][SW] H1. 점 → 격자(높이맵) 변환",
+  "state": "Todo",
+  "start_date": "2026-12-02",
+  "target_date": "2026-12-08",
+  "module": "H. 처리·분석",
+  "description": "<div><h2>목표</h2><p>삼각측량으로 얻은 흩어진 3D 점을 일정한 간격의 높이맵으로 바꿉니다. 격자 규칙은 기준 높이맵과 똑같이 맞추고, 점이 없는 칸은 보간하지 않고 비워 둡니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>격자 규칙을 기준 높이맵과 맞추기</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>칸 값 = 들어온 점의 중앙값, 점 없는 칸 = NaN</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>칸마다 점 개수 함께 저장</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 데이터와 가상 스캔으로 검증</p></li></ul><h2>완료 기준</h2><ul><li><p>격자 원점·간격·크기가 기준 높이맵과 완전히 같음 (차이 &lt; 1e-9 mm)</p></li><li><p>합성 데이터 내부 칸 치우침 |평균| &lt; 0.5 µm</p></li><li><p>L자 데이터에서 축 방향이 맞음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-27 F1. 레이저 라인 중심 추출</p></li><li><p>LTGE-20 D2. 레이저 평면 캘리브레이션</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/H-analysis/H1-gridding.md\" rel=\"noopener noreferrer\">H1-gridding.md</a></p></div>"
+ },
+ {
+  "seq": 36,
+  "id": "97144847-27da-44bb-9e5c-d2c41cdd2996",
+  "name_at_check": "[M0][C0W036][SW] H2. 이상치 · 노이즈 처리",
+  "state": "Todo",
+  "start_date": "2026-12-02",
+  "target_date": "2026-12-08",
+  "module": "H. 처리·분석",
+  "description": "<div><h2>목표</h2><p>믿을 수 없는 측정값을 정해진 규칙으로 걸러 냅니다. 진짜 형상(단차·모서리)은 지우지 않는 것이 원칙입니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>점 단계: 어둡거나 포화되었거나 두꺼운 선의 점 제거</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>격자 단계: 주변 중앙값에서 크게 튀는 칸을 NaN으로</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>단계마다 제거 비율 기록</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>기준값을 바꿔 결과 지표가 거의 안 변하는지 확인</p></li></ul><h2>완료 기준</h2><ul><li><p>합성 잡음 5 µm에서 잡음 추정 4.5–5.5 µm</p></li><li><p>정상 칸을 잘못 지운 수 0개</p></li><li><p>합성 블록의 모서리·단차 경계가 모두 남아 있음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-27 F1. 레이저 라인 중심 추출</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/H-analysis/H2-outliers.md\" rel=\"noopener noreferrer\">H2-outliers.md</a></p></div>"
+ },
+ {
+  "seq": 37,
+  "id": "2c50c769-e431-422b-ad6c-196caaea2e3a",
+  "name_at_check": "[M0][C0W037][SW] H3. 바닥(베드) 평면 기준화",
+  "state": "Todo",
+  "start_date": "2026-12-09",
+  "target_date": "2026-12-15",
+  "module": "H. 처리·분석",
+  "description": "<div><h2>목표</h2><p>베드 표면을 찾아 Z = 0으로 맞추고 기울기를 없앱니다. 베드 표면이 곧 G코드의 Z 기준이므로, 이렇게 하면 측정 높이를 G코드 높이와 바로 비교할 수 있습니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>베드 영역 고르기 (시편·이물 제외)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>RANSAC 평면 맞춤 (문턱값·반복 수·시드)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>점군 회전으로 기울기 제거</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>베드가 휘었을 때 국소 기준 처리</p></li></ul><h2>완료 기준</h2><ul><li><p>합성 기울기 0.3° 복원 오차 &lt; 0.002°</p></li><li><p>수평화 뒤 베드 높이 |값| &lt; 1 µm</p></li><li><p>이상치 40 %에서도 높이 오차 &lt; 1 µm</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-20 D2. 레이저 평면 캘리브레이션</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/H-analysis/H3-bed-leveling.md\" rel=\"noopener noreferrer\">H3-bed-leveling.md</a></p></div>"
+ },
+ {
+  "seq": 38,
+  "id": "6342a61d-c30a-46f2-b5c0-4dd6d14bd8bd",
+  "name_at_check": "[M0][C0W038][SW] H4. 정합 (Registration) — 위치 오차와 형상 오차 분리",
+  "state": "Todo",
+  "start_date": "2026-12-09",
+  "target_date": "2026-12-22",
+  "module": "H. 처리·분석",
+  "description": "<div><h2>목표</h2><p>측정 데이터를 G코드 좌표로 옮기고, 남은 차이를 위치 오차·배율(수축) 오차·형상 오차로 나눕니다. 최적 맞춤 결과만으로 오차를 보고하지 않고, 형상 비교에는 배율을 허용하지 않습니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>표식 기준 강체 정합 (절대 위치)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>최적 맞춤으로 남은 이동·회전 = 위치 오차</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>닮음 맞춤으로 배율 오차 따로 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 데이터 종합 시험과 반복성 확인</p></li></ul><h2>완료 기준</h2><ul><li><p>표식 정합 잔차(FRE) ≤ 10 µm</p></li><li><p>위치 dx, dy 각 |오차| ≤ 10 µm, yaw ≤ 0.01°</p></li><li><p>배율 |오차| ≤ 0.05 %</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-35 H1. 점 → 격자(높이맵) 변환</p></li><li><p>LTGE-32 G3. 층별 마스크 · 기준 높이맵 생성</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/H-analysis/H4-registration.md\" rel=\"noopener noreferrer\">H4-registration.md</a></p></div>"
+ },
+ {
+  "seq": 39,
+  "id": "76a3fdda-d8e3-42c1-b901-078b975ccbf9",
+  "name_at_check": "[M0][C0W039][SW] H5. 높이 오차 지표",
+  "state": "Todo",
+  "start_date": "2026-12-16",
+  "target_date": "2026-12-28",
+  "module": "H. 처리·분석",
+  "description": "<div><h2>목표</h2><p>같은 격자에서 칸마다 높이 편차(측정 − 기준)를 구하고, 평가 영역 안의 치우침·흩어짐·최악값을 표로 요약합니다. 이 과제의 핵심 결과인 단차 높이 오차가 여기서 나옵니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>측정·기준 격자 일치 확인</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>평가 마스크 구성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>단차 높이와 면 평균 계산 (형상별·층별)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>경계 띠 폭 민감도 확인</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시편 하나당 결과 CSV 저장</p></li></ul><h2>완료 기준</h2><ul><li><p>0.2 / 0.3 / 0.4 mm 단차 복원 Q ≤ 50 µm (필수), ≤ 20 µm (목표)</p></li><li><p>합성 계단에서 영역별 |평균 − 정답| ≤ 1 µm</p></li><li><p>모든 영역에 평가 영역 %가 있고 80 % 미만이면 표시</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-38 H4. 정합</p></li><li><p>LTGE-33 G4. 비교 영역(마스킹) 정의</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/H-analysis/H5-height-metrics.md\" rel=\"noopener noreferrer\">H5-height-metrics.md</a></p></div>"
+ },
+ {
+  "seq": 40,
+  "id": "926e3295-a487-4079-a214-f0ede5317e35",
+  "name_at_check": "[M0][C0W040][SW] H6. 2D 윤곽 지표 (마스크 비교: IoU·Hausdorff)",
+  "state": "Backlog",
+  "start_date": "2026-12-29",
+  "target_date": "2027-01-11",
+  "module": "H. 처리·분석",
+  "description": "<div><h2>목표</h2><p>위에서 본 윤곽이 G코드 기준과 얼마나 다른지 IoU, 윤곽 거리 등으로 나타냅니다. 이번 단계에서는 선택 과제로 두고, 시간이 남으면 진행합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>기준 다각형 준비</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>IoU·Dice·과충진/미충진 면적·윤곽 거리 계산 모듈</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>높이 문턱 민감도 확인</p></li></ul><h2>완료 기준</h2><ul><li><p>반쯤 겹친 사각형에서 IoU = 1/3, Dice = 1/2</p></li><li><p>균일 +50 µm 사각형에서 평균 부호 윤곽 거리 +50 ± 6 µm</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-38 H4. 정합</p></li><li><p>LTGE-33 G4. 비교 영역(마스킹) 정의</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/H-analysis/H6-contour-metrics.md\" rel=\"noopener noreferrer\">H6-contour-metrics.md</a></p></div>"
+ },
+ {
+  "seq": 41,
+  "id": "a71d05ee-d8c3-474d-86a2-5aa32281d324",
+  "name_at_check": "[M0][C0W041][SW] H7. 치수 · 형상 지표",
+  "state": "Backlog",
+  "start_date": "2026-12-29",
+  "target_date": "2027-01-11",
+  "module": "H. 처리·분석",
+  "description": "<div><h2>목표</h2><p>시편 형상마다 설계값과 바로 비교할 수 있는 치수(지름, 폭, 단차, 평면도)를 뽑습니다. 이번 단계에서는 선택 과제로 두고, 시간이 남으면 진행합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>형상 목록과 연결</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>원 맞춤·직선 맞춤·평면 맞춤 모듈</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 데이터로 확인</p></li></ul><h2>완료 기준</h2><ul><li><p>합성 전체 원의 지름 |오차| ≤ 1 µm</p></li><li><p>합성 폭·단차 |오차| ≤ 1 µm</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-38 H4. 정합</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/H-analysis/H7-dimensional-metrics.md\" rel=\"noopener noreferrer\">H7-dimensional-metrics.md</a></p></div>"
+ },
+ {
+  "seq": 42,
+  "id": "4cd93c9c-a0f2-44a1-bc52-d64aad573cea",
+  "name_at_check": "[M0][C0W042][SW] H8. 통계 분석",
+  "state": "Todo",
+  "start_date": "2027-01-12",
+  "target_date": "2027-02-01",
+  "module": "H. 처리·분석",
+  "description": "<div><h2>목표</h2><p>조건 사이의 오차 차이가 정말 있는지, 얼마나 큰지, 측정 불확도보다 큰지를 통계로 답합니다. 시뮬레이션 데이터의 반복 측정으로 분석 틀을 먼저 만듭니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>데이터를 보기 전에 분석 계획서 고정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>분석 단위 규칙: 시편 1개 = 요약값 1개</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>신뢰구간·t-검정·분산분석·효과크기 코드</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>통계적 유의 + 차이 &gt; 불확도 U일 때만 실질적 차이로 판단</p></li></ul><h2>완료 기준</h2><ul><li><p>손계산 예와 신뢰구간 반폭 일치 (오차 &lt; 10⁻³)</p></li><li><p>모든 시편의 반복 수가 계획값과 같고 누락·중복 0</p></li><li><p>같은 입력으로 다시 돌리면 결과 파일이 완전히 같음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-39 H5. 높이 오차 지표</p></li><li><p>LTGE-40 H6. 2D 윤곽 지표</p></li><li><p>LTGE-41 H7. 치수 · 형상 지표</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/H-analysis/H8-statistics.md\" rel=\"noopener noreferrer\">H8-statistics.md</a></p></div>"
+ },
+ {
+  "seq": 43,
+  "id": "7bbabfdf-f228-4058-a1c7-3dc159d89909",
+  "name_at_check": "[M0][C0W043][QA] I1. 측정 불확도 평가 (GUM)",
+  "state": "Todo",
+  "start_date": "2027-01-12",
+  "target_date": "2027-02-01",
+  "module": "I. 측정 신뢰성 검증",
+  "description": "<div><h2>목표</h2><p>측정한 높이가 참값에서 얼마나 벗어날 수 있는지를 확장불확도 U 하나로 정합니다. 결과를 \"오차 ± U (k = 2)\"로 보고할 수 있게 합니다. 실제 장비 대신 시뮬레이션의 요인 강도로 계산합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>불확도 요인 목록(피시본) 작성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>요인별 표준불확도 계산 (가상 요인 강도 기준)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>높이 불확도 예산표와 합성·확장불확도</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>몬테카를로로 교차 확인</p></li></ul><h2>완료 기준</h2><ul><li><p>계산기 테스트 11개 모두 통과</p></li><li><p>피시본의 모든 요인이 예산표에 \"포함\" 또는 \"무시 가능(근거)\"으로 있음</p></li><li><p>높이 예산 U(k = 2) ≤ 20 µm</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-23 D5. 캘리브레이션 검증 · 이력 관리</p></li><li><p>LTGE-39 H5. 높이 오차 지표</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/I-reliability/I1-uncertainty.md\" rel=\"noopener noreferrer\">I1-uncertainty.md</a></p></div>"
+ },
+ {
+  "seq": 44,
+  "id": "0c6c0392-847a-4c68-b326-4004ffc6cc5f",
+  "name_at_check": "[M0][C0W044][QA] I2. 측정시스템분석 (MSA · Gage R&R)",
+  "state": "Todo",
+  "start_date": "2027-01-12",
+  "target_date": "2027-02-01",
+  "module": "I. 측정 신뢰성 검증",
+  "description": "<div><h2>목표</h2><p>측정 시스템의 치우침·직선성·안정성·반복성·재현성을 판정합니다. 실제 장비 대신 시드만 바꾼 가상 반복 측정으로 Gage R&amp;R 틀을 만듭니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 반복 측정 계획 (시편 수, 반복 수)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>Gage R&amp;R 계산기 작성과 모의실험 검증</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>치우침·직선성 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>%GRR, ndc 판정과 보고서</p></li></ul><h2>완료 기준</h2><ul><li><p>%GRR &lt; 30 % (목표 &lt; 10 %)</p></li><li><p>구별 범주 수 ndc ≥ 5</p></li><li><p>모의실험에서 분산 성분 평균이 참값 ±10 % 안</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-26 E3. 시편 설계</p></li><li><p>LTGE-39 H5. 높이 오차 지표</p></li><li><p>LTGE-22 D4. 센서 ↔ 기계(G코드) 좌표 변환</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/I-reliability/I2-msa.md\" rel=\"noopener noreferrer\">I2-msa.md</a></p></div>"
+ },
+ {
+  "seq": 45,
+  "id": "77417397-8cc2-4ab1-9f09-4e4976acbb36",
+  "name_at_check": "[M0][C0W045][QA] I3. 독립 장비와의 교차검증",
+  "state": "Todo",
+  "start_date": "2026-12-29",
+  "target_date": "2027-01-11",
+  "module": "I. 측정 신뢰성 검증",
+  "description": "<div><h2>목표</h2><p>원리가 다른 측정과 결과가 불확도 범위 안에서 맞는지 확인합니다. 실제 장비 대신 가상 BLTouch 점과 가상 필러게이지 단차로 교차검증합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>같은 단차 면에서 레이저 결과와 가상 BLTouch 결과 짝 짓기</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>Bland–Altman으로 평균 차와 일치 한계 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>형상 크기에 따른 비례 치우침 확인</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>그림 1장과 요약표 작성</p></li></ul><h2>완료 기준</h2><ul><li><p>높이 쌍 ≥ 30개</p></li><li><p>레이저와 BLTouch 단차의 평균 차가 합성 확장불확도(k = 2) 안</p></li><li><p>Bland–Altman 그림과 요약표가 있음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-44 I2. 측정시스템분석</p></li><li><p>LTGE-26 E3. 시편 설계</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/I-reliability/I3-cross-validation.md\" rel=\"noopener noreferrer\">I3-cross-validation.md</a></p></div>"
+ },
+ {
+  "seq": 46,
+  "id": "52f6961b-cc5e-4370-8fe0-8570c8b7aeb7",
+  "name_at_check": "[M0][C0W046][SW] J1. 소프트웨어 구조 설계",
+  "state": "Todo",
+  "start_date": "2026-11-04",
+  "target_date": "2026-11-10",
+  "module": "J. 소프트웨어",
+  "description": "<div><h2>목표</h2><p>어디에 무엇이 있는지 바로 알 수 있는 폴더·모듈 구조를 정합니다. 기준 → 측정 → 편차 → 지표를 단계별로 나누고, 단계마다 결과를 파일로 남겨 뒤 단계만 다시 돌릴 수 있게 합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>저장소 폴더·모듈 구조 확정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상환경과 고정 버전 라이브러리로 설치 절차 표준화</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>단계별 실행기 작성 (건너뛰기, 부분 재실행)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 데이터로 4단계 한 번에 실행</p></li></ul><h2>완료 기준</h2><ul><li><p>requirements.txt의 모든 줄이 == 로 고정</p></li><li><p>합성 실행 결과 mean_mm = 0.030 ± 0.001, std_mm = 0.005 ± 0.0005</p></li><li><p>다시 실행하면 4단계 모두 건너뛰고 1 s 안에 끝남</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/J-software/J1-software-structure.md\" rel=\"noopener noreferrer\">J1-software-structure.md</a></p></div>"
+ },
+ {
+  "seq": 47,
+  "id": "c37615fe-f350-4464-b4c8-0f7a4ca61a11",
+  "name_at_check": "[M0][C0W047][SW] J2. 설정 · 재현성 관리",
+  "state": "Todo",
+  "start_date": "2026-11-04",
+  "target_date": "2026-11-10",
+  "module": "J. 소프트웨어",
+  "description": "<div><h2>목표</h2><p>처리에 쓰는 모든 숫자를 코드 밖 설정 파일 한 곳에 모으고, 실행마다 설정·커밋·교정 ID·시드를 함께 기록해 어떤 결과든 다시 만들 수 있게 합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>설정 YAML과 기본값 정리</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>오타·범위·관계 자동 검증</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>실행 기록(manifest) 자동 저장</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>무작위 처리의 시드 고정</p></li></ul><h2>완료 기준</h2><ul><li><p>키 철자가 틀린 설정은 틀린 키 이름과 함께 오류</p></li><li><p>같은 설정·시드로 두 번 실행한 결과 해시가 같음</p></li><li><p>실행 기록에 9개 키가 모두 있음</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/J-software/J2-config-reproducibility.md\" rel=\"noopener noreferrer\">J2-config-reproducibility.md</a></p></div>"
+ },
+ {
+  "seq": 48,
+  "id": "d70a89ab-c5d0-430f-b9d4-211241f54b33",
+  "name_at_check": "[M0][C0W048][SW] J3. 합성 데이터 테스트 (정답을 아는 데이터로 검증)",
+  "state": "Todo",
+  "start_date": "2026-12-16",
+  "target_date": "2026-12-28",
+  "module": "J. 소프트웨어",
+  "description": "<div><h2>목표</h2><p>정답을 알고 만든 합성 데이터를 넣어 코드가 정답을 되찾는지 자동 테스트로 확인합니다. 코드 버그와 측정 오차가 섞이기 전에 버그를 없애는 것이 목적입니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>파서·IoU·강체 변환·합성 복원 테스트 작성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 변형 복원 기준을 숫자로 정의</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>잡음·결측을 키워 가며 실패 지점 표 만들기</p></li></ul><h2>완료 기준</h2><ul><li><p>이동 (0.20, −0.10) mm·회전 0.5°·배율 0.996·높이 +0.03 mm를 이동 ≤ 0.005 mm, 회전 ≤ 0.03°, 배율 ≤ 5×10⁻⁴, 높이 ≤ 0.002 mm로 복원 (시드 3개)</p></li><li><p>결측은 0이 아니라 NaN으로 표현</p></li><li><p>전체 테스트 &lt; 5 s</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-32 G3. 층별 마스크 · 기준 높이맵 생성</p></li><li><p>LTGE-33 G4. 비교 영역(마스킹) 정의</p></li><li><p>LTGE-35 H1. 점 → 격자(높이맵) 변환</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/J-software/J3-synthetic-tests.md\" rel=\"noopener noreferrer\">J3-synthetic-tests.md</a></p></div>"
+ },
+ {
+  "seq": 49,
+  "id": "e52247c4-5759-4f8f-b730-adfdd26d4a58",
+  "name_at_check": "[M0][C0W049][SW] J4. 시각화 · 리포트 자동화",
+  "state": "Todo",
+  "start_date": "2026-12-16",
+  "target_date": "2026-12-28",
+  "module": "J. 소프트웨어",
+  "description": "<div><h2>목표</h2><p>시편 하나를 처리하면 같은 규칙으로 그린 그림 4장과 지표 CSV가 자동으로 나오게 합니다. 색 규칙을 고정해 시편끼리 비교할 수 있게 합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>편차 히트맵·마스크 오버레이·히스토그램·단면 그림</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>색 규칙 고정: 0 = 흰색, ±0.2 mm 대칭, 빨강 = 재료 과다</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>모든 시편 결과를 summary.csv 한 표로 모으기</p></li></ul><h2>완료 기준</h2><ul><li><p>PNG 4장 + metrics.csv 1개 생성, summary.csv 갱신</p></li><li><p>300 dpi, 모든 축 라벨에 단위</p></li><li><p>+0.03 mm 합성 시편에서 mean_mm = +0.030 ± 0.002, 히트맵 빨강</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-35 H1. 점 → 격자(높이맵) 변환</p></li><li><p>LTGE-48 J3. 합성 데이터 테스트</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/J-software/J4-visualization-report.md\" rel=\"noopener noreferrer\">J4-visualization-report.md</a></p></div>"
+ },
+ {
+  "seq": 50,
+  "id": "b4bf32cc-140a-45ec-bc4a-734ec6300d1c",
+  "name_at_check": "[M0][C0W050][DOC] K1. 일정 · 마일스톤 관리 (24주)",
+  "state": "Todo",
+  "start_date": "2027-02-02",
+  "target_date": "2027-02-05",
+  "module": "K. 프로젝트 운영",
+  "description": "<div><h2>목표</h2><p>시뮬레이션 데이터 단계의 일정과 점검 지점을 실제 진행과 비교해 정리하고, 실측 단계 일정의 초안을 만듭니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>점검 지점별 통과 여부와 날짜 정리</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>계획 대비 늦어진 작업과 이유 기록</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>실측 단계 일정 초안</p></li></ul><h2>완료 기준</h2><ul><li><p>점검 지점 6개(11-03, 11-24, 12-15, 12-28, 01-11, 02-01)의 판정이 모두 기록됨</p></li><li><p>Plane 항목 기간과 일정표가 일치</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/K-management/K1-schedule.md\" rel=\"noopener noreferrer\">K1-schedule.md</a></p></div>"
+ },
+ {
+  "seq": 53,
+  "id": "dbc6664f-226d-4e6e-a020-6679801a326f",
+  "name_at_check": "[M0][C0W053][DOC] K4. 위험 관리 (리스크 레지스터)",
+  "state": "Todo",
+  "start_date": "2027-02-02",
+  "target_date": "2027-02-05",
+  "module": "K. 프로젝트 운영",
+  "description": "<div><h2>목표</h2><p>과제를 실패하게 만들 수 있는 일을 목록으로 관리합니다. 가장 큰 위험은 측정 장비의 오차를 가공 오차로 잘못 보고하는 것이고, 시뮬레이션 단계에서는 가상 결과가 실제보다 좋게 나오는 위험도 함께 봅니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>위험 목록 갱신 (가능성·영향 점수, 담당, 발생 신호)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>위험마다 예방책과 발생 시 대책 정리</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시뮬레이터 가정 가운데 실측으로 확인할 것 목록화</p></li></ul><h2>완료 기준</h2><ul><li><p>모든 위험의 담당 칸이 채워짐</p></li><li><p>발생 신호가 숫자나 관측 가능한 조건으로 적혀 있음</p></li><li><p>시뮬레이터 가정 목록이 있음</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/K-management/K4-risks.md\" rel=\"noopener noreferrer\">K4-risks.md</a></p></div>"
+ },
+ {
+  "seq": 54,
+  "id": "ae880472-63f2-4345-817b-e40c2ad28117",
+  "name_at_check": "[M0][C0W054][DOC] K5. 산출물 · 논문 작성",
+  "state": "Todo",
+  "start_date": "2027-02-02",
+  "target_date": "2027-02-05",
+  "module": "K. 프로젝트 운영",
+  "description": "<div><h2>목표</h2><p>시뮬레이션 데이터 단계에서 내놓을 산출물과 각각의 완성 기준을 정리합니다. 다른 사람이 데이터와 코드로 같은 숫자를 다시 만들 수 있게 준비합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>산출물 목록과 완성 기준 작성</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>단계 결산 문서와 실측 전환 체크리스트</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>결과 문서마다 해석 주의 문장 넣기</p></li></ul><h2>완료 기준</h2><ul><li><p>문서 속 수치와 results/summary.csv 불일치 0</p></li><li><p>모든 결과 문서에 \"가상 데이터 결과는 하드웨어 성능의 증거가 아니다\"가 있음</p></li><li><p>그림 300 dpi 이상, 단위 표기</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-45 I3. 교차검증</p></li><li><p>LTGE-42 H8. 통계 분석</p></li><li><p>LTGE-43 I1. 측정 불확도 평가</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/K-management/K5-deliverables-paper.md\" rel=\"noopener noreferrer\">K5-deliverables-paper.md</a></p></div>"
+ },
+ {
+  "seq": 55,
+  "id": "705b4698-9170-4463-80c9-19081f84a2c9",
+  "name_at_check": "[M0][C0W055][DOC] K6. Python 학습 로드맵 (완전 초보 기준)",
+  "state": "Backlog",
+  "start_date": "2026-10-06",
+  "target_date": "2027-03-22",
+  "module": "K. 프로젝트 운영",
+  "description": "<div><h2>목표</h2><p>Python을 처음 배우는 사람이 과제에 필요한 만큼만, 필요한 시점보다 조금 먼저 배우도록 계획을 세웁니다. 이번 단계에서는 보류합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>과제 계산을 줄인 연습문제 목록</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>풀이마다 assert로 스스로 검사</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>연습 코드를 실제 코드로 옮기기</p></li></ul><h2>완료 기준</h2><ul><li><p>모든 연습 풀이가 실행해서 \"통과\" 출력</p></li><li><p>연습한 함수가 src/cvlab/ 에 있음</p></li></ul><h2>선행 작업</h2><p>없음</p><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/K-management/K6-learning-roadmap.md\" rel=\"noopener noreferrer\">K6-learning-roadmap.md</a></p></div>"
+ },
+ {
+  "seq": 59,
+  "id": "76b7e763-b797-41af-92ae-6e1ba9f4bfb2",
+  "name_at_check": "[M0][C0W059][QA] 🚩 M3. 합성 데이터에서 변형 복원 성공",
+  "state": "Todo",
+  "start_date": "2026-12-28",
+  "target_date": "2026-12-28",
+  "module": "",
+  "description": "<div><h2>목표</h2><p>마일스톤 점검입니다. 합성 데이터에 넣은 변형을 처리 코드가 허용오차 안에서 되찾는지 확인합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>합성 종단 시험 실행 (잡음 포함)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>복원 결과를 기준과 비교해 판정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>묶인 항목이 모두 끝났는지 확인</p></li></ul><h2>완료 기준</h2><ul><li><p>이동 (0.20, −0.10) mm·회전 0.5°·배율 0.996·높이 +0.03 mm 복원, 허용오차는 J3 기준</p></li><li><p>선행 항목이 모두 Done</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-14 C4. 좌표계 체계 정의</p></li><li><p>LTGE-22 D4. 센서 ↔ 기계(G코드) 좌표 변환</p></li><li><p>LTGE-26 E3. 시편 설계</p></li><li><p>LTGE-30 G1 · LTGE-31 G2 · LTGE-32 G3</p></li><li><p>LTGE-38 H4. 정합</p></li><li><p>LTGE-48 J3. 합성 데이터 테스트</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/README.md#%EB%A7%88%EC%9D%BC%EC%8A%A4%ED%86%A4\" rel=\"noopener noreferrer\">blueprints/README.md 마일스톤</a></p></div>"
+ },
+ {
+  "seq": 60,
+  "id": "fd635d51-8dbf-4166-9f99-6f82936ef7af",
+  "name_at_check": "[M0][C0W060][QA] 🚩 M4. 가상 시편 1개 전체 파이프라인 완주",
+  "state": "Todo",
+  "start_date": "2027-01-11",
+  "target_date": "2027-01-11",
+  "module": "",
+  "description": "<div><h2>목표</h2><p>마일스톤 점검입니다. E3 가상 시편 설계 + 시뮬레이터 생성 데이터로, 층마다 찍은 원시 영상 → 교정 → 높이맵 → G코드 비교 → 오차 보고서까지 한 번에 완주합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 시편 1개를 원시 영상부터 보고서까지 한 번에 실행</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 BLTouch·필러게이지와 비교</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>막힌 단계가 있으면 그 단계부터 다시</p></li></ul><h2>완료 기준</h2><ul><li><p>0.2 / 0.3 / 0.4 mm 단차 복원 Q ≤ 50 µm (필수), ≤ 20 µm (목표)</p></li><li><p>레이저와 BLTouch 단차의 평균 차가 합성 확장불확도(k = 2) 안</p></li><li><p>선행 항목이 모두 Done</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-63 F0 · LTGE-64 J0</p></li><li><p>LTGE-25 E2 · LTGE-26 E3 · LTGE-33 G4</p></li><li><p>LTGE-35 H1 · LTGE-36 H2 · LTGE-37 H3 · LTGE-39 H5 · LTGE-40 H6 · LTGE-41 H7</p></li><li><p>LTGE-46 J1 · LTGE-47 J2 · LTGE-49 J4</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/README.md#%EB%A7%88%EC%9D%BC%EC%8A%A4%ED%86%A4\" rel=\"noopener noreferrer\">blueprints/README.md 마일스톤</a></p></div>"
+ },
+ {
+  "seq": 61,
+  "id": "039ed476-c1af-4c96-b496-4b9499bedd48",
+  "name_at_check": "[M0][C0W061][QA] 🚩 M5. 측정시스템 검증 통과 (가상 반복, %GRR < 30 %)",
+  "state": "Todo",
+  "start_date": "2027-02-01",
+  "target_date": "2027-02-01",
+  "module": "",
+  "description": "<div><h2>목표</h2><p>마일스톤 점검입니다. 시드만 바꾼 가상 반복 측정으로 불확도 예산과 Gage R&amp;R을 계산해 측정 시스템이 쓸 만한지 판정합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>높이 불확도 예산표 검토</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 반복 측정으로 %GRR·ndc 계산</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>못 넘으면 한계로 기록</p></li></ul><h2>완료 기준</h2><ul><li><p>%GRR &lt; 30 % (목표 &lt; 10 %), ndc ≥ 5</p></li><li><p>높이 불확도 예산표 1부</p></li><li><p>선행 항목이 모두 Done</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-43 I1. 측정 불확도 평가</p></li><li><p>LTGE-44 I2. 측정시스템분석</p></li><li><p>LTGE-64 J0. 가상 센서 시뮬레이터</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/README.md#%EB%A7%88%EC%9D%BC%EC%8A%A4%ED%86%A4\" rel=\"noopener noreferrer\">blueprints/README.md 마일스톤</a></p></div>"
+ },
+ {
+  "seq": 62,
+  "id": "7dc541e0-b286-408d-9e5e-667576d89eb5",
+  "name_at_check": "[M0][C0W062][DOC] 🚩 M6. 최종 보고서 / 논문",
+  "state": "Backlog",
+  "start_date": null,
+  "target_date": "2027-03-22",
+  "module": "",
+  "description": "<div><h2>목표</h2><p>최종 보고서와 논문입니다. 시뮬레이션 데이터 단계 다음에 다룹니다. 결과가 가상 데이터 기반이라는 점을 분명히 적습니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>보고서·논문 구성과 그림 목록</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 데이터 결과와 실측 결과 구분 표기</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>제출</p></li></ul><h2>완료 기준</h2><ul><li><p>최종 보고서 또는 논문 제출</p></li><li><p>선행 항목이 모두 Done</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-34 G5 · LTGE-42 H8 · LTGE-45 I3</p></li><li><p>LTGE-53 K4 · LTGE-54 K5 · LTGE-55 K6</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/blueprints/README.md#%EB%A7%88%EC%9D%BC%EC%8A%A4%ED%86%A4\" rel=\"noopener noreferrer\">blueprints/README.md 마일스톤</a></p></div>"
+ },
+ {
+  "seq": 63,
+  "id": "d7fc0092-dce3-48a5-b743-9f45160b5dfb",
+  "name_at_check": "[M0][C0W063][SW] F0. 하드웨어 데이터 명세 — 장비가 넘겨야 할 데이터 정의",
+  "state": "In Progress",
+  "start_date": "2026-10-27",
+  "target_date": "2026-11-03",
+  "module": "F. 데이터 명세·획득",
+  "description": "<div><h2>목표</h2><p>장비가 소프트웨어에 넘겨야 할 데이터를 파일 단위로 정의합니다. 측정은 출력 중 층마다 스캔하는 방식을 기준으로 합니다. 지금은 시뮬레이터가 이 명세대로 데이터를 만들고, 나중에 실제 장비 데이터로 바꿔 넣기만 하면 되게 합니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>원시 프레임과 위치 로그 (층 번호, 프린터 X·Y·Z, 시각)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>교정 원자료 (체커보드, 필러게이지 0.2 / 0.3 / 0.4 mm, 십자 표식)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>기준 스캔과 메타데이터 (G코드·해시, 재료, 온도, 노출·게인, 스캔 속도)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>BLTouch 검증점과 반복 측정</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>파일 형식·폴더 구조·단위·좌표계·필수 여부 확정</p></li></ul><h2>완료 기준</h2><ul><li><p>7개 묶음 모두 필드·단위·형식·예시 파일이 문서에 있음</p></li><li><p>삭제된 하드웨어 항목 20개가 어떤 필드로 대체되는지 대응표가 있음</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-14 C4. 좌표계 체계 정의</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/%ED%95%98%EB%93%9C%EC%9B%A8%EC%96%B4-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EB%AA%85%EC%84%B8.md\" rel=\"noopener noreferrer\">하드웨어-데이터-명세.md</a> (작성 중)</p></div>"
+ },
+ {
+  "seq": 64,
+  "id": "f30edf0f-cd48-42be-98ea-89ac6e6a1dfd",
+  "name_at_check": "[M0][C0W064][SW] J0. 가상 센서 시뮬레이터 — 명세대로 원시 영상·로그 생성",
+  "state": "Todo",
+  "start_date": "2026-11-04",
+  "target_date": "2026-11-24",
+  "module": "J. 소프트웨어",
+  "description": "<div><h2>목표</h2><p>시편 G코드와 넣고 싶은 출력 오차를 주면, 노즐 장착 라인 레이저가 출력 중 층마다 찍었을 법한 원시 영상·위치 로그·교정 원자료·BLTouch 점을 데이터 명세 형식으로 만듭니다. 정답을 알기 때문에 모든 처리 단계의 정확도를 확인할 수 있습니다.</p><h2>할 일</h2><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\"><p>기하 설정: 레이저 수직, 카메라 30°, 작동거리 50 mm, 배율 0.19, 화소 3 µm</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>층마다 스캔하는 출력 중 측정 시나리오 구현</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>레이저 선 영상 렌더링과 잡음 (스펙클, 표면 산란, 헤드 흔들림, 열 드리프트, 주변광)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>가상 교정 원자료와 가상 BLTouch 점 (σ 5 µm)</p></li><li data-type=\"taskItem\" data-checked=\"false\"><p>시드 고정, 정답 파일은 따로 저장, 실패 요인별로 켜고 끄기</p></li></ul><h2>완료 기준</h2><ul><li><p>명세 검증기 통과 100 %</p></li><li><p>같은 시드로 만들면 같은 바이트</p></li><li><p>잡음을 끄면 복원 오차 &lt; 1 µm, 켜면 단차 Q ≈ 22 µm (방법 선정 시뮬레이션 값 ±30 % 안)</p></li></ul><h2>선행 작업</h2><ul><li><p>LTGE-63 F0. 하드웨어 데이터 명세</p></li><li><p>LTGE-4 B1. 레이저 삼각측량 원리와 핵심 공식</p></li><li><p>LTGE-5 B2. 기하 배치</p></li><li><p>LTGE-25 E2. 가림과 엣지 효과</p></li></ul><p>자세한 내용: <a href=\"https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/docs/%ED%95%98%EB%93%9C%EC%9B%A8%EC%96%B4-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EB%AA%85%EC%84%B8.md\" rel=\"noopener noreferrer\">하드웨어-데이터-명세.md</a> (작성 중)</p></div>"
+ }
+]
