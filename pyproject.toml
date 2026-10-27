@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cvlab"
+version = "0.1.0"
+description = "레이저 삼각측량 형상 측정과 G코드 기준 비교 연구 코드"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy==2.4.4",
+    "scipy==1.18.0",
+    "pandas==3.0.2",
+    "matplotlib==3.11.2",
+    "PyYAML==6.0.3",
+    "Pillow==12.2.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==9.1.1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
