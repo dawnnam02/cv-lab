@@ -1,0 +1,14 @@
+# T7a 레이저 선 중심 추출 설정 (docs/레이저선-추출.md §7).
+# 교정값 (K, dist, 레이저 평면, 변환)은 여기에 넣지 않습니다. T8 교정 결과 YAML에서 받습니다.
+# 모르는 키는 오류입니다 (cvlab.triangulation.TriParams).
+triangulation:
+  method: cog                  # 세부청사진 §6.5 규칙으로 확정 (docs/레이저선-추출.md §7, F1 권장 cog)
+  threshold_k_sigma: 5.0       # F1 §4: 배경 중앙값 + 5σ
+  half_win_px: null            # null = ⌈1.5 × FWHM⌉ (F1 §4). FWHM은 영상의 열별 FWHM 중앙값
+  guide_win_cols: 51           # F1 §4: 연속성 안내 중앙값 필터 열 수
+  guide_band_px: 8             # F1 §4: 안내선 ± 띠. null이면 안내 끔
+  low_peak_factor: 3.0         # F1 §4: 피크 < 3 × 문턱이면 low_peak
+  wide_factor: 2.0             # F1 §4: FWHM > 2 × 정상 폭이면 wide
+  multi_peak_ratio: 0.3        # [추정] 둘째 봉우리 높이 / 첫째 (배경 위 높이) > 0.3이면 multi_peak
+  steger_sigma_px: 1.5         # F1: Steger 1차원 가우시안 미분 σ
+  gaussfit_max_iter: 10        # [추정] 가우시안 + 상수 맞춤 반복 수 (합성 영상에서 5회 안에 수렴)
