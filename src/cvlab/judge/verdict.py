@@ -43,6 +43,9 @@ class LayerInput:
     region: Any
     outlier: Any = None
     exclusion_code: Any = None
+    # 식힌 재측정 비교 전용 Δ (J-3). 판정 영역 밖 측정값도 남긴 진행 중 Δ. 판정 집계는 이 값을 읽지 않음.
+    # None이면 delta_mm을 그대로 비교에 씀 (고운 격자에서는 delta_mm이 영역 밖 값을 이미 가짐).
+    delta_cmp_mm: Any = None
 
     def __post_init__(self) -> None:
         if isinstance(self.layer_idx, bool) or not isinstance(self.layer_idx, (int, np.integer)):
@@ -75,6 +78,17 @@ class LayerInput:
             if (r & (c != 0)).any():
                 raise ValueError(f"층 {self.layer_idx}: 판정 영역 안 칸에 0이 아닌 exclusion_code")
             self.exclusion_code = c.astype(np.int8)
+        if self.delta_cmp_mm is not None:
+            dc = np.asarray(self.delta_cmp_mm, dtype=float)
+            if dc.shape != r.shape:
+                raise ValueError(f"층 {self.layer_idx}: delta_cmp_mm 모양 {dc.shape} ≠ delta 모양 {r.shape}")
+            if np.isinf(dc).any():
+                raise ValueError(f"층 {self.layer_idx}: delta_cmp_mm에 무한대 값")
+            self.delta_cmp_mm = dc
+
+    def compare_delta(self) -> np.ndarray:
+        """식힌 재측정 비교에 쓸 Δ (delta_cmp_mm, 없으면 delta_mm)."""
+        return self.delta_mm if self.delta_cmp_mm is None else self.delta_cmp_mm
 
 
 @dataclass
@@ -204,10 +218,14 @@ def _pct_block(c: dict) -> dict:
 
 def judge_print(layers: Sequence[LayerInput], params: JudgeParams, post: LayerInput | None = None, *,
                 meta: dict | None = None, height_mm: float | None = None,
-                specimen_temp_c: float | None = None, room_temp_c: float | None = None) -> JudgeResult:
+                specimen_temp_c: float | None = None, room_temp_c: float | None = None,
+                post_rule: str | None = None) -> JudgeResult:
     """출력물 하나를 판정한다.
 
     post: 식힌 재측정 (thermal_state = cooled, 마지막 층과 같은 layer_idx). 판정을 바꾸지 않음.
+          비교 영역은 post.region (T4b post_region, J-3). 비교 칸 = post.region ∩ 두 Δ 유효 칸.
+          마지막 층 Δ는 compare_delta() (판정 영역 밖 측정값 포함)를 씀.
+    post_rule: post 영역 규칙 이름 (RegionStack.info["post_rule"]). 결과 cooled에 그대로 적음.
     meta: 판정 거부 X1–X7 검사용 메타데이터 {"scans": [...], "refs": [...]} (reject.META_FIELDS 이름).
           None이면 X1–X4 · X7은 검사하지 않고 경고만 (X5 입력 층 · X6은 늘 검사).
           하나라도 걸리면 판정은 insufficient, 걸린 코드는 result.reject (§16).
@@ -327,9 +345,18 @@ def judge_print(layers: Sequence[LayerInput], params: JudgeParams, post: LayerIn
         last = layers[-1]
         if post.layer_idx != last.layer_idx:
             raise ValueError(f"post: layer_idx {post.layer_idx} ≠ 마지막 층 {last.layer_idx}")
-        diff = cooled_difference(last.delta_mm, post.delta_mm, region=last.region & post.region)
-        if diff is None:
-            warns.append("식힌 재측정: 마지막 층과 공통 유효 칸이 없음")
+        # J-3: 비교 영역 = post 영역 (마지막 층 판정 영역과 교집합하지 않음). 판정 집계와 무관.
+        last_cmp = last.compare_delta()
+        n_post_region = int(post.region.sum())
+        n_compare = int((post.region & np.isfinite(last_cmp) & np.isfinite(post.delta_mm)).sum())
+        diff = cooled_difference(last_cmp, post.delta_mm, region=post.region)
+        comparable = diff is not None
+        if not comparable:
+            if n_post_region == 0:
+                why = "post 영역이 0칸"
+            else:
+                why = f"post 영역 {n_post_region}칸 중 마지막 층과 공통 유효 칸이 없음"
+            warns.append(f"식힌 재측정: 비교 불가 ({why}). 판정은 그대로 (D-06)")
         crit = cooling_criterion(height_mm, specimen_temp_c, room_temp_c,
                                  params.cooled_alpha_um_per_m_c, params.cooled_delta_max_um)
         if crit["ok"] is False:
@@ -337,7 +364,11 @@ def judge_print(layers: Sequence[LayerInput], params: JudgeParams, post: LayerIn
                          f"(ΔT {crit['delta_T_c']:.1f} °C > ΔT_max {crit['delta_T_max_c']:.1f} °C)")
         elif crit["ok"] is None:
             warns.append(f"식힘 기준 판단 못 함: {', '.join(crit['missing'])} 없음")
-        cooled = {"layer_idx": last.layer_idx, "difference": diff, "criterion": crit,
+        cooled = {"layer_idx": last.layer_idx, "status": "비교 가능" if comparable else "비교 불가",
+                  "comparable": comparable, "n_compare": n_compare, "n_post_region": n_post_region,
+                  "n_last_region": int(last.region.sum()),
+                  "region": "post 영역 (T4b post_region) ∩ 두 Δ 유효 칸", "post_rule": post_rule,
+                  "difference": diff, "criterion": crit,
                   "note": "차이 = Δ_post − Δ_last (µm). 음수면 식으면서 낮아짐. 판정을 바꾸지 않음 (D-06)"}
 
     t_pass, t_fail = thresholds_nm(params.T_mm, U)
@@ -353,9 +384,21 @@ def judge_print(layers: Sequence[LayerInput], params: JudgeParams, post: LayerIn
     )
 
 
-def fine_to_cell_layer(L: LayerInput, res_mm: float, cell_mm: float, params: JudgeParams) -> LayerInput:
-    """고운 격자 층을 판정 칸 층으로 묶는다 (§6.2–6.3). 이상치는 묶음 안에 하나라도 있으면 그 칸을 이상치로."""
+def fine_to_cell_layer(L: LayerInput, res_mm: float, cell_mm: float, params: JudgeParams,
+                       cmp_region=None) -> LayerInput:
+    """고운 격자 층을 판정 칸 층으로 묶는다 (§6.2–6.3). 이상치는 묶음 안에 하나라도 있으면 그 칸을 이상치로.
+
+    cmp_region: 고운 격자 비교 영역 (식힌 재측정의 post 영역, J-3). 주면 L.compare_delta()를 판정 영역이 아니라
+    이 영역으로 묶어 delta_cmp_mm에 넣는다 (판정 영역 밖 측정값도 비교에 남김). 판정 칸 값 · 영역은 그대로.
+    """
     f = cell_factor(cell_mm, res_mm)
+    cmp = None
+    if cmp_region is not None:
+        cr = np.asarray(cmp_region, dtype=bool)
+        if cr.shape != L.region.shape:
+            raise ValueError(f"층 {L.layer_idx}: cmp_region 모양 {cr.shape} ≠ 격자 {L.region.shape}")
+        cmp, _, _ = aggregate_to_cells(L.compare_delta(), None, cr, f, stat=params.cell_stat,
+                                       fill_min=params.cell_fill_min, region_fill_min=params.region_fill_min)
     d, valid, region = aggregate_to_cells(L.delta_mm, None, L.region, f, stat=params.cell_stat,
                                           fill_min=params.cell_fill_min, region_fill_min=params.region_fill_min)
     outlier = None
@@ -364,15 +407,22 @@ def fine_to_cell_layer(L: LayerInput, res_mm: float, cell_mm: float, params: Jud
     code = None
     if L.exclusion_code is not None:
         code = np.where(region, 0, aggregate_exclusion_code(L.exclusion_code, f)).astype(np.int8)
-    return LayerInput(L.layer_idx, L.thermal_state, d, region, outlier=outlier, exclusion_code=code)
+    return LayerInput(L.layer_idx, L.thermal_state, d, region, outlier=outlier, exclusion_code=code,
+                      delta_cmp_mm=cmp)
 
 
 def judge_print_fine(layers_fine: Sequence[LayerInput], params: JudgeParams, res_mm: float = 0.02,
                      post: LayerInput | None = None, **kw) -> dict:
-    """고운 격자 입력을 주 칸 (cell_mm)과 보조 칸 (cell_mm_alt)으로 각각 판정 (MF-JDG-04)."""
+    """고운 격자 입력을 주 칸 (cell_mm)과 보조 칸 (cell_mm_alt)으로 각각 판정 (MF-JDG-04).
+
+    post가 있으면 마지막 층 (가장 큰 layer_idx)의 비교용 Δ를 post 영역으로 따로 묶는다 (J-3).
+    """
     out = {}
+    last_idx = max(L.layer_idx for L in layers_fine) if (post is not None and layers_fine) else None
     for key, cm in (("primary", params.cell_mm), ("alt", params.cell_mm_alt)):
-        ls = [fine_to_cell_layer(L, res_mm, cm, params) for L in layers_fine]
+        ls = [fine_to_cell_layer(L, res_mm, cm, params,
+                                 cmp_region=post.region if L.layer_idx == last_idx else None)
+              for L in layers_fine]
         pc = fine_to_cell_layer(post, res_mm, cm, params) if post is not None else None
         r = judge_print(ls, params, pc, **kw)
         r.params = {**r.params, "cell_mm_used": cm, "res_mm": res_mm}
