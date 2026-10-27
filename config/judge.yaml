@@ -5,7 +5,7 @@ judge:
   U_mm: null               # 실행 때 반드시 지정. T12 (C8) 전까지 임시값, U_source 필수
   U_source: null           # U의 출처 문자열 (예: "T2 5.2 기본 RSS 31.7 µm"). 없으면 판정 거부 (MF-JDG-01)
   pass_min_pct: 95         # D-08 (전체 층 합산, 합격점 ≥ 95 %면 합격)
-  fail_max_pct: 5          # 청사진 §2.3 (불합격점 > 5 %면 불합격)
+  fail_max_pct: 5          # 청사진 §2.3 (불합격점 > 5 %면 불합격). pass_min_pct + fail_max_pct < 100이면 오류 (J-1)
   valid_min_pct: 90        # 청사진 §2.3 안 → 판정-규칙 §14 결정 요청
   cell_mm: 0.2             # 청사진 §2.3 안 → §14
   cell_mm_alt: 0.4         # MF-JDG-04 함께 보고 (비드 간격 약 0.4 mm)

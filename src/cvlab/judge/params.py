@@ -11,6 +11,8 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any, Mapping
 
+import numpy as np
+
 OUTLIER_PRIMARY = ("worse", "before", "after")
 CELL_STATS = ("mean", "median")
 
@@ -58,6 +60,11 @@ class JudgeParams:
             raise ValueError(f"T_mm: 0보다 커야 함 ({self.T_mm!r})")
         for name in ("pass_min_pct", "fail_max_pct", "valid_min_pct", "layer_fail_warn_pct"):
             _pct_fraction(name, getattr(self, name))
+        # J-1: 합이 100 미만이면 합격과 불합격이 함께 참일 수 있다 (decide는 합격을 먼저 봄)
+        if _pct_fraction("pass_min_pct", self.pass_min_pct) + _pct_fraction("fail_max_pct", self.fail_max_pct) < 100:
+            raise ValueError(
+                f"pass_min_pct + fail_max_pct < 100 ({self.pass_min_pct!r} + {self.fail_max_pct!r}). "
+                "합격과 불합격이 함께 참이 될 수 있음")
         for name in ("cell_mm", "cell_mm_alt"):
             if _finite_number(name, getattr(self, name)) <= 0:
                 raise ValueError(f"{name}: 0보다 커야 함")
@@ -110,7 +117,7 @@ def check_U(T_mm: float, U_mm: Any) -> float:
     """U 검사. 통과하면 float로 돌려준다."""
     if U_mm is None:
         raise ValueError("U_mm: 없음. U는 출처와 함께 반드시 지정해야 함")
-    if isinstance(U_mm, bool) or not isinstance(U_mm, (int, float)):
+    if isinstance(U_mm, (bool, np.bool_)) or not isinstance(U_mm, (int, float, np.integer, np.floating)):
         raise ValueError(f"U_mm: 숫자가 아님 ({U_mm!r})")
     U = float(U_mm)
     if math.isnan(U):
