@@ -683,9 +683,22 @@ def _add_col(b: bytes) -> bytes:
     return "\n".join((ln + (",extra" if i == 0 else ",1")) if ln else ln for i, ln in enumerate(lines)).encode("utf-8")
 
 
+META_L000 = f"sessions/{SESSION}/{SR}/L000/meta.json"
+
+
+def _redump_meta(**kw):
+    """L000 meta.json을 다른 표기로 다시 씀 (값은 그대로, meta.json은 files_sha256 밖)."""
+    def f(fs):
+        fs[META_L000] = (json.dumps(json.loads(fs[META_L000].decode("utf-8")), **kw) + "\n").encode("utf-8")
+    return f
+
+
 def warn_tests() -> list[tuple]:
-    """경고 규칙이 실제로 나오는지 (이름, 기대 규칙 ID, 모형 고침)."""
+    """경고 규칙이 실제로 나오는지 (이름, 기대 규칙 ID, 모형 고침[, 바이트 고침])."""
     return [
+        ("meta.json 들여쓰기 4칸", "JSON-06", None, _redump_meta(indent=4, ensure_ascii=False)),
+        ("meta.json 한글을 \\u로", "JSON-07", lambda m: _scan(m)["meta"].update(notes="한글 메모"),
+         _redump_meta(indent=2, ensure_ascii=True)),
         ("D1 재투영 RMS 0.25", "W-CAL-11", lambda m: m["cal"][CAL]["cal_results.csv"][0].update(reproj_rms_px=0.25)),
         ("D2 평면 RMS 6", "W-CAL-12", lambda m: m["cal"][CAL]["cal_results.csv"][1].update(plane_rms_um=6.0)),
         ("무효화된 교정", "W-CAL-13", lambda m: m["cal"][CAL]["cal_results.csv"][2].update(invalidated_by="remount")),
@@ -802,10 +815,14 @@ def run_selftest(fields: list[dict], rules_list: list[dict], file_cols: dict, di
         ids = {x.rule_id for x in fnd if x.severity == "ERROR"}
         results.append({"kind": "손", "name": name, "expected": rid, "detected": rid in ids, "got": sorted(ids)[:12]})
     warns = []
-    for name, rid, fm in warn_tests():
+    for name, rid, fm, *fb in warn_tests():
         m = clone(base)
-        fm(m)
-        fnd = check(serialize(m, file_cols))
+        if fm:
+            fm(m)
+        fs = serialize(m, file_cols)
+        for f in fb:
+            f(fs)
+        fnd = check(fs)
         ids = {x.rule_id for x in fnd if x.severity == "WARN"}
         warns.append({"name": name, "expected": rid, "detected": rid in ids})
     timing["손고장·경고"] = time.perf_counter() - t0

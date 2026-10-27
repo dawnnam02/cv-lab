@@ -62,6 +62,58 @@ def test_cli_exit_codes(tmp_path):
     assert cli.main([]) == 2
 
 
+def test_json_indent4_is_warn_on_disk(tmp_path):
+    """들여쓰기 4칸 meta.json은 JSON-06 WARN만 나오고 종료 코드 0 (팀장검증_3차 S-2 표본)."""
+    cli = load_script("validate_dataset")
+    good = disk_campaign()
+    meta = good / "sessions" / st.SESSION / st.SR / "L000" / "meta.json"
+    orig = meta.read_bytes()
+    rep = tmp_path / "r.json"
+    try:
+        meta.write_bytes((json.dumps(json.loads(orig), indent=4, ensure_ascii=False) + "\n").encode("utf-8"))
+        assert cli.main([str(good), "--report", str(rep)]) == 0
+    finally:
+        meta.write_bytes(orig)
+    rows = json.loads(rep.read_text(encoding="utf-8"))["findings"]
+    assert [(r["rule_id"], r["severity"], r["value"]) for r in rows] == [("JSON-06", "WARN", "4칸")]
+
+
+def test_file_faults_on_disk():
+    """FILE-06 · 07 · 10 고장을 디스크 폴더 (DirFS)로 돌림. 고친 파일은 되돌림 (팀장검증_3차 S-3)."""
+    from cvlab.io.validate import DirFS
+    fields, rules, fc = schema()
+    good = disk_campaign()
+    scan = good / "sessions" / st.SESSION / st.SR / "L000"
+    png5, png4, meta = scan / "frames" / "000005.png", scan / "frames" / "000004.png", scan / "meta.json"
+
+    def run():
+        return {f.rule_id for f in Validator(fields, rules, fc).run(DirFS(good), st.CAMPAIGN) if f.severity == "ERROR"}
+
+    def bad_hash(b):
+        m = json.loads(b)
+        k = sorted(m["files_sha256"])[0]
+        m["files_sha256"][k] = "0" * 64
+        return (json.dumps(m, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+
+    cases = [
+        ("FILE-06", png5, None),  # 프레임 파일 지움
+        ("FILE-07", png4, lambda b: b[:-20] + bytes([b[-20] ^ 0xFF]) + b[-19:]),  # PNG 한 바이트
+        ("FILE-10", meta, bad_hash),  # files_sha256 지문 하나 틀림
+    ]
+    for rid, path, edit in cases:
+        orig = path.read_bytes()
+        try:
+            if edit is None:
+                path.unlink()
+            else:
+                path.write_bytes(edit(orig))
+            got = run()
+        finally:
+            path.write_bytes(orig)
+        assert rid in got, (rid, sorted(got))
+    assert run() == set()
+
+
 def test_truth_path_refused_without_opening(tmp_path, monkeypatch):
     cli = load_script("validate_dataset")
     t = tmp_path / "data" / "_truth" / st.CAMPAIGN

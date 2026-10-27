@@ -561,6 +561,7 @@ class Validator:
         if not isinstance(obj, dict):
             self.emit("JSON-05", path)
             return None
+        self._json_format(path, data.decode("utf-8"), obj)
         cols = self.file_cols["meta.json"]
         raw = {}
         for k, v in obj.items():
@@ -581,6 +582,23 @@ class Validator:
                     self.emit(f"REQ.meta.{c}", path, None, f"meta.{c}", "", "키가 없음")
                 raw[c] = None
         return self.check_record(raw, "meta", cols, path, None, dict(ctx_base, file="meta.json"), csv_mode=False)
+
+    def _json_format(self, path: str, text: str, obj: dict):
+        """명세 §0.5 JSON 표기: 들여쓰기 2칸 (JSON-06), ensure_ascii=False (JSON-07). 둘 다 WARN."""
+        lines = [ln for ln in text.split("\n") if ln.strip()]
+        lead = [ln[:len(ln) - len(ln.lstrip(" \t"))] for ln in lines[1:]]
+        pos = [len(w) for w in lead if w]
+        if any("\t" in w for w in lead):
+            self.emit("JSON-06", path, None, "", "탭", "들여쓰기에 탭이 있음 (명세 §0.5: 들여쓰기 2칸)")
+        elif obj and not pos:
+            self.emit("JSON-06", path, None, "", "한 줄", "들여쓰기 없이 한 줄로 씀 (명세 §0.5: 들여쓰기 2칸)")
+        elif pos and (min(pos) != 2 or any(n % 2 for n in pos)):
+            n = min(pos) if min(pos) != 2 else next(n for n in pos if n % 2)
+            self.emit("JSON-06", path, None, "", f"{n}칸", f"들여쓰기 {n}칸이 있음 (명세 §0.5: 2칸 단위)")
+        for m in re.finditer(r"\\+u([0-9a-fA-F]{4})", text):
+            if (len(m.group(0)) - 5) % 2 == 1 and int(m.group(1), 16) >= 0x80:
+                self.emit("JSON-07", path, None, "", m.group(0)[-6:])
+                break
 
     # -- PNG ---------------------------------------------------------------
     def _png(self, data: bytes):
