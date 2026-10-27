@@ -1,22 +1,28 @@
 # 세부청사진 T0 · Plane 정리
 
-> 상위: [청사진_가상데이터단계](청사진_가상데이터단계.md) §4 · 작성: 2026-10-27 팀장 · 상태: 착수 대기 (**최우선**, 다른 T와 병행)
+> 상위: [청사진_가상데이터단계](청사진_가상데이터단계.md) §4 · 작성: 2026-10-27 팀장 · 상태: T0a 끝 (팀장 검증 전) → **T0c 개정 반영 대기** (**최우선**, 다른 T와 병행)
 > 사용자 요청 원문: "plane에이전트 활용해서 plane에 파일 나눠서 가독성 좋게 정리해줘."
+
+> **개정 2026-10-27: 무엇이 바뀌었나**
+> 1. 목표가 "G코드 대비 높이 판정 워크플로우"로 바뀌었습니다. 페이지 ①④와 항목 본문의 옛 단차 기준 (0.2–0.4 mm 단차, Q ≤ 50/20 µm)을 허용 오차·U 기준으로 고치는 **T0c 단계**를 더합니다 (P11–P14).
+> 2. Plane은 보고용입니다. 사람이 쓴 문체, 내부 용어 금지. 제목 형식은 "D1. 작업명"으로 바뀌었습니다 (완료). 새 항목 (C9 펌웨어 선정)과 제목 변경은 본인 승인 (청사진 D-09) 뒤에만 합니다.
+> 3. 대조표는 `docs/운영/결과_T0_대조표.md`, 검증 스냅숏은 메인이 받는 `docs/운영/plane/_check/`입니다. 검증 명령을 그 형식에 맞췄습니다.
 
 | 항목 | 내용 |
 |---|---|
-| Plane | 워크스페이스 `hyonam-kim` · 프로젝트 LTGE "G코드 대비 가공오차 정량평가" · 항목 44개 |
+| Plane | 워크스페이스 `hyonam-kim` · 프로젝트 LTGE "G코드 대비 가공오차 정량평가" · 항목 44개 (C9 승인 시 45개) |
 | 담당 | Plane 담당 (Plane MCP 도구를 쓰는 worker, Opus 5.5, effort medium) |
-| 기간 | T0a 2026-10-28 ~ 10-29 (페이지 ①–④, 항목 정리) · T0b 11-04 (G0 뒤 페이지 ⑤⑥ 채움) |
-| 선행 | 메인이 `docs/운영/` 청사진 문서를 커밋·푸시한 뒤 시작 (페이지 링크가 살아 있어야 함) |
+| 기간 | T0a 2026-10-27 (끝, 검증 전) · **T0c 10-28 ~ 10-29 (개정 반영)** · T0b 11-04 (G0 뒤 페이지 ⑤⑥ 채움) |
+| 선행 | 메인이 `docs/운영/` 청사진 문서 (개정본)를 커밋·푸시한 뒤 시작 (페이지 링크가 살아 있어야 함) |
 | 후행 | 모든 작업의 "Plane 반영" 단계 (청사진 §7 8단계)가 이 정리 결과 위에서 돕니다 |
-| 산출물 | Plane 페이지 7개 · Plane 항목 44개 정리 · `docs/운영/plane/` 백업·검증 스냅숏 · `docs/운영/대조/T0_대조표.md` |
+| 산출물 | Plane 페이지 7개 · Plane 항목 44개 (또는 45개) 정리 · `docs/운영/plane/` 백업 스냅숏·변경기록 · `docs/운영/결과_T0_대조표.md` (개정 절 덧붙임) |
 
 ## 1. 목적
 
 Plane을 처음 여는 사람이 **5분 안에** 과제 목표, 현재 결정, 작업 순서, 자기 할 일을 찾게 합니다.
 원본은 저장소 문서입니다. Plane 페이지는 요약과 링크만 둡니다.
 하드웨어 항목 삭제 뒤 남은 옛 표기 (없어진 선행 항목, 옛 µm 기준)를 걷어 내고, 비어 있는 상태·기간·모듈을 채웁니다.
+[개정] 10-27 목표 재정의 (G코드를 정답으로, 층마다 레이저로 잰 높이와 비교해 허용 오차 0.2–0.4 mm 안이면 합격)가 Plane에도 보이게 합니다. Plane은 보고용이라, 처음 보는 사람이 읽기 쉬운 짧은 보고문으로 씁니다.
 
 ## 2. 목표 (완료 기준)
 
@@ -29,21 +35,26 @@ Plane을 처음 여는 사람이 **5분 안에** 과제 목표, 현재 결정, �
 | P5 | 상태가 ToDo·InProgress인 항목은 시작일·마감일이 부록 A 표와 같음. Backlog 항목의 날짜는 건드리지 않음 | 검증 명령 ② |
 | P6 | 항목 44개 모두 모듈이 있음. 요소 항목은 요소 코드 첫 글자 모듈 (F0 → F, J0 → J). 마일스톤은 기존 관례 유지 | 검증 명령 ② |
 | P7 | 항목 본문에서 삭제된 20개 항목 (A3 · B3–B7 · C1–C3 · C5–C8 · E1 · F2 · K2 · K3 · M0–M2)과 그 W번호를 가리키는 곳 0. 남은 곳은 부록 B 대체표대로 바꿈 | 검증 명령 ② (남은 적중은 팀장이 한 줄씩 판정) |
-| P8 | 옛 표기 0: A2의 옛 기준 (층 높이 ±0.02 mm → 2–5 µm 중심)을 0.2–0.4 mm·Q ≤ 50/20 µm 기준으로, M4의 "E3 설계·출력"을 "E3 가상 시편 설계 + 시뮬레이터 생성"으로 고침. 그 밖의 옛 표기는 발견 목록과 처리 결과를 대조표에 | 검증 명령 ② + 팀장 열람 |
+| P8 | 옛 표기 0: A2의 옛 기준 (층 높이 ±0.02 mm → 2–5 µm 중심)을 0.2–0.4 mm·Q ≤ 50/20 µm 기준으로, M4의 "E3 설계·출력"을 "E3 가상 시편 설계 + 시뮬레이터 생성"으로 고침. 그 밖의 옛 표기는 발견 목록과 처리 결과를 대조표에. **[개정] 여기서 고친 "0.2–0.4 mm 단차·Q ≤ 50/20 µm"와 "가상 시편 설계"도 이제 옛 표기입니다. P12에서 다시 고칩니다** | 검증 명령 ② + 팀장 열람 |
 | P9 | 본문 구조 (Objective · Scope of Work · Completion Requirements · Assignees · Dependencies)가 정리 전후로 그대로임. 체크박스 개수가 줄지 않음 | 정리 전·후 스냅숏 비교 (검증 명령 ②) |
 | P10 | 정리 전 백업 스냅숏과 정리 후 스냅숏이 저장소에 있음. 바뀐 항목마다 "무엇을 무엇으로" 한 줄 기록 | `docs/운영/plane/` 파일 확인 |
+| — | [개정] P9는 10-27 메인 변경 지시로 바뀌었습니다: "모든 항목 본문에 새 요약 구조 (목표 · 할 일 · 완료 기준 · 선행 작업 · 자세한 내용)가 있음". 체크박스 보존 규칙은 없앴습니다 (옛 본문은 백업에 있음). P6의 마일스톤 4개 (M3–M6)는 모듈 없이 "마일스톤" 라벨을 쓰는 기존 관례가 맞습니다 | 검증 명령 ② |
+| P11 | [개정] 페이지 ①에 개정 결정이 보임: 허용 오차 0.2–0.4 mm, 측정 불확도 50 µm 이하 (목표 20 µm), 측정점 95 % 합격 규칙, 정답 = 사용자 G코드, 펌웨어 선정 진행. 페이지 ④에 펌웨어 선정·합격 판정 규칙 작업과 바뀐 기간 4건 | 검증 명령 ③ (키워드) + 팀장 열람 |
+| P12 | [개정] 부록 C의 항목 본문이 개정 목표와 맞음. 옛 단차 기준 표기 ("Q ≤", "가상 시편 설계" 등) 0. "단차"가 남은 곳은 팀장이 한 줄씩 판정 (필러게이지·벽 가림처럼 정당한 언급은 둠) | 검증 명령 ② (P12 적중) |
+| P13 | [개정] 기간이 바뀐 4개 (G1 · E3 · H5 · A2)가 부록 A 표와 같음 | 검증 명령 ② (P4–P6과 함께) |
+| P14 | [개정] 문체·형식: 제목 44/44가 "D1. 작업명" 형식, 항목 본문·페이지에 내부 용어 0. C9는 본인 승인 (D-09) 뒤에만 있음 (승인 전 0개, 승인 뒤 1개) | 검증 명령 ② · ③ |
 
 ## 3. 페이지 구성
 
 | 페이지 | 제목 (안) | 꼭 담을 것 | 원본 링크 |
 |---|---|---|---|
 | 상위 | LTGE 과제 안내 (2026-10-27 기준) | 한 줄 목표, 하위 페이지 목차 (링크), "원본은 저장소" 안내, 갱신 규칙 | 저장소 README · 중심주제 |
-| ① | 과제 개요와 현재 결정 | 궁극 목표 (중심주제 §1), 10-27 결정 4가지 표 (측정 방식 · 교차검증 · 요구 0.2–0.4 mm · 하드웨어 작업 없음), M54 사양 한 줄 표, 다음 게이트 날짜 | 중심주제 · 청사진 §1 · M54 |
-| ② | 운영 체계 | 팀장·worker 역할, 문서 체계 5층 표, 8단계 대조 절차 표, 판정 기호, 금지 명령 요약 | 청사진 §0 · §5 · §7 |
-| ③ | 0단계 방법탐색 결과 | §000 선정표 (후보 · 비용 · Q · 0.2 mm · 0.4 mm), 선정 결론 2줄, 이전 선정 (§00 · §0)은 링크만 | 비교-선정 §000 |
-| ④ | 작업 지도 | T0–T13 작업표 (작업 · Plane 항목 · 기간 · 선행 · 담당), 게이트 표 (G0 · G1 · G2 · M3 · M4 · M5), 모듈 → 항목 표 (A–K, 44개 전부) | 청사진 §4 · §6 |
-| ⑤ | 하드웨어 데이터 명세 | T0a: "T1 진행 중, 11-03 동결 뒤 채움" 한 줄. T0b: 7묶음 표 (묶음 · 파일 · 필수 필드 수), 폴더 구조, 삭제 항목 대응 요약 | `docs/하드웨어-데이터-명세.md` |
-| ⑥ | 측정 실패 사례 | T0a: "T2 진행 중, 10-30 마감" 한 줄. T0b: 심각도 상위 10개 표, 범주별 개수, 대책 요약 | `docs/측정-실패사례.md` |
+| ① | 과제 개요와 현재 결정 | 궁극 목표 (중심주제 §1), 10-27 결정 4가지 표 (측정 방식 · 교차검증 · 요구 0.2–0.4 mm · 하드웨어 작업 없음), M54 사양 한 줄 표, 다음 게이트 날짜. **[개정] 최종 산출물 한 줄 (G코드 → 정답 높이 지도, 층마다 레이저 → 실측 높이 지도, 차이 → 합격 판정 → 보고서), 결정 표에 허용 오차 0.2–0.4 mm · 측정 불확도 50 µm 이하 (목표 20 µm) · 측정점 95 % 합격 (경계는 보류) · 정답 = 사용자 G코드 · 펌웨어 선정 진행 · 예산 100만 원 미만** | 중심주제 · 청사진 개정 요약 · §1 · §2.3 · M54 |
+| ② | 운영 체계 (현재 제목 "진행 방식") | 역할, 문서 체계, 진행 절차, 판정 기호 요약. [개정] 보고용 문체로 이미 바꿈 (T0a). 대조표 경로만 맞춤 | 청사진 §0 · §5 · §7 |
+| ③ | 0단계 방법탐색 결과 | §000 선정표 (후보 · 비용 · Q · 0.2 mm · 0.4 mm), 선정 결론 2줄, 이전 선정 (§00 · §0)은 링크만. [개정] 표 위에 "이 표의 Q는 당시 단차 기준. 지금 기준은 절대 높이 불확도 U (페이지 ①)" 한 줄 | 비교-선정 §000 |
+| ④ | 작업 지도 | 작업표 (작업 · Plane 항목 · 기간 · 선행), 게이트 표 (G0 · G1 · G2 · M3 · M4 · M5), 모듈 → 항목 표 (A–K, 44개 전부). **[개정] 새 작업 2개 (펌웨어 선정 · 합격 판정 규칙), 축소 1개 (E3), 기간 바뀐 4개 (G1 · E3 · H5 · A2). 작업 번호 (T번호) 대신 작업 이름으로** | 청사진 §4 · §6 |
+| ⑤ | 하드웨어 데이터 명세 | T0a: 틀만 (끝). T0b: 7묶음 표 (묶음 · 파일 · 필수 필드 수), 폴더 구조, 삭제 항목 대응 요약. [개정] 높이 0점·열 상태·펌웨어 필드 한 줄 | `docs/하드웨어-데이터-명세.md` |
+| ⑥ | 측정 실패 사례 | T0a: 틀만 (끝). T0b: 심각도 상위 10개 표, 범주별 개수, 대책 요약. [개정] 절대 높이 기준으로 다시 매긴 순위, 절대 높이 오차 예산 한 줄 | `docs/측정-실패사례.md` |
 
 - 페이지 첫 줄 형식: `원본: <GitHub 링크> · 기준일: 2026-10-28 · 담당: 팀장 (갱신은 저장소 먼저)`.
 - 링크 기준: `https://github.com/dawnnam02/cv-lab/blob/claude/lidar-error-measurement-blueprint-vq1ofq/<경로>`.
@@ -57,10 +68,12 @@ Plane을 처음 여는 사람이 **5분 안에** 과제 목표, 현재 결정, �
 | Dependencies | 삭제된 항목을 가리키는 줄은 부록 B 대체표대로 바꿉니다. 대체할 것이 없으면 그 줄만 지웁니다 |
 | 옛 기준·옛 표기 | P8의 두 곳은 반드시 고칩니다. 그 밖에 찾은 옛 표기는 고치기 전에 대조표에 목록을 쓰고, 명백한 것 (삭제 항목 이름, 옛 마일스톤 날짜)만 고칩니다. 판단이 필요한 것은 팀장에게 묻습니다 |
 | 구조 | 제목 헤더 (Objective · Scope of Work · Completion Requirements · Assignees · Dependencies)와 체크박스는 그대로 둡니다. 문장만 고칩니다 |
-| 제목 | 바꾸지 않습니다. `[M0][C0W번호][작업종류]` 형식 위반을 찾으면 대조표에 적고 팀장에게 보고만 합니다 |
+| 제목 | [개정] 형식은 "D1. 작업명" (요소 코드 + 마침표 + 작업명, 10-27 변경 완료, `T0_제목변경.md`). 작업 종류는 라벨로 둡니다. 제목은 바꾸지 않습니다. 부록 C의 제목 변경 제안 (E3 · H5)과 새 항목 C9는 본인 승인 (D-09) 뒤에만 |
+| 문체 | [개정] 보고용. 사람이 쓴 짧은 문장. 내부 용어 금지: worker · 에이전트 · 팀장 · 메인 · 세부청사진 · 대조표 · 스냅숏 · Opus · effort · 작업 번호 (T0–T15) · 게이트 기호 (G0 등은 "중간 점검 (11-03)"처럼 날짜로) · 이모지 |
 | 상태·기간·모듈 | 부록 A 표대로 맞춥니다. 표와 Plane 값이 다르면 표를 따르고, 바꾸기 전 값은 백업 스냅숏에 남습니다 |
 | 변경 메모 | 항목 본문에 변경 메모를 덧붙이지 않습니다 (가독성). 변경 기록은 저장소의 대조표와 스냅숏에 둡니다 |
-| 다른 worker 작업 | 다른 worker가 D1–D5 · E3 · M3–M6 · A2 본문에 "가상 데이터 기준" 안내를 붙이는 중입니다. **그 작업이 끝났다고 메인이 확인해 주기 전에는 이 11개 항목 본문을 고치지 않습니다.** 상태·기간·모듈만 먼저 바꿉니다. 끝난 뒤 고칠 때도 그 안내 문단은 지우거나 옮기지 않습니다 |
+| 다른 worker 작업 | 다른 worker가 D1–D5 · E3 · M3–M6 · A2 본문에 "가상 데이터 기준" 안내를 붙이는 중입니다. **그 작업이 끝났다고 메인이 확인해 주기 전에는 이 11개 항목 본문을 고치지 않습니다.** 상태·기간·모듈만 먼저 바꿉니다. 끝난 뒤 고칠 때도 그 안내 문단은 지우거나 옮기지 않습니다. [개정] 10-27 메인이 끝남을 확인했습니다 (T0 대조표). 이 규칙은 닫혔습니다 |
+| 개정 반영 (T0c) | [개정] 부록 C 표대로 고칩니다. 판단이 필요한 문장 ("단차"가 정당한 언급인지 등)은 고치기 전에 대조표에 목록을 쓰고 팀장에게 묻습니다. 숫자는 청사진 개정본에 있는 것만 씁니다 |
 
 ## 5. 단계
 
@@ -74,7 +87,12 @@ Plane을 처음 여는 사람이 **5분 안에** 과제 목표, 현재 결정, �
 | S6 | 10-29 | 페이지 상위 1 + ①–④ 작성, ⑤⑥은 진행 중 한 줄 | 검증 명령 ③④ 통과 |
 | S7 | 10-29 | 정리 후 스냅숏 `LTGE_items_20261029_after.json`, `LTGE_pages_20261029_after.json`. 바뀐 항목마다 한 줄 기록 `docs/운영/plane/T0_변경기록.md` | 파일 3개 |
 | S8 | 10-29 | 종료 대조표 작성 → 팀장 검증 | 점검일지 판정 |
-| S9 (T0b) | 11-04 | G0 통과 뒤 페이지 ⑤⑥ 채움, ④의 진행 상태 갱신, 다시 스냅숏 | 검증 명령 ③④ 재통과 |
+| S9 (T0b) | 11-04 | G0 통과 뒤 페이지 ⑤⑥ 채움 ([개정] 절대 높이 기준 내용), ④의 진행 상태 갱신, 다시 스냅숏 | 검증 명령 ③④ 재통과 |
+| S10 (T0c) [개정] | 10-28 | 대조표에 "개정 시작 확인" 절 (§8 개정 항목). **개정 전 백업** `docs/운영/plane/LTGE_items_20261028_before.json`, `LTGE_pages_20261028_before.json` | 파일 2개, 항목 수 44 |
+| S11 (T0c) [개정] | 10-28 | 페이지 ① · ③ · ④ 개정 (§3 [개정] 칸). ②는 대조표 경로만 | 검증 명령 ③ P11 키워드 |
+| S12 (T0c) [개정] | 10-28 ~ 10-29 | 부록 C 항목 본문 개정, 부록 A 기간 4건 (G1 · E3 · H5 · A2) 반영. "단차"가 남은 문장 목록을 대조표에 쓰고 팀장 판정 받음 | 검증 명령 ② P12·P13 |
+| S13 (T0c) [개정] | 10-29 | 본인 승인 (D-09)이 있으면: C9 항목 생성 (부록 A 행대로, 제목 "C9. 프린터 펌웨어 선정"), 부록 C 제목 변경 2건. 승인이 없으면 건너뛰고 대조표에 "승인 대기" | 검증 명령 ② P14 |
+| S14 (T0c) [개정] | 10-29 | 개정 후 스냅숏 `LTGE_items_20261029_after.json`, `LTGE_pages_20261029_after.json`, 변경 기록 `docs/운영/plane/T0c_변경기록.md`. "개정 종료 대조" 절 → 메인이 새 `_check` 스냅숏을 받음 → 팀장 검증 | 파일 3개 + `_check` 갱신 |
 
 ## 6. 검증
 
@@ -92,85 +110,128 @@ Plane을 처음 여는 사람이 **5분 안에** 과제 목표, 현재 결정, �
 
 **검증용 스냅숏 (`_check`)은 메인이 Plane에서 따로 받아 저장합니다.** worker가 만든 `_after` 스냅숏만으로 판정하지 않습니다.
 
-### 6.2 검증 명령 (Git Bash에 그대로 붙여 넣기)
+[개정] 메인의 검증용 스냅숏은 실제로 폴더 `docs/운영/plane/_check/`에 있습니다 (items.json · pages.json · modules.json · states.json · labels.json, 형식 `{"project_id", "count", "results": [...]}`, 받은 시각은 README.md). 항목의 `state`는 `{"id","name"}`, `module`은 `[{"id","name"}]` 목록, 본문은 `description_html`입니다. 아래 명령은 이 형식을 먼저 읽고, 없으면 옛 `LTGE_*_check.json`을 읽습니다.
+- 10-27 `_check`는 제목 변경 (11:21) 전에 받은 것이라 제목이 옛 형식입니다. T0c 뒤 메인이 다시 받습니다. 새로 받을 때 이전 폴더는 `_check_20261027/`로 이름을 바꿔 보관합니다.
+
+### 6.2 검증 명령 (Git Bash에 그대로 붙여 넣기) [개정]
+
+[개정] 메인의 `_check/` 폴더 형식을 읽도록 바꿨고, P9 (새 요약 구조)·P11–P14 검사를 더했습니다. 개정 전 상태에 돌리면 P11–P14에서 적중이 나오는 것이 정상입니다.
 
 ① 파일 확인
 
 ```bash
-cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && ls -la docs/운영/plane/ && PYTHONIOENCODING=utf-8 python -c "import json,glob; [print(f, len(json.load(open(f,encoding='utf-8')))) for f in sorted(glob.glob('docs/운영/plane/*.json'))]"
+cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && ls -la docs/운영/plane/ docs/운영/plane/_check/ && PYTHONIOENCODING=utf-8 python -c "import json,glob; [print(f, (lambda d: len(d.get('results',d)) if isinstance(d,dict) else len(d))(json.load(open(f,encoding='utf-8')))) for f in sorted(glob.glob('docs/운영/plane/*.json')+glob.glob('docs/운영/plane/_check/*.json'))]"
 ```
 
-② 항목 상태·기간·모듈·옛 참조 (검증용 스냅숏 기준)
+② 항목 상태·기간·모듈·옛 참조·문체 (검증용 스냅숏 기준)
 
 ```bash
 cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && PYTHONIOENCODING=utf-8 python - <<'EOF'
-import json,re,glob
-chk=sorted(glob.glob('docs/운영/plane/LTGE_items_*_check.json'))[-1]
-bef=sorted(glob.glob('docs/운영/plane/LTGE_items_*_before.json'))[0]
-items=json.load(open(chk,encoding='utf-8')); old={i['seq']:i for i in json.load(open(bef,encoding='utf-8'))}
+import json,re,glob,os,html
+def strip(h):
+    h=re.sub(r'</(p|li|tr|h\d|div)>|<br\s*/?>','\n',h or '')
+    return html.unescape(re.sub(r'<[^>]+>',' ',h))
+f='docs/운영/plane/_check/items.json'
+if os.path.exists(f):
+    d=json.load(open(f,encoding='utf-8')); d=d.get('results',d) if isinstance(d,dict) else d
+else:
+    f=sorted(glob.glob('docs/운영/plane/LTGE_items_*_check.json'))[-1]; d=json.load(open(f,encoding='utf-8'))
+items=[]
+for i in d:
+    st=i.get('state'); st=st.get('name') if isinstance(st,dict) else st
+    md=i.get('module'); md=(md[0].get('name','') if md else '') if isinstance(md,list) else (md or '')
+    items.append(dict(seq=int(i.get('sequence_id') or i.get('seq')),name=i['name'],state=st,sd=i.get('start_date'),td=i.get('target_date'),mod=md,text=strip(i.get('description_html') or i.get('description'))))
 bp=open('docs/운영/세부청사진_T0_Plane정리.md',encoding='utf-8').read().split('## 부록 A. 항목별 목표 상태')[-1].split('## 부록 B')[0]
 tgt={m[0]:m[1:] for m in re.findall(r'^\| ([A-K]\d|M[3-6]) \| (\w+) \| ([\d-]+|-) \| ([\d-]+|-) \| ([^|]+?) \|',bp,re.M)}
 norm=lambda s:(s or '').replace(' ','').lower()
-print('검증 스냅숏',chk,'/ 항목',len(items),'/ 목표표',len(tgt))
-code=lambda n:(re.search(r'(?:^|\]\s*)([A-K]\d|M[3-6])\b',n) or [None,None])[1]
-bad=[]
+code=lambda n:(re.search(r'^(?:\[[^\]]*\])*\s*(?:🚩\s*)?([A-K]\d|M[3-6])\.',n) or [None,None])[1]
+print('검증 스냅숏',f,'/ 항목',len(items),'/ 목표표',len(tgt))
+bad=[]; seen=set()
 for i in items:
-    c=code(i['name']); t=tgt.get(c)
+    c=code(i['name']); t=tgt.get(c); seen.add(c)
     if not t: bad.append((i['seq'],'목표표에 없음',i['name'][:40])); continue
     st,sd,td,mod=t
-    if norm(i.get('state'))!=norm(st): bad.append((c,'상태',i.get('state'),st))
-    if st!='Backlog' and (i.get('start_date')!=sd or i.get('target_date')!=td): bad.append((c,'기간',i.get('start_date'),i.get('target_date'),sd,td))
-    if not i.get('module'): bad.append((c,'모듈 빈칸'))
-    elif mod.strip()!='기존 유지' and not i['module'].strip().startswith(mod.strip()): bad.append((c,'모듈',i['module'],mod))
-print('P4–P6 불일치',len(bad)); [print(' ',b) for b in bad]
+    if norm(i['state'])!=norm(st): bad.append((c,'상태',i['state'],st))
+    if st!='Backlog' and (i['sd']!=sd or i['td']!=td): bad.append((c,'기간',i['sd'],i['td'],sd,td))
+    if mod.strip()!='기존 유지':
+        if not i['mod']: bad.append((c,'모듈 빈칸'))
+        elif not i['mod'].strip().startswith(mod.strip()): bad.append((c,'모듈',i['mod'],mod))
+print('P4–P6·P13 불일치',len(bad)); [print(' ',b) for b in bad]
+print('목표표에 있는데 Plane에 없음',sorted(set(tgt)-seen),'(C9만 있으면 D-09 승인 전이라 정상)')
 gone={n for n in range(1,63) if n not in {i['seq'] for i in items}}
-print('사라진 W번호',len(gone),sorted(gone))
+print('사라진 번호',len(gone))
 pat=re.compile(r'(?<![\[\w])(A3|B[3-7]|C[1-3]|C[5-8]|E1|F2|K2|K3)\.|(?<![\[\w])(M[0-2])(?![\w\]])')
-stale=['E3 설계·출력','2–5 µm','2~5 µm','±0.02 mm']
+stale=['E3 설계·출력','2–5 µm','2~5 µm','±0.02 mm','Q ≤','Q≤','단차 Q','가상 시편 설계','시편 설계']
 hits=[]
 for i in items:
-    d=i.get('description') or ''
-    hits+=[(i['seq'],'W'+w) for w in re.findall(r'C0W0*(\d+)',d) if int(w) in gone]
-    hits+=[(i['seq'],m.group(0)) for m in pat.finditer(d)]
-    hits+=[(i['seq'],s) for s in stale if s in d]
-print('P7·P8 적중 (팀장이 한 줄씩 판정)',len(hits)); [print(' ',h) for h in hits[:60]]
-cb=lambda d:len(re.findall(r'type="checkbox"|data-checked|- \[[ x]\]',d or ''))
-hd=lambda d:[h for h in ['Objective','Scope of Work','Completion Requirements','Assignees','Dependencies'] if h in (d or '')]
-p9=[(i['seq'],cb(old[i['seq']].get('description')),cb(i.get('description'))) for i in items if i['seq'] in old and (cb(i.get('description'))<cb(old[i['seq']].get('description')) or hd(i.get('description'))!=hd(old[i['seq']].get('description')))]
-print('P9 구조·체크박스 감소',p9)
+    t=i['text']
+    hits+=[(i['seq'],'W'+w) for w in re.findall(r'C0W0*(\d+)',t) if int(w) in gone]
+    hits+=[(i['seq'],m.group(0)) for m in pat.finditer(t)]
+    hits+=[(code(i['name']),s) for s in stale if s in t]
+print('P7·P8·P12 적중',len(hits)); [print(' ',h) for h in hits[:60]]
+print('P12 "단차"가 남은 항목 (팀장이 문장별 판정)',[(code(i['name']),i['text'].count('단차')) for i in items if '단차' in i['text']])
+heads=['목표','할 일','완료 기준','선행 작업','자세한 내용']
+print('P9 요약 구조 누락',[(code(i['name']),[h for h in heads if h not in i['text']]) for i in items if any(h not in i['text'] for h in heads)])
+tf=re.compile(r'^([A-K]\d|M[3-6])\. \S')
+print('P14 제목 형식 위반',len([i for i in items if not tf.match(i['name'])]),[i['name'][:30] for i in items if not tf.match(i['name'])][:10])
+terms=['worker','에이전트','팀장','메인','세부청사진','대조표','스냅숏','Opus','effort','🚩']
+it=[(code(i['name']),t) for i in items for t in terms if t in i['text']]
+it+=[(code(i['name']),m) for i in items for m in re.findall(r'(?<![\w-])T(?:1[0-5]|[0-9])(?![\w.])',i['text'])]
+print('P14 내부 용어 (본문)',it[:40])
 EOF
 ```
 
-③ 페이지 구성 (검증용 스냅숏 기준)
+③ 페이지 구성·개정 키워드 (검증용 스냅숏 기준)
 
 ```bash
 cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && PYTHONIOENCODING=utf-8 python - <<'EOF'
-import json,glob
-pg=json.load(open(sorted(glob.glob('docs/운영/plane/LTGE_pages_*_check.json'))[-1],encoding='utf-8'))
-top=[p for p in pg if '과제 안내' in p['name']]
+import json,glob,os,re,html
+def strip(h):
+    h=re.sub(r'</(p|li|tr|h\d|div)>|<br\s*/?>','\n',h or '')
+    return html.unescape(re.sub(r'<[^>]+>',' ',h))
+f='docs/운영/plane/_check/pages.json'
+if os.path.exists(f):
+    d=json.load(open(f,encoding='utf-8')); d=d.get('results',d) if isinstance(d,dict) else d
+    pg=[dict(id=p.get('id'),name=p['name'],parent=p.get('parent_id'),text=strip(p.get('description_html'))) for p in d]
+else:
+    pg=json.load(open(sorted(glob.glob('docs/운영/plane/LTGE_pages_*_check.json'))[-1],encoding='utf-8'))
+top=[p for p in pg if '과제 안내' in p['name']]; tid=top[0].get('id') if top else None
 print('페이지',len(pg),'/ 상위',[p['name'] for p in top])
 for p in pg:
-    head=p['text'].strip().splitlines()[0] if p['text'].strip() else ''
-    print(p['name'][:30],'| 상위:',p.get('parent'),'| 글자',len(p['text']),'| 원본·기준일',('원본:' in head and '기준일:' in head),'| 4000자 이하',len(p['text'])<=4000)
+    if not p['name'].startswith('LTGE'): continue
+    lines=[l.strip() for l in p['text'].splitlines() if l.strip()]; head=lines[0] if lines else ''
+    n=len(p['text'].strip()); ok_parent=(p.get('parent') in (None,'None','')) if '과제 안내' in p['name'] else (p.get('parent')==tid or p.get('parent') in [q['name'] for q in top])
+    print(p['name'][:24],'| 상위 맞음',ok_parent,'| 글자',n,'| 원본·기준일',('원본' in head and '기준일' in head),'| 4000자 이하',n<=4000)
+one=next((p['text'] for p in pg if '①' in p['name']),''); four=next((p['text'] for p in pg if '④' in p['name']),'')
+print('P11 페이지 ① 키워드 누락',[k for k in ['허용 오차','0.2','0.4','50 µm','20 µm','95','G코드','펌웨어'] if k not in one])
+print('P11 페이지 ④ 키워드 누락',[k for k in ['펌웨어','판정'] if k not in four])
+terms=['worker','에이전트','팀장','세부청사진','대조표','스냅숏','Opus','effort','🚩']
+print('P14 내부 용어 (페이지)',[(p['name'][:12],t) for p in pg if p['name'].startswith('LTGE') for t in terms if t in p['text']])
 EOF
 ```
 
-④ 페이지 링크가 원격 브랜치에 있는 파일인지
+④ 페이지·항목 링크가 원격 브랜치에 있는 파일인지
 
 ```bash
 cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && git fetch -q origin && PYTHONIOENCODING=utf-8 python - <<'EOF'
-import json,glob,re,subprocess,urllib.parse
+import json,glob,re,subprocess,urllib.parse,os
 B='claude/lidar-error-measurement-blueprint-vq1ofq'
-pg=json.load(open(sorted(glob.glob('docs/운영/plane/LTGE_pages_*_check.json'))[-1],encoding='utf-8'))
+texts=[]
+for f in ['docs/운영/plane/_check/pages.json','docs/운영/plane/_check/items.json']:
+    if os.path.exists(f):
+        d=json.load(open(f,encoding='utf-8')); d=d.get('results',d) if isinstance(d,dict) else d
+        texts+=[x.get('description_html') or '' for x in d]
+if not texts:
+    texts=[p['text'] for p in json.load(open(sorted(glob.glob('docs/운영/plane/LTGE_pages_*_check.json'))[-1],encoding='utf-8'))]
 files=set(subprocess.run(['git','-c','core.quotepath=false','ls-tree','-r','--name-only','origin/'+B],capture_output=True,text=True,encoding='utf-8').stdout.splitlines())
 links=set()
-for p in pg: links|=set(re.findall(r'github\.com/dawnnam02/cv-lab/blob/'+re.escape(B)+r'/([^\s)#"\'<>]+)',p['text']))
+for t in texts: links|=set(re.findall(r'github\.com/dawnnam02/cv-lab/blob/'+re.escape(B)+r'/([^\s)#"\'<>]+)',t))
 bad=[l for l in links if urllib.parse.unquote(l) not in files]
-print('링크',len(links),'/ 깨진 링크',bad)
+print('링크 (페이지+항목)',len(links),'/ 깨진 링크',bad)
 EOF
 ```
 
-판정: ② 불일치 0, 적중은 모두 "정당한 언급"으로 팀장 판정, P9 빈 목록. ③ 7개 페이지 모두 True. ④ 깨진 링크 빈 목록.
+판정: ② 불일치 0 (C9 누락은 D-09 승인 전이면 정상), 적중은 모두 "정당한 언급"으로 팀장 판정, P9 누락 빈 목록, P14 제목 위반 0, 내부 용어 빈 목록 ("메인보드"처럼 일반 낱말은 팀장 판정). ③ LTGE 페이지 7개 모두 True, P11 누락 빈 목록, 내부 용어 빈 목록. ④ 깨진 링크 빈 목록.
 
 ### 6.3 팀장 표본 검사
 
@@ -180,17 +241,17 @@ EOF
 
 ## 7. 금지 사항
 
-- 항목을 지우거나 새로 만들지 않습니다 (T2용 항목 신설은 본인 결정 대기). 상태를 Cancelled로 바꾸지 않습니다 (본인만 가능).
-- 항목 제목을 바꾸지 않습니다. LTGE 밖의 프로젝트·워크스페이스를 건드리지 않습니다.
-- 다른 worker의 "가상 데이터 기준" 안내 문단을 지우거나 옮기지 않습니다. 그 11개 항목 본문은 메인 확인 전 손대지 않습니다.
+- 항목을 지우거나 새로 만들지 않습니다. 상태를 Cancelled로 바꾸지 않습니다 (본인만 가능). [개정] 예외는 본인이 승인한 C9 (펌웨어 선정) 생성 하나뿐입니다 (D-09). T2용 항목은 만들지 않기로 확정됐습니다 (D-01).
+- 항목 제목을 바꾸지 않습니다 ([개정] 형식 "D1. 작업명" 유지. 부록 C의 제목 변경 2건은 D-09 승인 뒤에만). LTGE 밖의 프로젝트·워크스페이스를 건드리지 않습니다.
+- 다른 worker의 "가상 데이터 기준" 안내 문단을 지우거나 옮기지 않습니다. 그 11개 항목 본문은 메인 확인 전 손대지 않습니다. [개정] 메인 확인이 끝나 닫힌 규칙입니다 (10-27). T0c는 부록 C대로 고치되, 가상 데이터라는 안내 뜻은 남깁니다.
 - 숫자를 지어내지 않습니다. 페이지의 모든 숫자는 저장소 원본에서 옮기고, 원본에 없는 숫자는 쓰지 않습니다.
-- 저장소에서는 `docs/운영/plane/`과 `docs/운영/대조/T0_대조표.md`만 만듭니다. 다른 저장소 파일은 고치지 않습니다.
+- 저장소에서는 `docs/운영/plane/`과 `docs/운영/결과_T0_대조표.md`만 만들거나 고칩니다. `docs/운영/plane/_check/`는 메인 것이라 건드리지 않습니다. 다른 저장소 파일은 고치지 않습니다.
 - V2 미커밋 파일 (`scripts/method_screening/*`, `tests/test_method_screening.py`, `docs/0_방법탐색/결과_v3/`)을 고치거나 git으로 되돌리지 않습니다. `git add`·`commit`·`push`·`stash`·`checkout -- .`·`restore`·`clean`을 쓰지 않습니다.
 - 백업 스냅숏 (S2) 없이 항목을 고치지 않습니다.
 
 ## 8. 시작 시 확인 항목
 
-`docs/운영/대조/T0_대조표.md`의 "시작 확인" 절에 적고 시작합니다.
+`docs/운영/결과_T0_대조표.md`의 "시작 확인" 절에 적고 시작합니다.
 
 - [ ] `git pull` 결과, 브랜치, `git status --short` (V2 미커밋 파일 기준선)
 - [ ] 원격 브랜치에 `docs/운영/청사진_가상데이터단계.md`가 있는지 (`git ls-tree origin/<브랜치> docs/운영/`). 없으면 메인에게 커밋을 요청하고 기다립니다
@@ -199,6 +260,14 @@ EOF
 - [ ] 프로젝트의 상태 이름 목록 (Backlog · Todo · In Progress · Done · Cancelled 등 실제 표기)과 모듈 이름 목록
 - [ ] 다른 worker의 "가상 데이터 기준" 본문 작업이 끝났는지 메인에게 확인한 결과
 - [ ] 목표 P1–P10을 자기 말로 한 줄씩
+
+[개정] T0c는 같은 대조표에 "개정 시작 확인 (2026-10-28)" 절을 덧붙입니다. 이전 절은 지우지 않습니다.
+
+- [ ] 원격 브랜치에 청사진 개정본이 있는지 (`git ls-tree origin/<브랜치> docs/운영/`, 개정 요약 절이 있는 판). 없으면 메인에게 커밋을 요청하고 기다립니다
+- [ ] Plane 항목 44개 제목이 "D1. 작업명" 형식인지 (10-27 변경 결과)
+- [ ] 본인 승인 D-09 (C9 생성, 제목 변경 2건) 여부를 메인에게 확인
+- [ ] 목표 P11–P14를 자기 말로 한 줄씩
+- [ ] 이 세부청사진 §10 "추가 작업 후보" 중 T0c에서 함께 처리할 것과 남길 것
 
 ## 9. 종료 대조표 양식
 
@@ -217,34 +286,61 @@ EOF
 | P8 옛 표기 | A2 · M4 고침, 그 밖 n건 | T0_변경기록.md | |
 | P9 구조 보존 | 체크박스 감소 0 | 명령 ② | |
 | P10 백업·기록 | before · after · 변경기록 | docs/운영/plane/ | |
+| P11 [개정] 페이지 ①④ | 키워드 누락 0 | 명령 ③ | |
+| P12 [개정] 항목 본문 | 옛 표기 적중 0, "단차" n건 판정 | 명령 ② · T0c_변경기록.md | |
+| P13 [개정] 기간 4건 | 4/4 | 명령 ② | |
+| P14 [개정] 문체·형식 | 제목 위반 0, 내부 용어 0, C9 (승인 여부) | 명령 ② · ③ | |
 
 W번호 ↔ 요소 코드 대응표: (44행)
 검증 명령 실행 결과: (붙여 넣기)
 남은 문제: (없으면 "없음")
 ```
 
+- [개정] T0c 뒤에는 "개정 종료 대조 (2026-10-29 HH:MM)" 절을 덧붙이고 P1–P14를 모두 다시 판정합니다.
+
+## 10. 추가 작업 후보 (개정, 판정은 다음 검증에서)
+
+T0a 결과 (10-27)가 새 기준에 못 미칠 수 있는 곳입니다. 근거는 메인의 `_check` 스냅숏 (10-27 11:05–11:16)을 위 명령 ②③으로 읽은 결과입니다. 팀장이 다음 검증에서 하나씩 판정하고, 해당하면 T0c에서 고칩니다.
+
+| 번호 | 위치 | 의심 내용 | 관련 목표 |
+|---|---|---|---|
+| C1 | 페이지 ① | "허용 오차"·"95"·"펌웨어"가 없음. 요구 0.2–0.4 mm를 단차로 적었을 가능성 | P11 |
+| C2 | 페이지 ④ | "펌웨어"·"판정"이 없음. 기간 4건이 옛 값 | P11 · P13 |
+| C3 | 페이지 ③ | §000 표의 Q가 단차 기준이라는 설명이 없음 | P11 |
+| C4 | 항목 A2 · D5 · H5 · M4 · J0 | "Q ≤" 또는 "단차 Q" 표기 | P12 |
+| C5 | 항목 G5 · I2 · I3 · M3 · M4 | "시편 설계" 표기 (M4는 "가상 시편 설계") | P12 |
+| C6 | 항목 A1 · A2 · D5 · E2 · E3 · G4 · H2 · H5 · H7 · I3 · M4 · J0 | "단차"가 남음 (12개 항목, 항목당 1–5회). 문장마다 정당한 언급인지 판정 필요 | P12 |
+| C7 | 항목 G1 · G2 · G3 · I1 | 본문에 "사용자 G코드"·"절대 높이" 뜻이 없을 가능성 (부록 C 방향과 대조) | P12 |
+| C8 | `_check` 스냅숏 | 제목 변경 (11:21) 전에 받아 제목 44개가 옛 형식. 지금 Plane과 다름 → 새로 받아야 함 | P14 |
+| C9 | 선행 작업 | T0 대조표 남은 문제 3: 선행이 일정보다 늦은 5건 (E2 ← D5, E3 ← D4·G4, F3 ← F1, I3 ← I2, D4 ← D5). 개정 일정에서 E3 (11-02 ~ 11-04)는 G4 (11-16 ~ 11-17)보다 앞이라 "E3 ← G4"는 뒤집어야 함 | P12 |
+| C10 | 항목 K1 제목 "(24주)" | 옛 일정 표기. 제목이라 D-09와 함께 묻기 | P14 |
+| C11 | 기존 페이지 "📘 과제 청사진 개요" (10-06) | 55개 요소·24주 기준. 보관 여부는 본인 (T0 대조표 남은 문제 4) | P11 |
+| C12 | 항목 F0 · J0 "자세한 내용" 링크 | 명세 문서가 아직 원격에 없음 (T1 커밋 뒤 살아남) | P3 |
+
 ## 부록 A. 항목별 목표 상태
 
 청사진 §4.1 일정과 같습니다. 상태 이름은 Plane 실제 표기에 맞추되 뜻은 이 표를 따릅니다. Backlog 행의 `-`는 "날짜를 건드리지 않음"입니다. 모듈 칸은 모듈 이름의 첫 글자입니다.
+[개정] 2026-10-27 개정으로 바뀐 행: A2 · E3 · G1 · H5 (기간·작업), C9 (신설, D-09 승인 뒤 생성). "작업" 칸의 T번호는 저장소 안에서만 쓰고 Plane 본문에는 쓰지 않습니다.
 
 | 코드 | 상태 | 시작 | 마감 | 모듈 | 작업 |
 |---|---|---|---|---|---|
 | A1 | ToDo | 2027-02-02 | 2027-02-05 | A | T13 |
-| A2 | ToDo | 2027-02-02 | 2027-02-05 | A | T13 |
+| A2 | ToDo | 2026-11-04 | 2026-11-10 | A | T15 [개정] (T13에서 옮김) |
 | B1 | ToDo | 2026-11-04 | 2026-11-24 | B | T3 |
 | B2 | ToDo | 2026-11-04 | 2026-11-24 | B | T3 |
 | C4 | ToDo | 2026-11-25 | 2026-12-04 | C | T7 |
+| C9 | ToDo | 2026-10-28 | 2026-11-02 | C | T14 [개정] 신설 (D-09 승인 뒤 생성. 승인 전에는 Plane에 없어도 정상) |
 | D1 | ToDo | 2026-11-25 | 2026-12-01 | D | T8 |
 | D2 | ToDo | 2026-12-02 | 2026-12-08 | D | T8 |
 | D3 | ToDo | 2026-12-09 | 2026-12-12 | D | T8 |
 | D4 | ToDo | 2026-12-09 | 2026-12-13 | D | T8 |
 | D5 | ToDo | 2026-12-13 | 2026-12-15 | D | T8 |
 | E2 | ToDo | 2026-11-04 | 2026-11-24 | E | T3 |
-| E3 | ToDo | 2026-11-02 | 2026-11-06 | E | T5 |
+| E3 | ToDo | 2026-11-02 | 2026-11-04 | E | T5 [개정] 축소 (사용자 G코드 점검 + 필요시 보조 시편) |
 | F0 | InProgress | 2026-10-27 | 2026-11-03 | F | T1 |
 | F1 | ToDo | 2026-11-25 | 2026-12-04 | F | T7 |
 | F3 | ToDo | 2026-11-04 | 2026-11-10 | F | T6 |
-| G1 | ToDo | 2026-11-04 | 2026-11-08 | G | T4 |
+| G1 | ToDo | 2026-11-05 | 2026-11-08 | G | T4 [개정] 시작 하루 늦춤 |
 | G2 | ToDo | 2026-11-09 | 2026-11-11 | G | T4 |
 | G3 | ToDo | 2026-11-12 | 2026-11-15 | G | T4 |
 | G4 | ToDo | 2026-11-16 | 2026-11-17 | G | T4 |
@@ -253,7 +349,7 @@ W번호 ↔ 요소 코드 대응표: (44행)
 | H2 | ToDo | 2026-12-02 | 2026-12-08 | H | T9 |
 | H3 | ToDo | 2026-12-09 | 2026-12-15 | H | T9 |
 | H4 | ToDo | 2026-12-09 | 2026-12-22 | H | T9 |
-| H5 | ToDo | 2026-12-16 | 2026-12-28 | H | T10 |
+| H5 | ToDo | 2026-11-04 | 2026-11-10 | H | T15 [개정] (T10에서 옮김) |
 | H6 | Backlog | - | - | H | T10 선택 |
 | H7 | Backlog | - | - | H | T10 선택 |
 | H8 | ToDo | 2027-01-12 | 2027-02-01 | H | T12 |
@@ -292,3 +388,29 @@ W번호 ↔ 요소 코드 대응표: (44행)
 | K3 예산 | 선행 줄 삭제 (비교-선정 §000 링크로 대신) | 예산 검토 끝남 |
 | M0 | F0 (W063) | 옛 "사양표 확정" 대신 G0 게이트 (11-03, 명세·실패사례 동결) |
 | M1 · M2 | D5 | 옛 교정·단차 기준은 가상 교정 검증 (G2 게이트, 12-15)으로 대신함 |
+
+## 부록 C. [개정] T0c 항목·페이지 고칠 방향 (2026-10-27)
+
+Plane 문장은 아래 "바꿀 방향"을 사람 말로 짧게 풀어 씁니다. 숫자는 청사진 개정본 (§1.1 · §2.3 · §4.1)에 있는 것만 씁니다.
+
+| 대상 | 지금 문제 | 바꿀 방향 | 제목 변경 |
+|---|---|---|---|
+| 페이지 ① | 개정 결정이 없음 | 최종 산출물 한 줄 + 결정 표 (허용 오차 0.2–0.4 mm, 측정 불확도 50 µm 이하·목표 20 µm, 측정점 95 % 합격·경계는 보류, 정답 = 사용자 G코드, 층마다 측정, 펌웨어 선정 진행, 예산 100만 원 미만) | - |
+| 페이지 ③ | §000의 Q가 단차 기준임을 알리지 않음 | 표 위 한 줄: "이 표는 단차 기준으로 고른 결과. 지금은 G코드 대비 높이 기준 (페이지 ①)" | - |
+| 페이지 ④ | 새 작업·기간 변경 없음 | 펌웨어 선정 (10-28 ~ 11-02), 합격 판정 규칙 (11-04 ~ 11-10), E3 축소, G1 · E3 · H5 · A2 기간 | - |
+| A1 | 오차를 단차로 정의 | "G코드 높이와 잰 높이의 차이" | - |
+| A2 | 0.2–0.4 mm 단차, Q ≤ 50/20 µm | "허용 오차 0.2–0.4 mm. 측정 불확도는 50 µm 이하 (목표 20 µm). 측정점 95 %가 허용 오차 안이면 합격, 경계는 보류". 기간 11-04 ~ 11-10 | - |
+| D5 | 필러게이지 단차 Q | "베드 위 필러게이지 윗면 높이로 교정 검증" | - |
+| E3 | 가상 시편 설계 | "받은 G코드가 측정 조건 (시야·면 폭·층 수)에 맞는지 점검. 맞지 않으면 보조 시편 1개". 기간 11-02 ~ 11-04 | 제안: "E3. 사용자 G코드 점검과 보조 시편" (D-09) |
+| G1 | 일반 G코드 파싱 | "받은 G코드를 그대로 읽음 (슬라이서·펌웨어별 표기 포함)". 시작 11-05 | - |
+| G2 | 비드 모델 | "층 윗면 높이를 어디로 볼지 정함 (정답 높이의 기준)" | - |
+| G3 | 층별 마스크·기준 높이맵 | "층마다 정답 높이 지도" | - |
+| G4 | 비교 영역 (단차 언급) | "합격 판정에 쓰는 영역 (가장자리·가림 띠 제외)" | - |
+| H5 | 높이 오차 지표 (단차, Q) | "G코드 대비 높이 차이와 합격 판정 규칙". 기간 11-04 ~ 11-10 | 제안: "H5. G코드 대비 높이 차이와 합격 판정" (D-09) |
+| I1 | 불확도 대상이 단차일 가능성 | "G코드 대비 높이의 불확도. Z축·베드 기준·식으면서 줄어드는 양 포함" | - |
+| I2 · I3 · M3 | "시편 설계" 언급 | "받은 G코드 기준"으로 | - |
+| M4 | 가상 시편 1개 완주, Q ≤ | "받은 G코드 1개로 정답 높이 지도부터 합격 판정 보고서까지 한 번에" | - |
+| J0 | 단차 시편·단차 Q | "받은 G코드에 출력 오차를 넣은 가상 출력물을 층마다 촬영한 데이터" | - |
+| E2 · H2 · H7 | "단차" 언급 | 문장마다 판정. 벽 가림처럼 실제 모양을 말하면 둠 | - |
+| C9 (신설) | 없음 | "프린터 펌웨어를 확인하고, 층마다 측정에 가장 맞는 펌웨어를 고름 (층 변경 매크로·위치 보고·카메라 동기화·호스트 연동 비교)". D-09 승인 뒤 생성 | "C9. 프린터 펌웨어 선정" |
+| G5 | "시편 설계" 언급 | Backlog라 고치지 않음 | - |
