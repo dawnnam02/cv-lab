@@ -30,7 +30,7 @@ def cooled_difference(delta_last_mm, delta_post_mm, region=None) -> dict | None:
 
 def cooling_criterion(height_mm, specimen_temp_c, room_temp_c, alpha_um_per_m_c=68.0,
                       delta_max_um=5.0) -> dict:
-    """'식었다' 기준 안 (§6.7).
+    """'식었다' 기준 (D-20 R4 확정, docs/판정-규칙.md §8).
 
     남은 수축 δ = α · H · ΔT, ΔT = 시편 윗면 온도 − 실내 온도.
     ΔT_max = δ_max ÷ (α · H). 판정은 바꾸지 않고 충족 여부만 보고한다.

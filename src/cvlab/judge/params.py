@@ -39,19 +39,19 @@ def _finite_number(name: str, value: Any) -> float:
 @dataclass(frozen=True)
 class JudgeParams:
     T_mm: float = 0.20                 # D-05 확정
-    U_mm: float | None = None          # 판정 때 반드시 지정 (T12 전까지 임시값)
+    U_mm: float | None = None          # 판정 때 반드시 지정. 기본값 두지 않음 (D-15 참고값은 문서에만)
     U_source: str | None = None        # U의 출처 문자열, 필수
     pass_min_pct: float = 95           # D-08
     fail_max_pct: float = 5            # 청사진 §2.3
-    valid_min_pct: float = 90          # 청사진 §2.3 안 (결정 요청)
-    cell_mm: float = 0.2               # 청사진 §2.3 안 (결정 요청)
-    cell_mm_alt: float = 0.4           # MF-JDG-04 함께 보고
-    cell_fill_min: float = 0.5         # 팀장 안
-    region_fill_min: float = 1.0       # 팀장 안
-    cell_stat: str = "mean"            # 팀장 안
-    layer_fail_warn_pct: float = 50    # T2 MF-JDG-06 예시
-    outlier_primary: str = "worse"     # 팀장 안 (결정 요청)
-    cooled_delta_max_um: float = 5.0   # §6.7 안 (결정 요청)
+    valid_min_pct: float = 90          # D-20 R2 확정
+    cell_mm: float = 0.2               # D-20 R1 확정
+    cell_mm_alt: float = 0.4           # D-20 R1 확정 (함께 보고)
+    cell_fill_min: float = 0.5         # D-20 R6 확정
+    region_fill_min: float = 1.0       # D-20 R6 확정
+    cell_stat: str = "mean"            # D-20 R6 확정
+    layer_fail_warn_pct: float = 50    # D-20 R7 확정
+    outlier_primary: str = "worse"     # D-20 R3 확정
+    cooled_delta_max_um: float = 5.0   # D-20 R4 확정
     cooled_alpha_um_per_m_c: float = 68.0  # PLA 열팽창 계수, 청사진 §1.2 (사용자 제시)
 
     def __post_init__(self) -> None:
