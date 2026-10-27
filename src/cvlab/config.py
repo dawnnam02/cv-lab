@@ -1,7 +1,7 @@
 """설정 읽기 (세부청사진 T6 SV10, J2).
 
 `config/*.yaml`을 최상위 키로 합친다. 같은 최상위 키가 두 파일에 있으면 오류.
-T6가 소유한 절 (run · grid · paths)만 여기서 검사한다. judge · gcode 절은 그 패키지가 검사한다
+T6가 소유한 절 (run · grid · paths · validate)만 여기서 검사한다. judge · gcode 절은 그 패키지가 검사한다
 (병렬 작업 중 서로 import하지 않으려고).
 """
 
@@ -19,6 +19,7 @@ SCHEMA = {
     "run": {"random_seed": int, "spec_version": str},
     "grid": {"res_mm": float, "frame": str},
     "paths": {"data_raw": str, "data_processed": str, "results": str},
+    "validate": {"enable_rules": list},  # SV13: 기본 끔 규칙 (D-21 대기 X4 · X7) 켜기
 }
 
 
@@ -50,6 +51,8 @@ def _check_owned(cfg: dict, sources: dict[str, str]) -> None:
         raise ConfigError("grid.res_mm > 0 이어야 함")
     if cfg["run"]["random_seed"] < 0:
         raise ConfigError("run.random_seed ≥ 0 이어야 함")
+    if not all(isinstance(x, str) for x in cfg["validate"]["enable_rules"]):
+        raise ConfigError("validate.enable_rules는 규칙 ID 글자 목록이어야 함")
 
 
 def load_config(config_dir: str | Path = CONFIG_DIR) -> dict:

@@ -23,7 +23,8 @@ def test_selftest_detects_all_faults():
 def test_every_hand_rule_has_a_fault_sample():
     """구현한 손 규칙 (CROSS · FILE · CSV · JSON · LEAK · WARN)마다 고장·경고 표본이 하나 이상."""
     _, rules, _ = schema()
-    got = {h[1] for h in st.hand_faults()} | {w[1] for w in st.warn_tests()}
+    got = {h[1] for h in st.hand_faults()} | {w[1] for w in st.warn_tests()} | {s[1] for s in st.switch_tests()} \
+        | {t[2] for t in st.truth_tests() if t[2]}
     hand = [r["rule_id"] for r in rules if r["status"] == "구현" and r["kind"] not in ("REQ", "DTYPE", "REGEX", "ENUM", "RANGE")
             and not r["rule_id"].startswith("CROSS-EMPTY.")]
     assert [h for h in hand if h not in got] == []
@@ -129,23 +130,56 @@ def test_truth_path_refused_without_opening(tmp_path, monkeypatch):
         check_path_allowed("data\\_truth\\x")
 
 
-def test_blt_enabled_checks_probe_files():
-    """blt를 켜면 probe_points.csv 자동 규칙이 돈다 (기본은 꺼짐)."""
+def test_bltouch_folder_is_unknown():
+    """SV13: 명세 8절에서 bltouch/ 폴더가 빠짐 (D-14) → 모르는 폴더 (FILE-01)."""
     fields, rules, fc = schema()
-    from cvlab.io import rules as rl
-    from cvlab.io import spec_schema as ss
-    from infra_helpers import SPEC
-    on = ss.extract(SPEC, {})
-    on_rules = rl.build_rules(on)
     files = st.serialize(st.normal_model(), fc)
-    cols = fc["probe_points.csv"]
-    row = dict.fromkeys(cols, "")
-    row.update(session_id="BLT-2026-11-20-A", t_ns="abc")
-    files[f"sessions/{st.SESSION}/bltouch/BLT-2026-11-20-A/probe_points.csv"] = st.csv_bytes([row], cols)
-    off = {f.rule_id for f in Validator(fields, rules, fc).run(MemFS(files), st.CAMPAIGN)}
-    assert not any(r.startswith(("DTYPE.blt", "REQ.blt")) for r in off) and "FILE-01" not in off
-    got = {f.rule_id for f in Validator(on, on_rules, fc, {"blt"}).run(MemFS(files), st.CAMPAIGN)}
-    assert "DTYPE.blt.t_ns" in got and "REQ.blt.probe_model" in got
+    files[f"sessions/{st.SESSION}/bltouch/BLT-2026-11-20-A/probe_points.csv"] = b"session_id\nBLT-2026-11-20-A\n"
+    got = {f.rule_id for f in Validator(fields, rules, fc, repo_exists=st.repo_exists).run(MemFS(files), st.CAMPAIGN)}
+    assert got == {"FILE-01"}
+
+
+def test_d21_switch_default_off():
+    """X4 (W-REF-11) · X7 (W-MET-56)은 기본 끔, enabled_rules · 설정으로 켜면 WARN. 모르는 ID는 KeyError."""
+    fields, rules, fc = schema()
+    for name, rid, fm in st.switch_tests():
+        m = st.normal_model()
+        fm(m)
+        files = st.serialize(m, fc)
+        off = {f.rule_id for f in Validator(fields, rules, fc, repo_exists=st.repo_exists).run(MemFS(files), st.CAMPAIGN)}
+        on = [f for f in Validator(fields, rules, fc, enabled_rules={rid}, repo_exists=st.repo_exists).run(MemFS(files), st.CAMPAIGN)
+              if f.rule_id == rid]
+        assert rid not in off and on and all(f.severity == "WARN" for f in on), name
+    with pytest.raises(KeyError):
+        Validator(fields, rules, fc, enabled_rules={"X-NOPE-01"})
+    from cvlab.config import load_config
+    assert load_config()["validate"]["enable_rules"] == []
+
+
+def test_truth_judgement_matches_pass_pct():
+    fields, rules, fc = schema()
+    v = Validator(fields, rules, fc)
+    for name, obj, rid in st.truth_tests():
+        got = {f.rule_id for f in v.check_truth(obj)}
+        assert got == ({rid} if rid else set()), name
+
+
+def test_repo_root_from_campaign_path(tmp_path):
+    """캠페인이 <뿌리>/data/raw/<id>면 그 뿌리 기준으로 gcode_file을 봄 (FILE-17 · 18)."""
+    cli = load_script("validate_dataset")
+    fields, rules, fc = schema()
+    root = tmp_path / "repo"
+    camp = root / "data" / "raw" / st.CAMPAIGN
+    st.write_tree(st.serialize(st.normal_model(), fc), camp)
+    rep = tmp_path / "r.json"
+    assert cli.main([str(camp), "--report", str(rep)]) == 1
+    got = {r["rule_id"] for r in json.loads(rep.read_text(encoding="utf-8"))["findings"]}
+    assert got == {"FILE-17", "FILE-18"}
+    for rel in st.REPO_FILES:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel).write_bytes(b"; gcode\n")
+    assert cli.main([str(camp), "--report", str(rep)]) == 0
+    assert cli.main([str(camp), "--enable-rule", "X-NOPE-01"]) == 2
 
 
 def test_csv_cache_does_not_hide_findings():

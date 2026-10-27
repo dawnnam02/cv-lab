@@ -1,4 +1,4 @@
-# config/default.yaml — T6 소유 절 (run · grid · paths). 단위는 키 이름 끝에 적는다.
+# config/default.yaml — T6 소유 절 (run · grid · paths · validate). 단위는 키 이름 끝에 적는다.
 # judge 절은 config/judge.yaml (T15), gcode 절은 config/gcode.yaml (T4a)에 둔다.
 # 숫자마다 근거를 단다 (세부청사진 T6 §6.5).
 
@@ -14,3 +14,9 @@ paths:
   data_raw: data/raw             # 명세 8절 폴더 트리
   data_processed: data/processed # J1 처리 산출물
   results: results               # J2 결과 폴더 (manifest.json)
+
+validate:
+  # 기본으로 꺼 둔 검증 규칙을 켤 때 ID를 적는다 (scripts/validate_dataset.py --enable-rule과 합침).
+  # W-REF-11 = 판정 거부 X4 (bed_bare 교정 ID = 스캔 교정 ID), W-MET-56 = X7 (빠진 층).
+  # 둘 다 사용자 결정 D-21 대기라 기본 끔. 켜도 WARN (종료 코드는 바뀌지 않음). 예: [W-REF-11, W-MET-56]
+  enable_rules: []

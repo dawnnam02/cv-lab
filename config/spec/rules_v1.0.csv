@@ -1,10 +1,10 @@
 rule_id,kind,fields,severity,status,condition,params,message,reason,covers
 REQ.frame.scan_id,REQ,frame.scan_id,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.frame.scan_id,DTYPE,frame.scan_id,ERROR,구현,,str,자료형이 str가 아님,,
-REGEX.frame.scan_id,REGEX,frame.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?$,정규식과 맞지 않음,,
+REGEX.frame.scan_id,REGEX,frame.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,정규식과 맞지 않음,,
 REQ.frame.layer_idx,REQ,frame.layer_idx,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.frame.layer_idx,DTYPE,frame.layer_idx,ERROR,구현,,int,자료형이 int가 아님,,
-RANGE.frame.layer_idx,RANGE,frame.layer_idx,ERROR,구현,,0 ≤ x,범위 밖,,
+RANGE.frame.layer_idx,RANGE,frame.layer_idx,ERROR,구현,,-1 ≤ x,범위 밖,,
 REQ.frame.frame_idx,REQ,frame.frame_idx,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.frame.frame_idx,DTYPE,frame.frame_idx,ERROR,구현,,int,자료형이 int가 아님,,
 RANGE.frame.frame_idx,RANGE,frame.frame_idx,ERROR,구현,,0 ≤ x,범위 밖,,
@@ -54,7 +54,14 @@ DTYPE.frame.laser_on,DTYPE,frame.laser_on,ERROR,구현,,bool,자료형이 bool�
 ENUM.frame.laser_on,ENUM,frame.laser_on,ERROR,구현,,"true,false",true·false가 아님,,
 REQ.frame.trigger_mode,REQ,frame.trigger_mode,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.frame.trigger_mode,DTYPE,frame.trigger_mode,ERROR,구현,,str,자료형이 str가 아님,,
-ENUM.frame.trigger_mode,ENUM,frame.trigger_mode,ERROR,구현,,"hw,sw,free",허용 값 밖,,
+ENUM.frame.trigger_mode,ENUM,frame.trigger_mode,ERROR,구현,,"hw,sw,free,gate",허용 값 밖,,
+REQ.frame.trig_pulse_idx,REQ,frame.trig_pulse_idx,ERROR,구현,frame.trigger_mode = hw이고 frame.laser_on = true,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.frame.trig_pulse_idx,CROSS,frame.trig_pulse_idx;frame.trigger_mode;frame.laser_on,ERROR,구현,frame.trigger_mode = hw이고 frame.laser_on = true,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.frame.trig_pulse_idx,DTYPE,frame.trig_pulse_idx,ERROR,구현,,int,자료형이 int가 아님,,
+RANGE.frame.trig_pulse_idx,RANGE,frame.trig_pulse_idx,ERROR,구현,,0 ≤ x,범위 밖,,
+REQ.frame.gate_on,REQ,frame.gate_on,ERROR,구현,frame.trigger_mode = gate,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.frame.gate_on,CROSS,frame.gate_on;frame.trigger_mode,ERROR,구현,frame.trigger_mode = gate,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.frame.gate_on,DTYPE,frame.gate_on,ERROR,구현,,bool,자료형이 bool가 아님,,
 REQ.frame.dropped_before,REQ,frame.dropped_before,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.frame.dropped_before,DTYPE,frame.dropped_before,ERROR,구현,,int,자료형이 int가 아님,,
 RANGE.frame.dropped_before,RANGE,frame.dropped_before,ERROR,구현,,0 ≤ x,범위 밖,,
@@ -66,14 +73,14 @@ DTYPE.frame.sensor_temp_c,DTYPE,frame.sensor_temp_c,ERROR,구현,,float,자료�
 RANGE.frame.sensor_temp_c,RANGE,frame.sensor_temp_c,ERROR,구현,,-40 ≤ x ≤ 125,범위 밖,,
 REQ.pos.scan_id,REQ,pos.scan_id,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.pos.scan_id,DTYPE,pos.scan_id,ERROR,구현,,str,자료형이 str가 아님,,
-REGEX.pos.scan_id,REGEX,pos.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?$,정규식과 맞지 않음,,
+REGEX.pos.scan_id,REGEX,pos.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,정규식과 맞지 않음,,
 REQ.pos.t_ns,REQ,pos.t_ns,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.pos.t_ns,DTYPE,pos.t_ns,ERROR,구현,,int64,자료형이 int64가 아님,,
 RANGE.pos.t_ns,RANGE,pos.t_ns,ERROR,구현,,0 ≤ x,범위 밖,,
 REQ.pos.clock,REQ,pos.clock,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.pos.clock,DTYPE,pos.clock,ERROR,구현,,str,자료형이 str가 아님,,
 ENUM.pos.clock,ENUM,pos.clock,ERROR,구현,,"host,mcu",허용 값 밖,,
-REQ.pos.source,REQ,pos.source,ERROR,구현,,,필수 칸이 빔,,
+REQ.pos.source,REQ,pos.source,ERROR,구현,,,필수 칸이 빔,,pos.source:모든 행에 있음
 DTYPE.pos.source,DTYPE,pos.source,ERROR,구현,,str,자료형이 str가 아님,,
 ENUM.pos.source,ENUM,pos.source,ERROR,구현,,"cmd,plan,report,steps",허용 값 밖,,
 REQ.pos.x_mm,REQ,pos.x_mm,ERROR,구현,,,필수 칸이 빔,,
@@ -93,7 +100,7 @@ DTYPE.pos.feed_mm_s,DTYPE,pos.feed_mm_s,ERROR,구현,,float,자료형이 float�
 RANGE.pos.feed_mm_s,RANGE,pos.feed_mm_s,ERROR,구현,,0 ≤ x,범위 밖,,
 REQ.pos.layer_idx,REQ,pos.layer_idx,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.pos.layer_idx,DTYPE,pos.layer_idx,ERROR,구현,,int,자료형이 int가 아님,,
-RANGE.pos.layer_idx,RANGE,pos.layer_idx,ERROR,구현,,0 ≤ x,범위 밖,,
+RANGE.pos.layer_idx,RANGE,pos.layer_idx,ERROR,구현,,-1 ≤ x,범위 밖,,
 REQ.pos.pass_idx,REQ,pos.pass_idx,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.pos.pass_idx,DTYPE,pos.pass_idx,ERROR,구현,,int,자료형이 int가 아님,,
 RANGE.pos.pass_idx,RANGE,pos.pass_idx,ERROR,구현,,0 ≤ x,범위 밖,,
@@ -103,7 +110,7 @@ DTYPE.pos.mesh_dz_mm,DTYPE,pos.mesh_dz_mm,ERROR,구현,,float,자료형이 float
 RANGE.pos.mesh_dz_mm,RANGE,pos.mesh_dz_mm,ERROR,구현,,-2.0 ≤ x ≤ 2.0,범위 밖,,
 REQ.pos.event,REQ,pos.event,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.pos.event,DTYPE,pos.event,ERROR,구현,,str,자료형이 str가 아님,,
-ENUM.pos.event,ENUM,pos.event,ERROR,구현,,"none,home,layer_change,scan_start,scan_end,pause_start,pause_end,motor_off,m400_done,probe,error",허용 값 밖,,
+ENUM.pos.event,ENUM,pos.event,ERROR,구현,,"none,home,layer_change,scan_start,scan_end,pause_start,pause_end,resume,cool_start,cool_end,motor_off,m400_done,probe,error",허용 값 밖,,
 REQ.pos.clock_offset_ns,REQ,pos.clock_offset_ns,ERROR,구현,pos.clock = mcu,,조건이 참인데 칸이 빔,,
 CROSS-EMPTY.pos.clock_offset_ns,CROSS,pos.clock_offset_ns;pos.clock,ERROR,구현,pos.clock = mcu,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.pos.clock_offset_ns,DTYPE,pos.clock_offset_ns,ERROR,구현,,int64,자료형이 int64가 아님,,
@@ -125,9 +132,12 @@ ENUM.cal.kind,ENUM,cal.kind,ERROR,구현,,"D1,D2,D3,D4,D5",허용 값 밖,,
 REQ.cal.created,REQ,cal.created,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.cal.created,DTYPE,cal.created,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.cal.created,REGEX,cal.created,ERROR,구현,,^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?([+-]\d{2}:\d{2}|Z)$,ISO 8601 (시간대 포함) 형식이 아님,,
+REQ.cal.record_type,REQ,cal.record_type,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.cal.record_type,DTYPE,cal.record_type,ERROR,구현,,str,자료형이 str가 아님,,
+ENUM.cal.record_type,ENUM,cal.record_type,ERROR,구현,,"image,nozzle_touch,micrometer",허용 값 밖,,
 REQ.cal.target_type,REQ,cal.target_type,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.cal.target_type,DTYPE,cal.target_type,ERROR,구현,,str,자료형이 str가 아님,,
-ENUM.cal.target_type,ENUM,cal.target_type,ERROR,구현,,"charuco,flat_plate,coord_plate,filler_gauge,none",허용 값 밖,,
+ENUM.cal.target_type,ENUM,cal.target_type,ERROR,구현,,"charuco,flat_plate,coord_plate,filler_gauge,step_gauge,material_sample,none",허용 값 밖,,
 REQ.cal.target_rows,REQ,cal.target_rows,ERROR,구현,cal.target_type = charuco,,조건이 참인데 칸이 빔,,
 CROSS-EMPTY.cal.target_rows,CROSS,cal.target_rows;cal.target_type,ERROR,구현,cal.target_type = charuco,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.cal.target_rows,DTYPE,cal.target_rows,ERROR,구현,,int,자료형이 int가 아님,,
@@ -155,9 +165,10 @@ RANGE.cal.target_flatness_um,RANGE,cal.target_flatness_um,ERROR,구현,,0 ≤ x,
 REQ.cal.pose_idx,REQ,cal.pose_idx,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.cal.pose_idx,DTYPE,cal.pose_idx,ERROR,구현,,int,자료형이 int가 아님,,
 RANGE.cal.pose_idx,RANGE,cal.pose_idx,ERROR,구현,,0 ≤ x,범위 밖,,
-REQ.cal.image_file,REQ,cal.image_file,ERROR,구현,영상이 있는 행 (데이터만으로 모름: 비어 있어도 됨),,조건이 참인데 칸이 빔,,
+REQ.cal.image_file,REQ,cal.image_file,ERROR,구현,cal.record_type = image,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.cal.image_file,CROSS,cal.image_file;cal.record_type,ERROR,구현,cal.record_type = image,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.cal.image_file,DTYPE,cal.image_file,ERROR,구현,,str,자료형이 str가 아님,,
-REGEX.cal.image_file,REGEX,cal.image_file,ERROR,구현,,^d[1-5]/,정규식과 맞지 않음,,
+REGEX.cal.image_file,REGEX,cal.image_file,ERROR,구현,,^d[1-5]/([a-z0-9_]+/)?[a-z0-9_]+\.png$,정규식과 맞지 않음,,
 REQ.cal.laser_on,REQ,cal.laser_on,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.cal.laser_on,DTYPE,cal.laser_on,ERROR,구현,,bool,자료형이 bool가 아님,,
 REQ.cal.exposure_us,REQ,cal.exposure_us,ERROR,구현,cal.image_file이 있으면,,조건이 참인데 칸이 빔,,
@@ -183,8 +194,8 @@ REQ.cal.feature_y_mm,REQ,cal.feature_y_mm,ERROR,구현,cal.kind = D4,,조건이 
 CROSS-EMPTY.cal.feature_y_mm,CROSS,cal.feature_y_mm;cal.kind,ERROR,구현,cal.kind = D4,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.cal.feature_y_mm,DTYPE,cal.feature_y_mm,ERROR,구현,,float,자료형이 float가 아님,,
 RANGE.cal.feature_y_mm,RANGE,cal.feature_y_mm,ERROR,구현,,finite,유한값이 아님 (inf),,
-REQ.cal.nozzle_touch_z_mm,REQ,cal.nozzle_touch_z_mm,ERROR,구현,cal.kind = D4이고 노즐 접촉 행 (접촉 행 표시가 없어 D4 밖이면 빈 칸만 검사),,조건이 참인데 칸이 빔,,
-CROSS-EMPTY.cal.nozzle_touch_z_mm,CROSS,cal.nozzle_touch_z_mm;cal.kind,ERROR,구현,cal.kind = D4이고 노즐 접촉 행 (접촉 행 표시가 없어 D4 밖이면 빈 칸만 검사),,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+REQ.cal.nozzle_touch_z_mm,REQ,cal.nozzle_touch_z_mm,ERROR,구현,cal.record_type = nozzle_touch,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.cal.nozzle_touch_z_mm,CROSS,cal.nozzle_touch_z_mm;cal.record_type,ERROR,구현,cal.record_type = nozzle_touch,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.cal.nozzle_touch_z_mm,DTYPE,cal.nozzle_touch_z_mm,ERROR,구현,,float,자료형이 float가 아님,,
 RANGE.cal.nozzle_touch_z_mm,RANGE,cal.nozzle_touch_z_mm,ERROR,구현,,0 ≤ x,범위 밖,,
 REQ.cal.gauge_nominal_mm,REQ,cal.gauge_nominal_mm,ERROR,구현,cal.target_type = filler_gauge,,조건이 참인데 칸이 빔,,
@@ -198,6 +209,26 @@ REQ.cal.gauge_u_um,REQ,cal.gauge_u_um,ERROR,구현,cal.target_type = filler_gaug
 CROSS-EMPTY.cal.gauge_u_um,CROSS,cal.gauge_u_um;cal.target_type,ERROR,구현,cal.target_type = filler_gauge,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.cal.gauge_u_um,DTYPE,cal.gauge_u_um,ERROR,구현,,float,자료형이 float가 아님,,
 RANGE.cal.gauge_u_um,RANGE,cal.gauge_u_um,ERROR,구현,,0 < x,범위 밖,,
+REQ.cal.gauge_block_id,REQ,cal.gauge_block_id,ERROR,구현,"cal.target_type ∈ {step_gauge, filler_gauge}",,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.cal.gauge_block_id,CROSS,cal.gauge_block_id;cal.target_type,ERROR,구현,"cal.target_type ∈ {step_gauge, filler_gauge}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.cal.gauge_block_id,DTYPE,cal.gauge_block_id,ERROR,구현,,str,자료형이 str가 아님,,
+REGEX.cal.gauge_block_id,REGEX,cal.gauge_block_id,ERROR,구현,,^GB-\d{2}(\+\d{2})*$||^FG-0\.[234]0$,정규식과 맞지 않음,,
+REQ.cal.gauge_block_height_mm,REQ,cal.gauge_block_height_mm,ERROR,구현,cal.target_type = step_gauge,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.cal.gauge_block_height_mm,CROSS,cal.gauge_block_height_mm;cal.target_type,ERROR,구현,cal.target_type = step_gauge,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.cal.gauge_block_height_mm,DTYPE,cal.gauge_block_height_mm,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.cal.gauge_block_height_mm,RANGE,cal.gauge_block_height_mm,ERROR,구현,,0 < x ≤ 60,범위 밖,,
+REQ.cal.gauge_block_u_um,REQ,cal.gauge_block_u_um,ERROR,구현,cal.target_type = step_gauge,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.cal.gauge_block_u_um,CROSS,cal.gauge_block_u_um;cal.target_type,ERROR,구현,cal.target_type = step_gauge,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.cal.gauge_block_u_um,DTYPE,cal.gauge_block_u_um,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.cal.gauge_block_u_um,RANGE,cal.gauge_block_u_um,ERROR,구현,,0 < x,범위 밖,,
+REQ.cal.material_offset_um,REQ,cal.material_offset_um,ERROR,구현,cal.target_type = material_sample,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.cal.material_offset_um,CROSS,cal.material_offset_um;cal.target_type,ERROR,구현,cal.target_type = material_sample,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.cal.material_offset_um,DTYPE,cal.material_offset_um,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.cal.material_offset_um,RANGE,cal.material_offset_um,ERROR,구현,,-100 ≤ x ≤ 100,범위 밖,,
+REQ.cal.material_offset_u_um,REQ,cal.material_offset_u_um,ERROR,구현,cal.target_type = material_sample,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.cal.material_offset_u_um,CROSS,cal.material_offset_u_um;cal.target_type,ERROR,구현,cal.target_type = material_sample,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.cal.material_offset_u_um,DTYPE,cal.material_offset_u_um,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.cal.material_offset_u_um,RANGE,cal.material_offset_u_um,ERROR,구현,,0 < x,범위 밖,,
 REQ.cal.temp_c,REQ,cal.temp_c,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.cal.temp_c,DTYPE,cal.temp_c,ERROR,구현,,float,자료형이 float가 아님,,
 RANGE.cal.temp_c,RANGE,cal.temp_c,ERROR,구현,,-10 ≤ x ≤ 50,범위 밖,,
@@ -225,13 +256,13 @@ DTYPE.ref.ref_id,DTYPE,ref.ref_id,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.ref.ref_id,REGEX,ref.ref_id,ERROR,구현,,^REF-[A-Z]{3}-\d{3}$,정규식과 맞지 않음,,
 REQ.ref.kind,REQ,ref.kind,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.ref.kind,DTYPE,ref.kind,ERROR,구현,,str,자료형이 str가 아님,,
-ENUM.ref.kind,ENUM,ref.kind,ERROR,구현,,"bed_bare,background,dark,bed_marker,ref_tower,daily_ref,static_repeat",허용 값 밖,,
-REQ.ref.scan_id,REQ,ref.scan_id,ERROR,구현,"ref.kind ∈ {bed_marker, ref_tower}",,조건이 참인데 칸이 빔,,
-CROSS-EMPTY.ref.scan_id,CROSS,ref.scan_id;ref.kind,ERROR,구현,"ref.kind ∈ {bed_marker, ref_tower}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+ENUM.ref.kind,ENUM,ref.kind,ERROR,구현,,"bed_bare,background,dark,bed_marker,ref_tower,step_gauge,feeler,daily_ref,static_repeat",허용 값 밖,,
+REQ.ref.scan_id,REQ,ref.scan_id,ERROR,구현,"ref.kind ∈ {bed_marker, ref_tower, step_gauge}",,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.ref.scan_id,CROSS,ref.scan_id;ref.kind,ERROR,구현,"ref.kind ∈ {bed_marker, ref_tower, step_gauge}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.ref.scan_id,DTYPE,ref.scan_id,ERROR,구현,,str,자료형이 str가 아님,,
-REGEX.ref.scan_id,REGEX,ref.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?$,정규식과 맞지 않음,,
-REQ.ref.layer_idx,REQ,ref.layer_idx,ERROR,구현,"ref.kind ∈ {bed_marker, ref_tower}",,조건이 참인데 칸이 빔,,
-CROSS-EMPTY.ref.layer_idx,CROSS,ref.layer_idx;ref.kind,ERROR,구현,"ref.kind ∈ {bed_marker, ref_tower}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,ref.layer_idx:kind = bed_bare면 빈 칸
+REGEX.ref.scan_id,REGEX,ref.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,정규식과 맞지 않음,,
+REQ.ref.layer_idx,REQ,ref.layer_idx,ERROR,구현,"ref.kind ∈ {bed_marker, ref_tower, step_gauge}",,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.ref.layer_idx,CROSS,ref.layer_idx;ref.kind,ERROR,구현,"ref.kind ∈ {bed_marker, ref_tower, step_gauge}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,"ref.layer_idx:kind ∈ {bed_bare, feeler}면 빈 칸"
 DTYPE.ref.layer_idx,DTYPE,ref.layer_idx,ERROR,구현,,int,자료형이 int가 아님,,
 REQ.ref.n_frames,REQ,ref.n_frames,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.ref.n_frames,DTYPE,ref.n_frames,ERROR,구현,,int,자료형이 int가 아님,,
@@ -254,11 +285,22 @@ RANGE.ref.marker_y_mm,RANGE,ref.marker_y_mm,ERROR,구현,,finite,유한값이 �
 REQ.ref.t_start_ns,REQ,ref.t_start_ns,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.ref.t_start_ns,DTYPE,ref.t_start_ns,ERROR,구현,,int64,자료형이 int64가 아님,,
 RANGE.ref.t_start_ns,RANGE,ref.t_start_ns,ERROR,구현,,0 < x,범위 밖,,
-REQ.ref.calibration_id,REQ,ref.calibration_id,ERROR,구현,선택: 열(키)은 있어야 하고 값은 비어도 됨 (명세 §0.1: 없으면 빈 칸·null),,선택 필드의 열(키)이 없음,,
+REQ.ref.calibration_id,REQ,ref.calibration_id,ERROR,구현,"ref.kind ∈ {bed_bare, bed_marker, ref_tower, step_gauge, feeler} (그 밖은 비어도 됨)",,조건이 참인데 칸이 빔,,
 DTYPE.ref.calibration_id,DTYPE,ref.calibration_id,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.ref.calibration_id,REGEX,ref.calibration_id,ERROR,구현,,^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$,정규식과 맞지 않음,,
-REQ.ref.line_peak_pct,REQ,ref.line_peak_pct,ERROR,구현,"ref.kind ∈ {daily_ref, static_repeat, bed_marker, ref_tower}",,조건이 참인데 칸이 빔,,
-CROSS-EMPTY.ref.line_peak_pct,CROSS,ref.line_peak_pct;ref.kind,ERROR,구현,"ref.kind ∈ {daily_ref, static_repeat, bed_marker, ref_tower}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+REQ.ref.gauge_block_id,REQ,ref.gauge_block_id,ERROR,구현,"ref.kind ∈ {step_gauge, feeler}",,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.ref.gauge_block_id,CROSS,ref.gauge_block_id;ref.kind,ERROR,구현,"ref.kind ∈ {step_gauge, feeler}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.ref.gauge_block_id,DTYPE,ref.gauge_block_id,ERROR,구현,,str,자료형이 str가 아님,,
+REQ.ref.gauge_height_mm,REQ,ref.gauge_height_mm,ERROR,구현,"ref.kind ∈ {step_gauge, feeler}",,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.ref.gauge_height_mm,CROSS,ref.gauge_height_mm;ref.kind,ERROR,구현,"ref.kind ∈ {step_gauge, feeler}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.ref.gauge_height_mm,DTYPE,ref.gauge_height_mm,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.ref.gauge_height_mm,RANGE,ref.gauge_height_mm,ERROR,구현,,0 < x ≤ 60,범위 밖,,
+REQ.ref.gauge_temp_c,REQ,ref.gauge_temp_c,ERROR,구현,ref.kind = step_gauge (feeler면 선택: 검사 안 함),,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.ref.gauge_temp_c,CROSS,ref.gauge_temp_c;ref.kind,ERROR,구현,ref.kind = step_gauge (feeler면 선택: 검사 안 함),,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.ref.gauge_temp_c,DTYPE,ref.gauge_temp_c,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.ref.gauge_temp_c,RANGE,ref.gauge_temp_c,ERROR,구현,,-10 ≤ x ≤ 130,범위 밖,,
+REQ.ref.line_peak_pct,REQ,ref.line_peak_pct,ERROR,구현,"ref.kind ∈ {daily_ref, static_repeat, bed_marker, ref_tower, step_gauge}",,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.ref.line_peak_pct,CROSS,ref.line_peak_pct;ref.kind,ERROR,구현,"ref.kind ∈ {daily_ref, static_repeat, bed_marker, ref_tower, step_gauge}",,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.ref.line_peak_pct,DTYPE,ref.line_peak_pct,ERROR,구현,,float,자료형이 float가 아님,,
 RANGE.ref.line_peak_pct,RANGE,ref.line_peak_pct,ERROR,구현,,0 ≤ x ≤ 100,범위 밖,,
 REQ.ref.note,REQ,ref.note,ERROR,구현,,,필수 칸이 빔,,
@@ -266,7 +308,10 @@ DTYPE.ref.note,DTYPE,ref.note,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.ref.note,REGEX,ref.note,ERROR,구현,,\S,빈 문자열 (공백만 있음),,
 REQ.meta.scan_id,REQ,meta.scan_id,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.scan_id,DTYPE,meta.scan_id,ERROR,구현,,str,자료형이 str가 아님,,
-REGEX.meta.scan_id,REGEX,meta.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?$,정규식과 맞지 않음,,
+REGEX.meta.scan_id,REGEX,meta.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,정규식과 맞지 않음,,
+REQ.meta.scan_pass_idx,REQ,meta.scan_pass_idx,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.scan_pass_idx,DTYPE,meta.scan_pass_idx,ERROR,구현,,int,자료형이 int가 아님,,
+RANGE.meta.scan_pass_idx,RANGE,meta.scan_pass_idx,ERROR,구현,,0 ≤ x ≤ 99,범위 밖,,
 REQ.meta.campaign_id,REQ,meta.campaign_id,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.campaign_id,DTYPE,meta.campaign_id,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.meta.campaign_id,REGEX,meta.campaign_id,ERROR,구현,,^[VR]C-\d{4}-\d{2}-\d{2}-[A-Z]$,정규식과 맞지 않음,,
@@ -284,7 +329,7 @@ DTYPE.meta.specimen_id,DTYPE,meta.specimen_id,ERROR,구현,,str,자료형이 str
 REGEX.meta.specimen_id,REGEX,meta.specimen_id,ERROR,구현,,^S\d{2}$,정규식과 맞지 않음,,
 REQ.meta.specimen_role,REQ,meta.specimen_role,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.specimen_role,DTYPE,meta.specimen_role,ERROR,구현,,str,자료형이 str가 아님,,
-ENUM.meta.specimen_role,ENUM,meta.specimen_role,ERROR,구현,,"user_gcode,aux_step",허용 값 밖,,
+ENUM.meta.specimen_role,ENUM,meta.specimen_role,ERROR,구현,,"user_gcode,public_gcode,aux_step",허용 값 밖,,
 REQ.meta.repeat,REQ,meta.repeat,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.repeat,DTYPE,meta.repeat,ERROR,구현,,int,자료형이 int가 아님,,
 RANGE.meta.repeat,RANGE,meta.repeat,ERROR,구현,,1 ≤ x ≤ 99,범위 밖,,
@@ -334,7 +379,7 @@ DTYPE.meta.scan_z_hop_mm,DTYPE,meta.scan_z_hop_mm,ERROR,구현,,float,자료형�
 RANGE.meta.scan_z_hop_mm,RANGE,meta.scan_z_hop_mm,ERROR,구현,,0 ≤ x ≤ 8,범위 밖,,
 REQ.meta.scan_axis,REQ,meta.scan_axis,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.scan_axis,DTYPE,meta.scan_axis,ERROR,구현,,str,자료형이 str가 아님,,
-ENUM.meta.scan_axis,ENUM,meta.scan_axis,ERROR,구현,,"+X,−X,+Y,−Y",허용 값 밖,,
+ENUM.meta.scan_axis,ENUM,meta.scan_axis,ERROR,구현,,"+X,-X,+Y,-Y",허용 값 밖,,
 REQ.meta.scan_x_mm,REQ,meta.scan_x_mm,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.scan_x_mm,DTYPE,meta.scan_x_mm,ERROR,구현,,float,자료형이 float가 아님,,
 REQ.meta.scan_y0_mm,REQ,meta.scan_y0_mm,ERROR,구현,,,필수 칸이 빔,,
@@ -345,9 +390,30 @@ ENUM.meta.process,ENUM,meta.process,ERROR,구현,,FDM,허용 값 밖,,
 REQ.meta.printer_model,REQ,meta.printer_model,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.printer_model,DTYPE,meta.printer_model,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.meta.printer_model,REGEX,meta.printer_model,ERROR,구현,,\S,빈 문자열 (공백만 있음),,
+REQ.meta.printer_kinematics,REQ,meta.printer_kinematics,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.printer_kinematics,DTYPE,meta.printer_kinematics,ERROR,구현,,str,자료형이 str가 아님,,
+ENUM.meta.printer_kinematics,ENUM,meta.printer_kinematics,ERROR,구현,,"corexy,cartesian_bedslinger,corexz",허용 값 밖,,
+REQ.meta.bed_motion,REQ,meta.bed_motion,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.bed_motion,DTYPE,meta.bed_motion,ERROR,구현,,str,자료형이 str가 아님,,
+ENUM.meta.bed_motion,ENUM,meta.bed_motion,ERROR,구현,,"fixed,z_only,y",허용 값 밖,,
+REQ.meta.z_drive,REQ,meta.z_drive,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.z_drive,DTYPE,meta.z_drive,ERROR,구현,,str,자료형이 str가 아님,,
+ENUM.meta.z_drive,ENUM,meta.z_drive,ERROR,구현,,"leadscrew,belt",허용 값 밖,,
+REQ.meta.z_motor_count,REQ,meta.z_motor_count,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.z_motor_count,DTYPE,meta.z_motor_count,ERROR,구현,,int,자료형이 int가 아님,,
+RANGE.meta.z_motor_count,RANGE,meta.z_motor_count,ERROR,구현,,1 ≤ x ≤ 4,범위 밖,,
+REQ.meta.z_level_method,REQ,meta.z_level_method,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.z_level_method,DTYPE,meta.z_level_method,ERROR,구현,,str,자료형이 str가 아님,,
+ENUM.meta.z_level_method,ENUM,meta.z_level_method,ERROR,구현,,"z_tilt,qgl,none",허용 값 밖,,
+REQ.meta.probe_type,REQ,meta.probe_type,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.probe_type,DTYPE,meta.probe_type,ERROR,구현,,str,자료형이 str가 아님,,
+ENUM.meta.probe_type,ENUM,meta.probe_type,ERROR,구현,,"tap,loadcell,strain_gauge,inductive,inductive_pressure,eddy,bltouch,none",허용 값 밖,,
 REQ.meta.firmware,REQ,meta.firmware,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.firmware,DTYPE,meta.firmware,ERROR,구현,,str,자료형이 str가 아님,,
-REGEX.meta.firmware,REGEX,meta.firmware,ERROR,구현,,\S,빈 문자열 (공백만 있음),,
+REGEX.meta.firmware,REGEX,meta.firmware,ERROR,구현,,^([a-z0-9]+-)?[a-z]+-[A-Za-z0-9._-]+$,정규식과 맞지 않음,,meta.firmware:정규식 `^([a-z0-9]+-)?
+REQ.meta.firmware_fork,REQ,meta.firmware_fork,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.firmware_fork,DTYPE,meta.firmware_fork,ERROR,구현,,str,자료형이 str가 아님,,
+ENUM.meta.firmware_fork,ENUM,meta.firmware_fork,ERROR,구현,,"mainline,vendor",허용 값 밖,,
 REQ.meta.mesh_enabled,REQ,meta.mesh_enabled,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.mesh_enabled,DTYPE,meta.mesh_enabled,ERROR,구현,,bool,자료형이 bool가 아님,,
 REQ.meta.control_group,REQ,meta.control_group,ERROR,구현,,,필수 칸이 빔,,
@@ -426,7 +492,7 @@ DTYPE.meta.z_offset_mm,DTYPE,meta.z_offset_mm,ERROR,구현,,float,자료형이 f
 RANGE.meta.z_offset_mm,RANGE,meta.z_offset_mm,ERROR,구현,,-5.0 ≤ x ≤ 5.0,범위 밖,,
 REQ.meta.zero_ref_method,REQ,meta.zero_ref_method,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.zero_ref_method,DTYPE,meta.zero_ref_method,ERROR,구현,,str,자료형이 str가 아님,,
-ENUM.meta.zero_ref_method,ENUM,meta.zero_ref_method,ERROR,구현,,"bed_marker,ref_tower,z_only",허용 값 밖,,
+ENUM.meta.zero_ref_method,ENUM,meta.zero_ref_method,ERROR,구현,,"step_gauge,bed_marker,ref_tower,z_only",허용 값 밖,,
 REQ.meta.bed_mesh_file,REQ,meta.bed_mesh_file,ERROR,구현,meta.mesh_enabled = true,,조건이 참인데 칸이 빔,,
 CROSS-EMPTY.meta.bed_mesh_file,CROSS,meta.bed_mesh_file;meta.mesh_enabled,ERROR,구현,meta.mesh_enabled = true,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.meta.bed_mesh_file,DTYPE,meta.bed_mesh_file,ERROR,구현,,str,자료형이 str가 아님,,
@@ -453,7 +519,7 @@ DTYPE.meta.gcode_flavor,DTYPE,meta.gcode_flavor,ERROR,구현,,str,자료형이 s
 ENUM.meta.gcode_flavor,ENUM,meta.gcode_flavor,ERROR,구현,,"marlin,klipper,reprap,other",허용 값 밖,,
 REQ.meta.firmware_name,REQ,meta.firmware_name,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.firmware_name,DTYPE,meta.firmware_name,ERROR,구현,,str,자료형이 str가 아님,,
-ENUM.meta.firmware_name,ENUM,meta.firmware_name,WARN,구현,,"klipper,marlin,rrf,other","허용 값 밖 (허용 값 [대기: T14], 경고)",,
+ENUM.meta.firmware_name,ENUM,meta.firmware_name,ERROR,구현,,"klipper,marlin,rrf,other",허용 값 밖,,
 REQ.meta.firmware_version,REQ,meta.firmware_version,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.firmware_version,DTYPE,meta.firmware_version,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.meta.firmware_version,REGEX,meta.firmware_version,ERROR,구현,,\S,빈 문자열 (공백만 있음),,
@@ -462,7 +528,20 @@ DTYPE.meta.host_software,DTYPE,meta.host_software,ERROR,구현,,str,자료형이
 REGEX.meta.host_software,REGEX,meta.host_software,ERROR,구현,,\S,빈 문자열 (공백만 있음),,
 REQ.meta.layer_macro_version,REQ,meta.layer_macro_version,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.layer_macro_version,DTYPE,meta.layer_macro_version,ERROR,구현,,str,자료형이 str가 아님,,
-REGEX.meta.layer_macro_version,REGEX,meta.layer_macro_version,ERROR,구현,,\S,빈 문자열 (공백만 있음),,
+REGEX.meta.layer_macro_version,REGEX,meta.layer_macro_version,ERROR,구현,,^LM-T14-\d+$,정규식과 맞지 않음,,
+REQ.meta.shaper_freq_x_hz,REQ,meta.shaper_freq_x_hz,ERROR,구현,선택: 열(키)은 있어야 하고 값은 비어도 됨 (명세 §0.1: 없으면 빈 칸·null),,선택 필드의 열(키)이 없음,,
+DTYPE.meta.shaper_freq_x_hz,DTYPE,meta.shaper_freq_x_hz,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.meta.shaper_freq_x_hz,RANGE,meta.shaper_freq_x_hz,ERROR,구현,,0 < x ≤ 200,범위 밖,,
+REQ.meta.shaper_freq_y_hz,REQ,meta.shaper_freq_y_hz,ERROR,구현,선택: 열(키)은 있어야 하고 값은 비어도 됨 (명세 §0.1: 없으면 빈 칸·null),,선택 필드의 열(키)이 없음,,
+DTYPE.meta.shaper_freq_y_hz,DTYPE,meta.shaper_freq_y_hz,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.meta.shaper_freq_y_hz,RANGE,meta.shaper_freq_y_hz,ERROR,구현,,0 < x ≤ 200,범위 밖,,
+REQ.meta.trigger_pin,REQ,meta.trigger_pin,ERROR,구현,,,필수 칸이 빔,,
+DTYPE.meta.trigger_pin,DTYPE,meta.trigger_pin,ERROR,구현,,str,자료형이 str가 아님,,
+REGEX.meta.trigger_pin,REGEX,meta.trigger_pin,ERROR,구현,,\S,빈 문자열 (공백만 있음),,
+REQ.meta.trigger_period_s,REQ,meta.trigger_period_s,ERROR,구현,이 스캔의 frame.trigger_mode = hw,,조건이 참인데 칸이 빔,,
+CROSS-EMPTY.meta.trigger_period_s,CROSS,meta.trigger_period_s;frame.trigger_mode,ERROR,구현,이 스캔의 frame.trigger_mode = hw,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
+DTYPE.meta.trigger_period_s,DTYPE,meta.trigger_period_s,ERROR,구현,,float,자료형이 float가 아님,,
+RANGE.meta.trigger_period_s,RANGE,meta.trigger_period_s,ERROR,구현,,0 < x ≤ 0.1,범위 밖,,
 REQ.meta.sensor_model,REQ,meta.sensor_model,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.sensor_model,DTYPE,meta.sensor_model,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.meta.sensor_model,REGEX,meta.sensor_model,ERROR,구현,,\S,빈 문자열 (공백만 있음),,
@@ -571,83 +650,6 @@ RANGE.meta.sim_seed,RANGE,meta.sim_seed,ERROR,구현,,0 ≤ x < 9223372036854775
 REQ.meta.injected_factors,REQ,meta.injected_factors,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.injected_factors,DTYPE,meta.injected_factors,ERROR,구현,,list,자료형이 list가 아님,,
 REGEX.meta.injected_factors,REGEX,meta.injected_factors,ERROR,구현,,^MF-[A-Z]{3}-\d{2}$,정규식과 맞지 않음,,meta.injected_factors:원소마다 정규식
-REQ.blt.session_id,REQ,blt.session_id,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.session_id,DTYPE,blt.session_id,ERROR,비활성,,str,자료형이 str가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REGEX.blt.session_id,REGEX,blt.session_id,ERROR,비활성,,^BLT-\d{4}-\d{2}-\d{2}-[A-Z]$,정규식과 맞지 않음,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.probe_model,REQ,blt.probe_model,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.probe_model,DTYPE,blt.probe_model,ERROR,비활성,,str,자료형이 str가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REGEX.blt.probe_model,REGEX,blt.probe_model,ERROR,비활성,,\S,빈 문자열 (공백만 있음),"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.point_id,REQ,blt.point_id,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.point_id,DTYPE,blt.point_id,ERROR,비활성,,str,자료형이 str가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REGEX.blt.point_id,REGEX,blt.point_id,ERROR,비활성,,^P\d{3}$,정규식과 맞지 않음,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.target,REQ,blt.target,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.target,DTYPE,blt.target,ERROR,비활성,,str,자료형이 str가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-ENUM.blt.target,ENUM,blt.target,ERROR,비활성,,"top_face,gauge,bed,ref,step_face",허용 값 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.face_id,REQ,blt.face_id,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.face_id,DTYPE,blt.face_id,ERROR,비활성,,str,자료형이 str가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.face_w_mm,REQ,blt.face_w_mm,ERROR,비활성,(조건 미구현),,조건이 참인데 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.face_w_mm,DTYPE,blt.face_w_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.face_w_mm,RANGE,blt.face_w_mm,ERROR,비활성,,3.0 ≤ x,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.face_margin_mm,REQ,blt.face_margin_mm,ERROR,비활성,(조건 미구현),,조건이 참인데 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.face_margin_mm,DTYPE,blt.face_margin_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.face_margin_mm,RANGE,blt.face_margin_mm,ERROR,비활성,,1.0 ≤ x,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.x_mm,REQ,blt.x_mm,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.x_mm,DTYPE,blt.x_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.x_mm,RANGE,blt.x_mm,ERROR,비활성,,finite,유한값이 아님 (inf),"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.y_mm,REQ,blt.y_mm,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.y_mm,DTYPE,blt.y_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.y_mm,RANGE,blt.y_mm,ERROR,비활성,,finite,유한값이 아님 (inf),"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.sample_idx,REQ,blt.sample_idx,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.sample_idx,DTYPE,blt.sample_idx,ERROR,비활성,,int,자료형이 int가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.sample_idx,RANGE,blt.sample_idx,ERROR,비활성,,0 ≤ x,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.z_trigger_mm,REQ,blt.z_trigger_mm,ERROR,비활성,(조건 미구현),,조건이 참인데 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.z_trigger_mm,DTYPE,blt.z_trigger_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.z_trigger_mm,RANGE,blt.z_trigger_mm,ERROR,비활성,,finite,유한값이 아님 (inf),"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.samples,REQ,blt.samples,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.samples,DTYPE,blt.samples,ERROR,비활성,,int,자료형이 int가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.samples,RANGE,blt.samples,ERROR,비활성,,1 ≤ x ≤ 20,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.samples_result,REQ,blt.samples_result,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.samples_result,DTYPE,blt.samples_result,ERROR,비활성,,str,자료형이 str가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-ENUM.blt.samples_result,ENUM,blt.samples_result,ERROR,비활성,,"average,median",허용 값 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.samples_tolerance_mm,REQ,blt.samples_tolerance_mm,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.samples_tolerance_mm,DTYPE,blt.samples_tolerance_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.samples_tolerance_mm,RANGE,blt.samples_tolerance_mm,ERROR,비활성,,0 < x ≤ 1,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.speed_mm_s,REQ,blt.speed_mm_s,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.speed_mm_s,DTYPE,blt.speed_mm_s,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.speed_mm_s,RANGE,blt.speed_mm_s,ERROR,비활성,,0 < x ≤ 50,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.lift_speed_mm_s,REQ,blt.lift_speed_mm_s,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.lift_speed_mm_s,DTYPE,blt.lift_speed_mm_s,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.lift_speed_mm_s,RANGE,blt.lift_speed_mm_s,ERROR,비활성,,0 < x ≤ 50,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.retract_mm,REQ,blt.retract_mm,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.retract_mm,DTYPE,blt.retract_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.retract_mm,RANGE,blt.retract_mm,ERROR,비활성,,0 < x ≤ 10,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.offset_x_mm,REQ,blt.offset_x_mm,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.offset_x_mm,DTYPE,blt.offset_x_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.offset_x_mm,RANGE,blt.offset_x_mm,ERROR,비활성,,finite,유한값이 아님 (inf),"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.offset_y_mm,REQ,blt.offset_y_mm,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.offset_y_mm,DTYPE,blt.offset_y_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.offset_y_mm,RANGE,blt.offset_y_mm,ERROR,비활성,,finite,유한값이 아님 (inf),"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.z_offset_mm,REQ,blt.z_offset_mm,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.z_offset_mm,DTYPE,blt.z_offset_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.z_offset_mm,RANGE,blt.z_offset_mm,ERROR,비활성,,0 < x ≤ 10,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.gauge_nominal_mm,REQ,blt.gauge_nominal_mm,ERROR,비활성,(조건 미구현),,조건이 참인데 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.gauge_nominal_mm,DTYPE,blt.gauge_nominal_mm,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-ENUM.blt.gauge_nominal_mm,ENUM,blt.gauge_nominal_mm,ERROR,비활성,,"0.20,0.30,0.40",허용 값 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.probe_temp_c,REQ,blt.probe_temp_c,ERROR,비활성,선택: 열(키)은 있어야 하고 값은 비어도 됨 (명세 §0.1: 없으면 빈 칸·null),,선택 필드의 열(키)이 없음,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.probe_temp_c,DTYPE,blt.probe_temp_c,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.probe_temp_c,RANGE,blt.probe_temp_c,ERROR,비활성,,-10 ≤ x ≤ 120,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.error,REQ,blt.error,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.error,DTYPE,blt.error,ERROR,비활성,,str,자료형이 str가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-ENUM.blt.error,ENUM,blt.error,ERROR,비활성,,"none,no_trigger,tolerance_exceeded,deploy_fail,alarm",허용 값 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.accuracy_range_um,REQ,blt.accuracy_range_um,ERROR,비활성,(조건 미구현),,조건이 참인데 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.accuracy_range_um,DTYPE,blt.accuracy_range_um,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.accuracy_range_um,RANGE,blt.accuracy_range_um,ERROR,비활성,,0 ≤ x,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.accuracy_std_um,REQ,blt.accuracy_std_um,ERROR,비활성,(조건 미구현),,조건이 참인데 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.accuracy_std_um,DTYPE,blt.accuracy_std_um,ERROR,비활성,,float,자료형이 float가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.accuracy_std_um,RANGE,blt.accuracy_std_um,ERROR,비활성,,0 ≤ x,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-REQ.blt.t_ns,REQ,blt.t_ns,ERROR,비활성,,,필수 칸이 빔,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-DTYPE.blt.t_ns,DTYPE,blt.t_ns,ERROR,비활성,,int64,자료형이 int64가 아님,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
-RANGE.blt.t_ns,RANGE,blt.t_ns,ERROR,비활성,,0 < x,범위 밖,"D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)",
 REQ.rep.study_id,REQ,rep.study_id,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.rep.study_id,DTYPE,rep.study_id,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.rep.study_id,REGEX,rep.study_id,ERROR,구현,,^MSA-\d{2}$,정규식과 맞지 않음,,
@@ -681,7 +683,7 @@ RANGE.rep.interval_s,RANGE,rep.interval_s,ERROR,구현,,0 ≤ x,범위 밖,,
 REQ.rep.scan_id,REQ,rep.scan_id,ERROR,구현,design_executed.csv (실행 뒤),,조건이 참인데 칸이 빔,,
 CROSS-EMPTY.rep.scan_id,CROSS,rep.scan_id,ERROR,구현,design_executed.csv (실행 뒤),,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.rep.scan_id,DTYPE,rep.scan_id,ERROR,구현,,str,자료형이 str가 아님,,
-REGEX.rep.scan_id,REGEX,rep.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?$,정규식과 맞지 않음,,
+REGEX.rep.scan_id,REGEX,rep.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,정규식과 맞지 않음,,
 REQ.rep.noise_seed,REQ,rep.noise_seed,ERROR,구현,가상 캠페인 (캠페인 ID 첫 글자 V),,조건이 참인데 칸이 빔,,
 CROSS-EMPTY.rep.noise_seed,CROSS,rep.noise_seed,ERROR,구현,가상 캠페인 (캠페인 ID 첫 글자 V),,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.rep.noise_seed,DTYPE,rep.noise_seed,ERROR,구현,,int,자료형이 int가 아님,,
@@ -704,14 +706,13 @@ JSON-04,JSON,,ERROR,구현,,,JSON으로 읽히지 않음 (UTF-8·BOM·문법),,
 JSON-05,JSON,,ERROR,구현,,,최상위가 JSON 객체가 아님,,
 JSON-06,JSON,,WARN,구현,,,들여쓰기가 2칸이 아님 (명세 §0.5: 들여쓰기 2칸),,
 JSON-07,JSON,,WARN,구현,,,ASCII 밖 글자를 \uXXXX로 씀 (명세 §0.5: ensure_ascii=False),,
-H-FMT-01,보류,,WARN,보류,,,길이 mm는 소수 4자리 이상 (명세 §0.5),표기 규칙 (글자로 소수 4자리를 씀)인지 정밀도 규칙 (0.1 µm까지 잃지 않음)인지 명세에 없음. 정상 표본은 152.331처럼 씀. T1에 넘김 (팀장검증_3차 §4.5 명세 반영점 9번),
 LEAK-01,LEAK,,ERROR,구현,,,data/raw 아래 파일에 truth 키·열이 있음 (truth. · truth_ 로 시작),,
 LEAK-02,LEAK,,ERROR,구현,,,data/raw 아래에 truth.json · _truth 폴더 · 참 높이맵 파일이 있음,,
 FILE-01,FILE,,ERROR,구현,,,§8 폴더 트리에 없는 파일·폴더,,
 FILE-02,FILE,,ERROR,구현,,,폴더·파일 이름이 §8 이름 규칙 정규식과 맞지 않음,,
-FILE-03,FILE,,ERROR,구현,,,"고정 파일이 없음 (스캔 폴더 meta.json·frames_index.csv·position_log.csv, 기준 폴더 ref_index.csv·frames_index.csv, 교정 폴더 cal_manifest.csv, MSA 폴더 design.csv)",,
-FILE-04,FILE,meta.timing,ERROR,구현,,,"시편·반복 폴더에 post 스캔이 정확히 1개가 아님 (§8, D-06)",,meta.timing:시편·반복마다 post 스캔이 정확히 1개
-FILE-05,FILE,meta.session_id;meta.specimen_id;meta.repeat;meta.layer_idx;meta.timing,ERROR,구현,,,스캔 폴더 경로에서 뽑은 세션·시편·반복·층이 meta 값과 다름 (§8 경로 일치),,meta.session_id:폴더 이름과 같음
+FILE-03,FILE,,ERROR,구현,,,"고정 파일이 없음 (스캔 폴더 meta.json·frames_index.csv·position_log.csv, 기준 폴더 ref_index.csv·frames_index.csv (+ 움직이며 찍는 기준 bed_bare·bed_marker·ref_tower·step_gauge·feeler는 position_log.csv), 교정 폴더 cal_manifest.csv, MSA 폴더 design.csv)",,
+FILE-04,FILE,meta.timing;meta.scan_pass_idx,ERROR,구현,,,"시편·반복 폴더에 post 스캔 (scan_pass_idx = 0)이 정확히 1개가 아님 (§8, D-06)",,meta.timing:시편·반복마다 post 스캔 (scan_pass_idx = 0)이 정확히 1개
+FILE-05,FILE,meta.session_id;meta.specimen_id;meta.repeat;meta.layer_idx;meta.timing;meta.scan_pass_idx,ERROR,구현,,,스캔 폴더 경로에서 뽑은 세션·시편·반복·층·줄 번호 (_pNN)가 meta 값과 다름 (§8 경로 일치),,meta.session_id:폴더 이름과 같음
 FILE-06,FILE,frame.file,ERROR,구현,,,frame.file이 가리키는 영상이 없음,,frame.file:파일이 실제로 있음
 FILE-07,FILE,frame.sha256,ERROR,구현,,,frame.sha256이 영상 파일 지문과 다름,,frame.sha256:다시 계산한 값과 같음
 FILE-08,FILE,frame.roi_w_px;frame.roi_h_px,ERROR,구현,,,영상 크기가 ROI 폭·높이와 다름,,frame.roi_w_px:영상 파일 폭과 같음;;frame.roi_h_px:영상 파일 높이와 같음
@@ -723,8 +724,11 @@ FILE-13,FILE,ref.frames_dir,ERROR,구현,,,ref.frames_dir 폴더가 없음,,ref.
 FILE-14,FILE,meta.bed_mesh_file,ERROR,구현,,,meta.bed_mesh_file이 세션 폴더에 없음,,meta.bed_mesh_file:파일 있음
 FILE-15,FILE,meta.raw_saved,ERROR,구현,,,"raw_saved = true인데 frames/·frames.npz가 없거나, false인데 영상이 있음",,meta.raw_saved:true면 frames/ 또는 frames.npz 있음;;meta.raw_saved:false면 영상 없음
 FILE-16,FILE,rep.study_id,ERROR,구현,,,rep.study_id가 MSA 폴더 이름과 다름,,rep.study_id:폴더 이름과 같음
+FILE-17,FILE,meta.gcode_file,ERROR,구현,,,meta.gcode_file이 저장소 뿌리 기준으로 없음 (명세 0.1절),,meta.gcode_file:저장소 뿌리 기준으로 파일 있음
+FILE-18,FILE,meta.slicer_profile_file,ERROR,구현,,,meta.slicer_profile_file이 저장소 뿌리 기준으로 없음 (명세 0.1절),,meta.slicer_profile_file:저장소 뿌리 기준으로 파일 있음
+FILE-19,FILE,ref.ref_id,ERROR,구현,,,ref.ref_id가 기준 폴더 이름과 다름 (명세 0.1 · 8절),,ref.ref_id:기준 폴더 이름과 같음
 X-FRM-01,CROSS,frame.scan_id;meta.scan_id,ERROR,구현,,,frame.scan_id가 파일 안에서 다르거나 meta.scan_id와 다름,,frame.scan_id:파일 안 모든 행이 같고
-X-FRM-02,CROSS,frame.layer_idx;meta.layer_idx,ERROR,구현,,,frame.layer_idx가 파일 안에서 다르거나 meta.layer_idx와 다름,,frame.layer_idx:파일 안 모든 행이 같고
+X-FRM-02,CROSS,frame.layer_idx;meta.layer_idx,ERROR,구현,,,"frame.layer_idx가 파일 안에서 다르거나, 스캔 폴더에서 meta.layer_idx와 다름 (-1 포함)",,frame.layer_idx:파일 안 모든 행이 같음;;frame.layer_idx:스캔 폴더에서는
 X-FRM-03,CROSS,frame.frame_idx,ERROR,구현,,,frame_idx가 0부터 1씩 늘지 않음,,frame.frame_idx:첫 행 0
 X-FRM-04,CROSS,frame.file;frame.frame_idx,ERROR,구현,,,frame.file의 숫자 6자리가 frame_idx와 다름,,frame.file:숫자 6자리
 X-FRM-05,CROSS,frame.t_cam_ns,ERROR,구현,,,t_cam_ns가 행마다 늘지 않음,,frame.t_cam_ns:있으면 행마다 증가
@@ -742,16 +746,24 @@ X-FRM-16,CROSS,frame.trigger_mode,ERROR,구현,,,스캔 안에서 trigger_mode�
 X-FRM-17,CROSS,frame.dropped_before;frame.cam_seq,ERROR,구현,,,dropped_before ≠ 이번 cam_seq − 이전 cam_seq − 1,,frame.dropped_before:이번 cam_seq
 X-FRM-18,CROSS,frame.saturated_px;frame.roi_w_px;frame.roi_h_px,ERROR,구현,,,saturated_px > roi_w × roi_h,,frame.saturated_px:roi_w × roi_h
 H-FRM-19,보류,frame.lossy,WARN,보류,,,lossy = true면 처리 코드가 경고,처리 코드 (T7) 몫. 데이터 검증 규칙이 아님,frame.lossy:처리 코드가 경고
+X-FRM-20,CROSS,frame.layer_idx;ref.layer_idx,ERROR,구현,,,기준 촬영 폴더의 frame.layer_idx가 ref.layer_idx와 다름 (ref.layer_idx가 빈 칸이면 -1이어야 함),,frame.layer_idx:기준 촬영 폴더에서는
+X-FRM-21,CROSS,frame.trig_pulse_idx,ERROR,구현,,,trig_pulse_idx가 값이 있는 행끼리 늘지 않음,,frame.trig_pulse_idx:값이 있는 행끼리 증가
+X-FRM-22,CROSS,frame.trig_pulse_idx;frame.dropped_before,ERROR,구현,,,trig_pulse_idx 앞 값과의 차 − 1 ≠ dropped_before,,frame.trig_pulse_idx:앞 값과의 차
+X-FRM-23,CROSS,frame.gate_on,ERROR,구현,,,gate_on = true 행이 한 덩어리가 아님 (중간에 끊김),,frame.gate_on:스캔 안에서 true 행이
 X-POS-01,CROSS,pos.scan_id;meta.scan_id,ERROR,구현,,,pos.scan_id가 meta.scan_id와 다름,,pos.scan_id:`meta.scan_id`와 같음
 X-POS-02,CROSS,pos.t_ns,ERROR,구현,,,같은 clock·source 안에서 t_ns가 늘지 않음,,pos.t_ns:같은 clock·source 안에서 증가
 X-POS-03,CROSS,pos.x_mm,ERROR,구현,,,스캔 구간 x_mm 변화 > 0.01,,pos.x_mm:스캔 구간에서 변화
 X-POS-04,CROSS,pos.y_mm,ERROR,구현,,,스캔 구간 y_mm가 출처별로 단조가 아님,,pos.y_mm:단조
 X-POS-05,CROSS,pos.z_mm,ERROR,구현,,,스캔 구간 z_mm (source = cmd) 변화 > 0.001,,pos.z_mm:스캔 구간 변화
-X-POS-06,CROSS,pos.e_mm,ERROR,구현,,,스캔 구간 e_mm가 변함 (스캔 중 압출),,pos.e_mm:변화 0
+X-POS-06,CROSS,pos.e_mm,ERROR,구현,,,스캔 구간에서 값이 있는 행끼리 e_mm가 변함 (스캔 중 압출),,pos.e_mm:변화 0;;pos.e_mm:그 구간에 값이 하나 이하면
 X-POS-07,CROSS,pos.feed_mm_s;meta.scan_speed_mm_s,ERROR,구현,,,스캔 구간 feed 평균이 scan_speed ±5 % 밖,,pos.feed_mm_s:±5 %
-X-POS-08,CROSS,pos.layer_idx;meta.layer_idx,ERROR,구현,,,층별 스캔인데 pos.layer_idx ≠ meta.layer_idx,,pos.layer_idx:층별 측정이면
+X-POS-08,CROSS,pos.layer_idx;meta.layer_idx,ERROR,구현,,,스캔 폴더의 pos.layer_idx ≠ meta.layer_idx (-1 포함),,pos.layer_idx:스캔 폴더에서는
 X-POS-09,CROSS,pos.event,ERROR,구현,,,scan_start·scan_end가 1개씩이 아니거나 scan_start가 먼저가 아님,,pos.event:스캔마다 scan_start 1개
 X-POS-10,CROSS,pos.acc_x_mm_s2;pos.acc_y_mm_s2;pos.acc_z_mm_s2,ERROR,구현,,,acc_x가 있는데 acc_y·acc_z 중 빈 칸이 있음,,pos.acc_x_mm_s2:있으면 acc_y·acc_z도
+X-POS-11,CROSS,pos.layer_idx;pos.scan_id;frame.layer_idx;frame.scan_id,ERROR,구현,,,기준 폴더 position_log의 scan_id·layer_idx가 그 기준 frames_index와 다름 (명세 4절),,pos.layer_idx:기준 촬영 폴더에서는
+X-POS-12,CROSS,pos.pass_idx,ERROR,구현,,,스캔 구간 pass_idx가 0부터 빈 번호 없이 늘지 않음,,pos.pass_idx:scan_start~scan_end 사이에서 값이 0부터
+X-POS-13,CROSS,pos.event;meta.timing,ERROR,구현,,,"resume이 layer 스캔의 scan_end 뒤 0–1개가 아님 (post 스캔에 있거나, 2개 이상이거나, scan_end 앞)",,pos.event:resume은
+X-POS-14,CROSS,pos.event;pos.t_ns;meta.timing,ERROR,구현,,,cool_start·cool_end가 post 스캔에 각 1개가 아니거나 (layer 스캔에 있음 포함) cool_start < cool_end ≤ scan_start가 아님,,pos.event:cool_start · cool_end는
 X-CAL-01,CROSS,cal.target_square_mm;cal.target_cols,ERROR,구현,,,target_cols × target_square_mm > 20.2 (시야 폭),,cal.target_square_mm:target_cols × x
 X-CAL-02,CROSS,cal.target_marker_mm;cal.target_square_mm,ERROR,구현,,,target_marker_mm ≥ target_square_mm,,cal.target_marker_mm:0 < x <
 X-CAL-03,CROSS,cal.pose_idx,ERROR,구현,,,"(cal_id, kind, pose_idx, laser_on) 중복",,cal.pose_idx:조합이 유일
@@ -766,8 +778,14 @@ W-CAL-11,CROSS,cal.reproj_rms_px,WARN,구현,,,D1 재투영 RMS ≥ 0.2 px (청�
 W-CAL-12,CROSS,cal.plane_rms_um,WARN,구현,,,D2 평면 RMS ≥ 5 µm (옛 M1 기준),,cal.plane_rms_um:옛 M1 기준
 W-CAL-13,CROSS,cal.invalidated_by;meta.calibration_id,WARN,구현,,,무효화된 교정 (invalidated_by ≠ none)을 쓴 스캔,,cal.invalidated_by:none이 아니면
 H-CAL-14,보류,cal.result_file,ERROR,보류,,,교정이 끝나면 result_file 있음,결과 파일은 데이터 폴더 밖 저장소 config/calibration/ 기준이라 캠페인 폴더만으로 못 봄,cal.result_file:교정이 끝나면 파일 있음
-H-CAL-15,보류,cal.nozzle_touch_z_mm,ERROR,보류,,,D4 노즐 접촉 행이면 nozzle_touch_z_mm 필수,노즐 접촉 행을 가리키는 필드가 명세에 없음 (D4 밖이면 빈 칸인지는 CROSS-EMPTY로 검사),cal.nozzle_touch_z_mm:노즐 접촉 행이면 필수
-H-CAL-16,보류,cal.image_file,ERROR,보류,,,영상이 있는 행이면 image_file 필수,영상이 있는 행인지 데이터만으로 모름,cal.image_file:영상이 있는 행이면 필수
+X-CAL-17,CROSS,cal.record_type;cal.kind,ERROR,구현,,,record_type = nozzle_touch인데 kind ≠ D4,,cal.record_type:nozzle_touch는 kind = D4에서만
+X-CAL-18,CROSS,cal.record_type;cal.target_type,ERROR,구현,,,"record_type = micrometer인데 target_type ∉ {filler_gauge, step_gauge, material_sample}",,cal.record_type:micrometer는
+X-CAL-19,CROSS,cal.target_type;cal.kind,ERROR,구현,,,target_type이 filler_gauge·step_gauge·material_sample인데 kind ≠ D5,,cal.target_type:filler_gauge · step_gauge · material_sample은 kind = D5
+X-CAL-20,CROSS,cal.laser_on;cal.record_type,ERROR,구현,,,영상이 아닌 행 (record_type ≠ image)인데 laser_on = true,,cal.laser_on:`cal.record_type` ≠ image면 false
+X-CAL-21,CROSS,cal.gauge_block_id;cal.gauge_nominal_mm,ERROR,구현,,,FG- 숫자가 gauge_nominal_mm와 다름,,cal.gauge_block_id:FG면 숫자
+X-CAL-22,CROSS,cal.gauge_block_height_mm;cal.gauge_block_id,ERROR,구현,,,블록 교정 높이와 GB- 공칭 합의 차 > 0.02 mm (명세 [추정]),,cal.gauge_block_height_mm:블록 공칭 합과 차
+X-CAL-23,CROSS,cal.gauge_block_height_mm;cal.gauge_block_id;cal.cal_id,ERROR,구현,,,같은 cal_id 안 같은 gauge_block_id인데 gauge_block_height_mm가 다름,,cal.gauge_block_height_mm:같은 cal_id 안
+H-CAL-24,보류,cal.material_offset_um,ERROR,보류,,,"재료 조각이 스캔과 같은 필라멘트, 재료마다 cal_id 따로",cal 행에 재료·색 필드가 없어 meta.material·meta.color와 데이터로 대조할 수 없음 (T1에 넘김),cal.material_offset_um:조각은 같은 캠페인;;cal.material_offset_um:재료가 여럿이면
 X-REF-01,CROSS,ref.ref_id;ref.kind,ERROR,구현,,,ref_id 가운데 세 글자가 kind 약어와 다름,,ref.ref_id:가운데 세 글자;;ref.kind:ref_id 약어와 맞음
 X-REF-02,CROSS,ref.kind;ref.t_start_ns;meta.layer_end_t_ns,ERROR,구현,,,세션에 bed_bare가 없거나 bed_bare 시각이 첫 층 layer_end_t_ns보다 늦음,,ref.kind:bed_bare는 세션마다
 X-REF-03,CROSS,ref.scan_id;meta.layer_z_mm,ERROR,구현,,,bed_marker 짝 스캔의 layer_z_mm > 8.0,,ref.scan_id:kind = bed_marker면 그 스캔
@@ -777,6 +795,13 @@ X-REF-06,CROSS,ref.n_frames;ref.kind,ERROR,구현,,,static_repeat인데 n_frames
 X-REF-07,CROSS,ref.t_start_ns,ERROR,구현,,,짝 스캔 첫 프레임과 기준 시각 차이 > 600 s,,ref.t_start_ns:짝 스캔이 있으면
 X-REF-08,CROSS,ref.scan_id,ERROR,구현,,,층별 기준 (스캔 폴더 안)의 ref.scan_id가 그 스캔 meta.scan_id와 다름,,ref.scan_id:층마다 그 층 스캔과 짝
 W-REF-09,CROSS,ref.line_peak_pct,WARN,구현,,,같은 kind 이전 값보다 line_peak_pct가 20 % 넘게 낮음 (광학창 오염 추세),,ref.line_peak_pct:20 % 넘게 낮으면 경고
+X-REF-10,CROSS,ref.kind;ref.t_start_ns;meta.layer_end_t_ns,ERROR,구현,,,feeler 기준 시각이 그 세션 첫 층 layer_end_t_ns보다 늦음 (출력 전이어야 함),,ref.kind:feeler도 출력 전
+W-REF-11,CROSS,ref.calibration_id;meta.calibration_id;meta.bed_ref_id,WARN,비활성,,,bed_bare 기준의 ref.calibration_id ≠ 그 기준을 가리키는 스캔의 meta.calibration_id (판정 거부 X4),D-21 대기 (X4 채택은 사용자 결정 전). 기본 끔. 켜기: validate_dataset.py --enable-rule W-REF-11 또는 config/default.yaml validate.enable_rules,ref.calibration_id:kind = bed_bare면 그 기준을;;meta.calibration_id:그 스캔의 `meta.bed_ref_id`가 가리키는
+X-REF-12,CROSS,ref.gauge_block_id;cal.gauge_block_id,ERROR,구현,,,ref.gauge_block_id가 같은 캠페인 cal_manifest.csv의 cal.gauge_block_id에 없음,,ref.gauge_block_id:같은 캠페인
+X-REF-13,CROSS,ref.gauge_block_id;ref.kind,ERROR,구현,,,"step_gauge인데 GB-로, feeler인데 FG-로 시작하지 않음",,ref.gauge_block_id:step_gauge면 GB-로
+X-REF-14,CROSS,ref.gauge_height_mm;cal.gauge_block_height_mm;cal.gauge_measured_mm,ERROR,구현,,,"ref.gauge_height_mm ≠ cal 교정값 (step_gauge: gauge_block_height_mm, feeler: gauge_measured_mm, 차 > 1e-9)",,ref.gauge_height_mm:step_gauge면 = 그 블록
+X-REF-15,CROSS,ref.gauge_height_mm;meta.layer_z_mm,ERROR,구현,,,step_gauge 높이 ≥ 짝 스캔 layer_z_mm (노즐 충돌),,ref.gauge_height_mm:kind = step_gauge면 x <
+X-REF-16,CROSS,ref.kind;pos.z_mm,ERROR,구현,,,"step_gauge 기준 위치 로그의 스캔 구간 Z (cmd)가 짝 스캔 스캔 구간 Z와 0.001 mm 넘게 다름 (같은 Z 연속 측정, 명세 4절)",,meta.zero_ref_method:step_gauge면 짝
 X-MET-01,CROSS,meta.scan_id;meta.timing;meta.layer_idx,ERROR,구현,,,scan_id의 _L 부분이 timing·layer_idx와 맞지 않음,,meta.scan_id:timing = layer면;;meta.scan_id:timing = post면
 X-MET-02,CROSS,meta.campaign_id;meta.source,ERROR,구현,,,캠페인 첫 글자 V ⇔ source = virtual 위반,,meta.campaign_id:첫 글자 V
 X-MET-03,CROSS,meta.specimen_id;meta.scan_id,ERROR,구현,,,specimen_id ≠ scan_id 앞 세 글자,,meta.specimen_id:scan_id 앞 세 글자
@@ -797,11 +822,9 @@ X-MET-17,CROSS,meta.scan_x_mm;pos.x_mm,ERROR,구현,,,scan_x_mm와 스캔 구간
 X-MET-18,CROSS,meta.scan_y0_mm;pos.y_mm,ERROR,구현,,,scan_y0_mm와 scan_start 행 y_mm 차이 > 0.01,,meta.scan_y0_mm:position_log scan_start 행
 X-MET-19,CROSS,meta.control_group;meta.timing,ERROR,구현,,,control_group ≠ none인데 timing ≠ post,,meta.control_group:none이 아니면
 X-MET-20,CROSS,meta.enclosure;meta.ambient_light,ERROR,구현,,,ambient_light = enclosure_dark인데 enclosure ≠ true,,meta.enclosure:ambient_light = enclosure_dark면
-H-MET-21,보류,meta.slicer_profile_file,ERROR,보류,,,slicer_profile_file 파일 있음,경로 기준점 (저장소·캠페인)이 명세에 없음 (예시 data/gcode/…),meta.slicer_profile_file:파일 있음
-H-MET-22,보류,meta.gcode_file,ERROR,보류,,,gcode_file 파일 있음,"경로 기준점이 명세에 없음, 사용자 G코드 미수령 (D-10)",meta.gcode_file:파일 있음
-H-MET-23,보류,meta.gcode_sha256,ERROR,보류,,,gcode_sha256 = 실제 파일 지문,G코드 파일 위치를 못 정해 다시 잴 수 없음 (H-MET-22와 같음),meta.gcode_sha256:실제 파일 지문과 같음
+H-MET-23,보류,meta.gcode_sha256,ERROR,보류,,,gcode_sha256 = 실제 파일 지문,사용자 G코드 미수령 (D-10 대기). 지문 대조는 정답 G코드가 정해진 뒤 (파일 있음은 FILE-17),meta.gcode_sha256:실제 파일 지문과 같음
 X-MET-24,CROSS,meta.layer_h_mm;meta.nozzle_dia_mm,ERROR,구현,,,layer_h_mm > nozzle_dia_mm,,meta.layer_h_mm:0.04 ≤ x ≤
-X-MET-25,CROSS,meta.bed_ref_id;ref.ref_id;ref.kind,ERROR,구현,,,bed_ref_id가 같은 세션 reference/의 bed_bare 기준을 가리키지 않음,,meta.bed_ref_id:같은 세션 `reference/`
+X-MET-25,CROSS,meta.bed_ref_id;ref.ref_id;ref.kind,ERROR,구현,,,bed_ref_id가 같은 세션 reference/의 bed_bare 기준을 가리키지 않음 (판정 거부 X1),,meta.bed_ref_id:같은 세션 `reference/`;;meta.bed_ref_id:없거나 bed_bare가 아니면 판정 거부 X1
 X-MET-26,CROSS,meta.bed_ref_id,ERROR,구현,,,세션 안 bed_ref_id가 다름,,meta.bed_ref_id:세션 안 모든 스캔이 같은 값
 X-MET-27,CROSS,meta.z_offset_mm,ERROR,구현,,,세션 안 z_offset_mm가 다름 (0점이 바뀜),,meta.z_offset_mm:세션 안 모든 스캔이 같은 값
 H-MET-28,보류,meta.z_offset_mm,ERROR,보류,,,펌웨어 부호를 명세 부호로 바꿔 적음,부호 바꾸는 법이 부록 D에서 [T14 대기],meta.z_offset_mm:펌웨어 값의 부호
@@ -811,8 +834,7 @@ H-MET-31,보류,meta.bed_mesh_file,ERROR,보류,,,메시 표가 펌웨어 원본
 X-MET-32,CROSS,meta.bed_mesh_file,ERROR,구현,,,세션 안 bed_mesh_file이 다름,,meta.bed_mesh_file:세션 안 모든 스캔이 같은 값
 X-MET-33,CROSS,meta.paired_scan_id;meta.layer_count;meta.thermal_state,ERROR,구현,,,paired_scan_id가 같은 세션·시편·반복의 마지막 층 in_process 스캔이 아님,,meta.paired_scan_id:같은 세션·시편·반복의 스캔
 X-MET-34,CROSS,meta.cool_wait_s;meta.wait_after_layer_s,ERROR,구현,,,abs(cool_wait_s − wait_after_layer_s) > 0.001,,meta.cool_wait_s:abs(x −
-H-MET-35,보류,meta.cool_wait_s,ERROR,보류,,,식었다고 보는 기준,기준은 T15에서 정함 (명세 14절 15),meta.cool_wait_s:식었다고 보는 기준
-X-MET-36,CROSS,meta.firmware;meta.firmware_name;meta.firmware_version,ERROR,구현,,,meta.firmware ≠ firmware_name + '-' + firmware_version (13절),,meta.firmware_name:13절
+X-MET-36,CROSS,meta.firmware;meta.firmware_name;meta.firmware_version,ERROR,구현,,,meta.firmware가 [<제조사>-]<firmware_name>-<firmware_version>[-<git 7자리>] 형식과 맞지 않음 (13절),,meta.firmware_name:13절;;meta.firmware:이름 부분 = `meta.firmware_name`;;meta.firmware:`meta.firmware_name`·`meta.firmware_version`과 맞음;;meta.firmware:형식 `[<제조사>-]
 X-MET-37,CROSS,meta.cam_interface;frame.roi_w_px;frame.roi_h_px;frame.bit_depth;meta.fps,ERROR,구현,,,usb2인데 ROI × 비트 × fps가 60 MB/s (9절 이론값)를 넘음,,meta.cam_interface:usb2면 9절 대역폭 검사
 W-MET-38,CROSS,meta.lens_focus_locked;meta.source,WARN,구현,,,실측인데 lens_focus_locked = false,,meta.lens_focus_locked:실측에서 false면 검증 경고
 W-MET-39,CROSS,meta.laser_power_mw,WARN,구현,,,laser_power_mw > 1.0 (C8 안전 경고),,meta.laser_power_mw:넘으면 C8 안전 경고
@@ -829,7 +851,16 @@ X-MET-49,CROSS,meta.calibration_id;meta.datetime;cal.valid_from;cal.valid_until,
 X-MET-50,CROSS,meta.files_sha256,ERROR,구현,,,files_sha256 키가 상대 경로가 아니거나 값이 64자 16진수가 아님,,meta.files_sha256:키 = 상대 경로
 X-MET-51,CROSS,meta.injected_factors;meta.source,ERROR,구현,,,실측인데 injected_factors가 빈 목록이 아님,,meta.injected_factors:source = real이면 빈 목록
 H-MET-52,보류,meta.slicer_name,ERROR,보류,,,slicer_name = G코드 머리말 값,G코드 해석 (T4a) 결과가 있어야 함,meta.slicer_name:G코드 머리말에서 읽고
-H-MET-53,보류,meta.layer_macro_version,ERROR,보류,,,매크로 버전 형식,형식이 [대기: T14],meta.layer_macro_version:형식은 T14
+X-MET-54,CROSS,meta.scan_id;meta.scan_pass_idx,ERROR,구현,,,"scan_id의 _p 부분이 scan_pass_idx와 맞지 않음 (0이면 _p 없음, 1 이상이면 _p 숫자 = scan_pass_idx)",,meta.scan_id:`meta.scan_pass_idx` = 0이면
+X-MET-55,CROSS,meta.scan_pass_idx,ERROR,구현,,,같은 시편·반복·층 (post끼리)의 scan_pass_idx가 0부터 빈 번호 없이 이어지지 않음,,meta.scan_pass_idx:같은 시편·반복·층;;meta.scan_pass_idx:줄이 하나면 0
+W-MET-56,CROSS,meta.layer_idx;meta.layer_count;meta.thermal_state,WARN,비활성,,,같은 시편·반복의 in_process 스캔에 0 ~ layer_count − 1 층이 다 있지 않음 (판정 거부 X7),D-21 대기 (X7 채택은 사용자 결정 전). 기본 끔. 켜기: validate_dataset.py --enable-rule W-MET-56 또는 config/default.yaml validate.enable_rules,meta.layer_idx:모든 층 스캔 (D-18)
+W-MET-57,CROSS,meta.bed_motion;meta.scan_axis,WARN,구현,,,"bed_motion = y인데 scan_axis가 ±X가 아님 (권장 위반, T2 MF-MEC-10)",,meta.bed_motion:y면 `meta.scan_axis`;;meta.scan_axis:베드가 Y로 움직이는 프린터면
+X-MET-58,CROSS,meta.z_drive;meta.timing;pos.event,ERROR,구현,,,"z_drive = belt인 post 스캔 위치 로그에 motor_off가 있음 (식힌 재측정 동안 모터 유지, T2 MF-SYN-09)",,meta.z_drive:belt면 식힌 재측정 동안
+X-MET-59,CROSS,meta.firmware;meta.firmware_fork,ERROR,구현,,,meta.firmware에 제조사 접두사가 있는데 firmware_fork ≠ vendor,,meta.firmware:제조사 접두사는
+X-MET-60,CROSS,meta.trigger_pin;frame.trigger_mode,ERROR,구현,,,"trigger_mode ∈ {hw, gate}인데 trigger_pin = none이거나, 그 밖인데 trigger_pin ≠ none",,meta.trigger_pin:이 스캔의
+X-MET-61,CROSS,meta.trigger_period_s;meta.fps,ERROR,구현,,,abs(trigger_period_s × fps − 1) > 0.001,,meta.trigger_period_s:abs(x ×
+X-MET-62,CROSS,meta.zero_ref_method;ref.kind,ERROR,구현,,,zero_ref_method = step_gauge인데 짝 step_gauge 기준이 없음,,meta.zero_ref_method:step_gauge면 짝
+W-MET-63,CROSS,meta.zero_ref_method,WARN,구현,,,"zero_ref_method = z_only (기록은 되나 판정 거부 X2, 판정 단계 몫)",,meta.zero_ref_method:z_only는
 X-REP-01,CROSS,rep.part_idx;rep.specimen_id,ERROR,구현,,,같은 specimen_id인데 part_idx가 다름,,rep.part_idx:같은 specimen_id면 같음
 X-REP-02,CROSS,rep.repeat_idx,ERROR,구현,,,"(part_idx, session_id, operator, repeat_idx) 중복",,rep.repeat_idx:유일
 X-REP-03,CROSS,rep.remount;rep.scan_id,ERROR,구현,,,remount = true인데 실행 스캔이 post가 아님 (design_executed),,rep.remount:층별 측정에서
@@ -837,3 +868,4 @@ X-REP-04,CROSS,rep.run_order,ERROR,구현,,,run_order가 행 수보다 크거나
 H-REP-05,보류,rep.run_order,WARN,보류,,,행 순서와 다른 무작위 순서 권장,권장 사항이라 위반 기준이 없음,rep.run_order:행 순서와 다름
 X-REP-06,CROSS,rep.noise_seed,ERROR,구현,,,같은 study 안 noise_seed 중복,,rep.noise_seed:같은 study 안에서 행마다 다름
 X-REP-07,CROSS,rep.truth_id;rep.specimen_id,ERROR,구현,,,같은 specimen_id인데 truth_id가 다름,,rep.truth_id:같은 specimen_id면 같음
+X-TRU-01,CROSS,truth.judgement;truth.pass_pct,ERROR,구현,,,truth.judgement = pass ⇔ truth.pass_pct ≥ 95 위반 (부록 A),,

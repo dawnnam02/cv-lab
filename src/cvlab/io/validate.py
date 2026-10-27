@@ -28,16 +28,21 @@ NAME_RES = {
     "campaign": re.compile(r"^[VR]C-\d{4}-\d{2}-\d{2}-[A-Z]$"),
     "session": re.compile(r"^PS-\d{4}-\d{2}-\d{2}-[A-Z]$"),
     "specrep": re.compile(r"^S\d{2}_r\d{2}$"),
-    "layer": re.compile(r"^L\d{3}$|^post$"),
+    # 명세 8절 (T1 2차): 한 층을 여러 줄로 재면 _pNN (= meta.scan_pass_idx, 0이면 안 붙임)
+    "layer": re.compile(r"^L\d{3}(_p\d{2})?$|^post(_p\d{2})?$"),
     "frame": re.compile(r"^\d{6}\.png$"),
     "cal": re.compile(r"^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$"),
-    "calimg": re.compile(r"^d[1-5]/[a-z0-9_]+\.png$"),
+    # 명세 8절 (T1 2차, T6 반영점 3): d1–d5 아래 하위 폴더 한 단계까지
+    "calimg": re.compile(r"^d[1-5]/([a-z0-9_]+/)?[a-z0-9_]+\.png$"),
     "ref": re.compile(r"^REF-[A-Z]{3}-\d{3}$"),
-    "blt": re.compile(r"^BLT-\d{4}-\d{2}-\d{2}-[A-Z]$"),
     "msa": re.compile(r"^MSA-\d{2}$"),
 }
 REF_ABBR = {"bed_bare": "BED", "background": "BKG", "dark": "DRK", "bed_marker": "MRK",
-            "ref_tower": "TWR", "daily_ref": "DAY", "static_repeat": "STA"}
+            "ref_tower": "TWR", "step_gauge": "STG", "feeler": "FLR", "daily_ref": "DAY", "static_repeat": "STA"}
+# 움직이며 찍는 기준: 기준 폴더에 position_log.csv도 둠 (명세 4절)
+MOVING_REF = {"bed_bare", "bed_marker", "ref_tower", "step_gauge", "feeler"}
+# 기본으로 꺼 둔 규칙 (사용자 결정 D-21 대기). --enable-rule 또는 config/default.yaml validate.enable_rules로 켬
+D21_RULES = ("W-REF-11", "W-MET-56")
 TRUTH_MAP_RE = re.compile(r"^T-S\d{2}_(L\d{3}|post)\.npy$")
 
 
@@ -198,6 +203,9 @@ COND_FUNCS = {
     "frame.sha256": lambda c: not is_missing(c["raw"].get("file", "")),
     "frame.t_cam_ns": lambda c: True if _any_raw(c, "t_cam_ns") else None,
     "frame.cam_seq": lambda c: True if _any_raw(c, "cam_seq") else None,
+    "frame.trig_pulse_idx": lambda c: None if _r(c, "trigger_mode") is None or _r(c, "laser_on") is None
+    else (_r(c, "trigger_mode") == "hw" and _r(c, "laser_on") is True),
+    "frame.gate_on": lambda c: None if _r(c, "trigger_mode") is None else _r(c, "trigger_mode") == "gate",
     "pos.mesh_dz_mm": lambda c: None if _m(c, "mesh_enabled") is None else _m(c, "mesh_enabled") is True,
     "pos.clock_offset_ns": lambda c: None if _r(c, "clock") is None else _r(c, "clock") == "mcu",
     "cal.target_rows": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "charuco",
@@ -206,26 +214,34 @@ COND_FUNCS = {
     "cal.target_marker_mm": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "charuco",
     "cal.target_dict": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "charuco",
     "cal.target_flatness_um": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") in ("charuco", "flat_plate"),
-    "cal.image_file": lambda c: None,
+    "cal.image_file": lambda c: None if _r(c, "record_type") is None else _r(c, "record_type") == "image",
     "cal.exposure_us": lambda c: not is_missing(c["raw"].get("image_file", "")),
     "cal.cmd_z_mm": lambda c: None if _r(c, "kind") is None else _r(c, "kind") == "D2",
     "cal.cmd_move_mm": lambda c: None if _r(c, "kind") is None else _r(c, "kind") == "D3",
     "cal.feature_id": lambda c: None if _r(c, "kind") is None else _r(c, "kind") == "D4",
     "cal.feature_x_mm": lambda c: None if _r(c, "kind") is None else _r(c, "kind") == "D4",
     "cal.feature_y_mm": lambda c: None if _r(c, "kind") is None else _r(c, "kind") == "D4",
-    # 접촉 행을 모르므로 D4면 None (필수 여부 모름), D4가 아니면 거짓 (빈 칸이어야 함)
-    "cal.nozzle_touch_z_mm": lambda c: None if _r(c, "kind") in (None, "D4") else False,
+    "cal.nozzle_touch_z_mm": lambda c: None if _r(c, "record_type") is None else _r(c, "record_type") == "nozzle_touch",
+    "cal.gauge_block_id": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") in ("step_gauge", "filler_gauge"),
+    "cal.gauge_block_height_mm": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "step_gauge",
+    "cal.gauge_block_u_um": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "step_gauge",
+    "cal.material_offset_um": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "material_sample",
+    "cal.material_offset_u_um": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "material_sample",
     "cal.gauge_nominal_mm": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "filler_gauge",
     "cal.gauge_measured_mm": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "filler_gauge",
     "cal.gauge_u_um": lambda c: None if _r(c, "target_type") is None else _r(c, "target_type") == "filler_gauge",
     "cal.reproj_rms_px": lambda c: None if _r(c, "kind") is None else (c["file"] == "cal_results.csv" and _r(c, "kind") == "D1"),
     "cal.plane_rms_um": lambda c: None if _r(c, "kind") is None else (c["file"] == "cal_results.csv" and _r(c, "kind") == "D2"),
-    "ref.scan_id": lambda c: None if _r(c, "kind") is None else _r(c, "kind") in ("bed_marker", "ref_tower"),
-    "ref.layer_idx": lambda c: None if _r(c, "kind") is None else _r(c, "kind") in ("bed_marker", "ref_tower"),
+    "ref.scan_id": lambda c: None if _r(c, "kind") is None else _r(c, "kind") in ("bed_marker", "ref_tower", "step_gauge"),
+    "ref.layer_idx": lambda c: None if _r(c, "kind") is None else _r(c, "kind") in ("bed_marker", "ref_tower", "step_gauge"),
+    "ref.calibration_id": lambda c: True if _r(c, "kind") in MOVING_REF else None,
+    "ref.gauge_block_id": lambda c: None if _r(c, "kind") is None else _r(c, "kind") in ("step_gauge", "feeler"),
+    "ref.gauge_height_mm": lambda c: None if _r(c, "kind") is None else _r(c, "kind") in ("step_gauge", "feeler"),
+    "ref.gauge_temp_c": lambda c: None if _r(c, "kind") in (None, "feeler") else _r(c, "kind") == "step_gauge",
     "ref.marker_id": lambda c: None if _r(c, "kind") is None else _r(c, "kind") == "bed_marker",
     "ref.marker_x_mm": lambda c: None if _r(c, "kind") is None else _r(c, "kind") == "bed_marker",
     "ref.marker_y_mm": lambda c: None if _r(c, "kind") is None else _r(c, "kind") == "bed_marker",
-    "ref.line_peak_pct": lambda c: None if _r(c, "kind") is None else _r(c, "kind") in ("daily_ref", "static_repeat", "bed_marker", "ref_tower"),
+    "ref.line_peak_pct": lambda c: None if _r(c, "kind") is None else _r(c, "kind") in ("daily_ref", "static_repeat", "bed_marker", "ref_tower", "step_gauge"),
     "meta.layer_time_s": lambda c: None if _r(c, "timing") is None else _r(c, "timing") == "layer",
     "meta.step_edge_angle_deg": lambda c: None if _r(c, "specimen_role") is None else _r(c, "specimen_role") == "aux_step",
     "meta.camera_temp_c": lambda c: True if _r(c, "source") == "virtual" else None,
@@ -234,6 +250,8 @@ COND_FUNCS = {
     "meta.cool_wait_s": lambda c: None if _r(c, "thermal_state") is None else _r(c, "thermal_state") == "cooled",
     "meta.sim_version": lambda c: None if _r(c, "source") is None else _r(c, "source") == "virtual",
     "meta.sim_seed": lambda c: None if _r(c, "source") is None else _r(c, "source") == "virtual",
+    # frames_index.csv를 읽은 뒤 _scan_cross에서 REQ · CROSS-EMPTY를 냄
+    "meta.trigger_period_s": lambda c: None,
     "rep.scan_id": lambda c: c["file"] == "design_executed.csv",
     "rep.noise_seed": lambda c: c.get("virtual"),
     "rep.truth_id": lambda c: c.get("virtual"),
@@ -245,15 +263,31 @@ COND_FUNCS = {
 # ---------------------------------------------------------------------------
 class Validator:
     def __init__(self, fields: list[dict], rules: list[dict], file_cols: dict[str, list[str]],
-                 enabled_groups: set[str] | None = None):
+                 enabled_groups: set[str] | None = None, enabled_rules: set[str] | None = None,
+                 repo_root: str | Path | None = None, repo_exists=None):
+        """enabled_groups: 명세에서 제외한 묶음을 켬 (지금은 없음, blt 필드표가 명세에서 빠짐).
+        enabled_rules: 상태 '비활성' 손 규칙을 ID로 켬 (D-21 대기 W-REF-11 · W-MET-56).
+        repo_root · repo_exists: 저장소 뿌리 기준 경로 (meta.gcode_file 등) 검사. 둘 다 없으면 FILE-17 · 18을 건너뜀.
+        """
         self.fields = {f["field"]: f for f in fields}
         self.file_cols = file_cols
         self.enabled = set(enabled_groups or ())
+        self.enabled_rules = set(enabled_rules or ())
         self.rules = {r["rule_id"]: r for r in rules}
+        unknown = self.enabled_rules - set(self.rules)
+        if unknown:
+            raise KeyError(f"규칙표에 없는 규칙 ID를 켜려 함: {sorted(unknown)}")
+        if repo_exists is None and repo_root is not None:
+            root = Path(repo_root)
+            repo_exists = lambda rel: (root / rel).is_file()  # noqa: E731
+        self.repo_exists = repo_exists
         self.active: set[str] = set()
         for r in rules:
-            grp = r["fields"].split(".", 1)[0] if r["kind"] in ("REQ", "DTYPE", "REGEX", "ENUM", "RANGE") or r["rule_id"].startswith("CROSS-EMPTY.") else ""
-            if r["status"] == "구현" or (r["status"] == "비활성" and grp in self.enabled and r["condition"] != "(조건 미구현)"):
+            auto = r["kind"] in ("REQ", "DTYPE", "REGEX", "ENUM", "RANGE") or r["rule_id"].startswith("CROSS-EMPTY.")
+            grp = r["fields"].split(".", 1)[0] if auto else ""
+            if r["status"] == "구현" \
+                    or (r["status"] == "비활성" and auto and grp in self.enabled and r["condition"] != "(조건 미구현)") \
+                    or (r["status"] == "비활성" and r["rule_id"] in self.enabled_rules):
                 self.active.add(r["rule_id"])
         self._vrules: dict[str, list] = {}
         self._png_cache: dict[str, tuple] = {}
@@ -283,6 +317,20 @@ class Validator:
         self._calibration()
         self._msa()
         self._sessions()
+        return self.out
+
+    def check_truth(self, obj: dict, path: str = "truth.json") -> list[Finding]:
+        """참값 객체 (부록 A truth) 하나를 본다. data/raw 검사와 따로 부른다 (T3 시뮬레이터가 참값을 쓴 뒤).
+
+        파일을 열지 않는다: 호출하는 쪽이 이미 읽은 사전을 넘긴다 (정보 차단, 청사진 §5.2).
+        """
+        self.out = []
+        recs = obj if isinstance(obj, list) else [obj]
+        for i, t in enumerate(recs):
+            j, p = t.get("judgement"), t.get("pass_pct")
+            if j in ("pass", "fail") and isinstance(p, (int, float)) and not isinstance(p, bool):
+                if (j == "pass") != (p >= 95):
+                    self.emit("X-TRU-01", path, i if isinstance(obj, list) else None, "truth.judgement", f"{j}, {p}")
         return self.out
 
     # -- 트리 ---------------------------------------------------------------
@@ -320,23 +368,17 @@ class Validator:
                 if not NAME_RES["session"].match(sid):
                     self.emit("FILE-02", p, message="세션 폴더 이름이 정규식과 맞지 않음")
                     continue
-                s = self.sessions.setdefault(sid, {"printer": [], "refs": {}, "blt": {}, "specreps": {}})
+                s = self.sessions.setdefault(sid, {"printer": [], "refs": {}, "specreps": {}})
                 sub = parts[2]
                 if sub == "printer" and len(parts) >= 4:
                     s["printer"].append("/".join(parts[3:]))
                 elif sub == "reference" and len(parts) >= 4:
                     self._add_ref(s["refs"], parts[3], parts[4:], p)
-                elif sub == "bltouch" and len(parts) == 5:
-                    if not NAME_RES["blt"].match(parts[3]):
-                        self.emit("FILE-02", p, message="BLTouch 세션 폴더 이름이 정규식과 맞지 않음")
-                    elif parts[4] in ("probe_points.csv", "probe_accuracy.csv"):
-                        s["blt"].setdefault(parts[3], []).append(parts[4])
-                    else:
-                        self.emit("FILE-01", p)
+                # bltouch/ 폴더는 명세 8절에서 빠짐 (D-14): FILE-01
                 elif NAME_RES["specrep"].match(sub) and len(parts) >= 5:
                     lay = parts[3]
                     if not NAME_RES["layer"].match(lay):
-                        self.emit("FILE-02", p, message="층 폴더 이름이 정규식과 맞지 않음 (L### 또는 post)")
+                        self.emit("FILE-02", p, message="층 폴더 이름이 정규식과 맞지 않음 (L### 또는 post, 뒤에 _pNN)")
                         continue
                     sr = s["specreps"].setdefault(sub, {})
                     sc = sr.setdefault(lay, {"files": [], "refs": {}})
@@ -370,7 +412,7 @@ class Validator:
             return
         r = refs.setdefault(ref_id, [])
         rel = "/".join(rest)
-        if rel in ("ref_index.csv", "frames_index.csv", "frames/", "frames.npz"):
+        if rel in ("ref_index.csv", "frames_index.csv", "position_log.csv", "frames/", "frames.npz"):
             r.append(rel)
         elif len(rest) == 2 and rest[0] == "frames" and NAME_RES["frame"].match(rest[1]):
             r.append(rel)
@@ -629,8 +671,28 @@ class Validator:
         if len(sids) > 1 or (scan_id_expect is not None and sids and sids != {scan_id_expect}):
             self.emit("X-FRM-01", P, None, "frame.scan_id", ",".join(sorted(sids)))
         lays = {r["layer_idx"] for r in rows if r["layer_idx"] is not None}
-        if len(lays) > 1 or (layer_expect is not None and lays and lays != {layer_expect}):
+        if len(lays) > 1 or (is_scan and layer_expect is not None and lays and lays != {layer_expect}):
             self.emit("X-FRM-02", P, None, "frame.layer_idx", ",".join(map(str, sorted(lays))))
+        elif not is_scan and layer_expect is not None and lays and lays != {layer_expect}:
+            # 기준 촬영 폴더: = ref.layer_idx, ref.layer_idx가 빈 칸이면 -1 (호출하는 쪽이 -1을 넘김)
+            self.emit("X-FRM-20", P, None, "frame.layer_idx", ",".join(map(str, sorted(lays))))
+        # 트리거 펄스 번호 (T14): 값이 있는 행끼리 증가, 차 − 1 = dropped_before
+        prev_pulse = None
+        for i, r in enumerate(rows):
+            tp = r.get("trig_pulse_idx")
+            if tp is None:
+                continue
+            if prev_pulse is not None:
+                if tp <= prev_pulse:
+                    self.emit("X-FRM-21", P, i + 2, "frame.trig_pulse_idx", tp)
+                elif r["dropped_before"] is not None and tp - prev_pulse - 1 != r["dropped_before"]:
+                    self.emit("X-FRM-22", P, i + 2, "frame.trig_pulse_idx", tp)
+            prev_pulse = tp
+        # 게이트: true 행이 한 덩어리
+        g = [r.get("gate_on") for r in rows]
+        on = [i for i, v in enumerate(g) if v is True]
+        if on and any(g[i] is not True for i in range(on[0], on[-1] + 1)):
+            self.emit("X-FRM-23", P, None, "frame.gate_on", f"{on[0]}~{on[-1]}")
         fidx = [r["frame_idx"] for r in rows]
         if fidx != list(range(len(rows))):
             self.emit("X-FRM-03", P, None, "frame.frame_idx", ",".join(map(str, fidx[:20])))
@@ -736,6 +798,27 @@ class Validator:
                             self.emit("FILE-12", P, ln, "cal.image_file", r["image_file"])
                     if r["gauge_measured_mm"] is not None and r["gauge_nominal_mm"] is not None and abs(r["gauge_measured_mm"] - r["gauge_nominal_mm"]) > 0.02 + 1e-12:
                         self.emit("X-CAL-08", P, ln, "cal.gauge_measured_mm", r["gauge_measured_mm"])
+                    # SV13 (T1 2차): 원자료 종류 · 기준물
+                    rt, tt, kd = r["record_type"], r["target_type"], r["kind"]
+                    if rt == "nozzle_touch" and kd is not None and kd != "D4":
+                        self.emit("X-CAL-17", P, ln, "cal.record_type", rt)
+                    if rt == "micrometer" and tt is not None and tt not in ("filler_gauge", "step_gauge", "material_sample"):
+                        self.emit("X-CAL-18", P, ln, "cal.record_type", rt)
+                    if tt in ("filler_gauge", "step_gauge", "material_sample") and kd is not None and kd != "D5":
+                        self.emit("X-CAL-19", P, ln, "cal.target_type", tt)
+                    if rt is not None and rt != "image" and r["laser_on"] is True:
+                        self.emit("X-CAL-20", P, ln, "cal.laser_on", True)
+                    gb = r["gauge_block_id"]
+                    if gb is not None and gb.startswith("FG-") and r["gauge_nominal_mm"] is not None:
+                        try:
+                            if abs(float(gb[3:]) - r["gauge_nominal_mm"]) > 1e-9:
+                                self.emit("X-CAL-21", P, ln, "cal.gauge_block_id", gb)
+                        except ValueError:
+                            pass  # 형식은 REGEX가 봄
+                    if gb is not None and gb.startswith("GB-") and r["gauge_block_height_mm"] is not None:
+                        parts = re.findall(r"\d{2}", gb[3:])
+                        if parts and abs(r["gauge_block_height_mm"] - sum(int(x) for x in parts)) > 0.02 + 1e-12:
+                            self.emit("X-CAL-22", P, ln, "cal.gauge_block_height_mm", r["gauge_block_height_mm"])
                 if fn == "cal_manifest.csv":
                     seen = set()
                     for i, r in enumerate(rows):
@@ -762,6 +845,12 @@ class Validator:
                     vals = list(zs.values())
                     if len(set(vals)) != len(vals) or (vals and max(vals) - min(vals) > 8.0):
                         self.emit("X-CAL-07", P, None, "cal.cmd_z_mm", ",".join(map(str, vals)))
+                    heights: dict = {}
+                    for i, r in enumerate(rows):
+                        if r["gauge_block_id"] is not None and r["gauge_block_height_mm"] is not None:
+                            h0 = heights.setdefault((r["cal_id"], r["gauge_block_id"]), r["gauge_block_height_mm"])
+                            if abs(h0 - r["gauge_block_height_mm"]) > 1e-12:
+                                self.emit("X-CAL-23", P, i + 2, "cal.gauge_block_height_mm", r["gauge_block_height_mm"])
                 allrows += rows
             self.cal_rows[cid] = allrows
 
@@ -806,7 +895,8 @@ class Validator:
     # -- 세션·스캔 -------------------------------------------------------------
     def _read_ref(self, base, files, ctx_meta):
         """기준 폴더 하나: ref_index.csv 행들과 frames_index 행들."""
-        out = {"rows": [], "frames": [], "base": base}
+        out = {"rows": [], "frames": [], "pos": [], "base": base}
+        folder = base.rsplit("/", 1)[-1]
         for fx in ("ref_index.csv", "frames_index.csv"):
             if fx not in files:
                 self.emit("FILE-03", base, message=f"{fx}가 없음")
@@ -815,11 +905,31 @@ class Validator:
         if "frames_index.csv" in files:
             out["frames"], _ = self.read_csv(f"{base}/frames_index.csv", "frames_index.csv", "frame",
                                              {"virtual": self.virtual, "meta": ctx_meta})
+        kinds = {r["kind"] for r in out["rows"] if r["kind"] is not None}
+        if "position_log.csv" in files:
+            out["pos"], _ = self.read_csv(f"{base}/position_log.csv", "position_log.csv", "pos",
+                                          {"virtual": self.virtual, "meta": ctx_meta})
+        elif kinds & MOVING_REF:
+            self.emit("FILE-03", base, message="움직이며 찍는 기준인데 position_log.csv가 없음 (명세 4절)")
+        # 기준 위치 로그의 scan_id · layer_idx = 그 기준 frames_index (명세 4절)
+        if out["pos"] and out["frames"]:
+            fs_ids = {r["scan_id"] for r in out["frames"] if r["scan_id"] is not None}
+            fl = {r["layer_idx"] for r in out["frames"] if r["layer_idx"] is not None}
+            for i, r in enumerate(out["pos"]):
+                if (r["scan_id"] is not None and fs_ids and r["scan_id"] not in fs_ids) or \
+                        (r["layer_idx"] is not None and fl and r["layer_idx"] not in fl):
+                    self.emit("X-POS-11", f"{base}/position_log.csv", i + 2, "pos.layer_idx", f"{r['scan_id']},{r['layer_idx']}")
         for i, r in enumerate(out["rows"]):
             ln = i + 2
+            if r["ref_id"] is not None and r["ref_id"] != folder:
+                self.emit("FILE-19", f"{base}/ref_index.csv", ln, "ref.ref_id", r["ref_id"])
             if r["ref_id"] is not None and r["kind"] is not None:
                 if r["ref_id"][4:7] != REF_ABBR.get(r["kind"], "?"):
                     self.emit("X-REF-01", f"{base}/ref_index.csv", ln, "ref.ref_id", r["ref_id"])
+            gb = r["gauge_block_id"]
+            if gb is not None and ((r["kind"] == "step_gauge" and not gb.startswith("GB-"))
+                                   or (r["kind"] == "feeler" and not gb.startswith("FG-"))):
+                self.emit("X-REF-13", f"{base}/ref_index.csv", ln, "ref.gauge_block_id", gb)
             if r["n_frames"] is not None:
                 if r["n_frames"] != len(out["frames"]):
                     self.emit("X-REF-05", f"{base}/ref_index.csv", ln, "ref.n_frames", r["n_frames"])
@@ -843,10 +953,6 @@ class Validator:
             for x in scans:
                 for rid, files in sorted(x["refs_files"].items()):
                     x["refs"][rid] = self._read_ref(f"{x['base']}/reference/{rid}", files, x["meta"])
-            if self.enabled & {"blt"}:
-                for bid, files in sorted(s["blt"].items()):
-                    for fn in files:
-                        self.read_csv(f"{sbase}/bltouch/{bid}/{fn}", fn, "blt", {"virtual": self.virtual})
             self._session_cross(sid, s, scans, srefs)
 
     def _read_scan(self, sid, sr, lay, sc):
@@ -889,19 +995,32 @@ class Validator:
             bad.append("specimen_id")
         if srm and g("repeat") is not None and g("repeat") != int(srm.group(2)):
             bad.append("repeat")
-        if x["lay"] == "post":
+        lm = re.match(r"^(L(\d{3})|post)(?:_p(\d{2}))?$", x["lay"])
+        if lm and lm.group(1) == "post":
             if g("timing") is not None and g("timing") != "post":
                 bad.append("timing")
-        else:
-            if g("layer_idx") is not None and g("layer_idx") != int(x["lay"][1:]):
+        elif lm:
+            if g("layer_idx") is not None and g("layer_idx") != int(lm.group(2)):
                 bad.append("layer_idx")
             if g("timing") is not None and g("timing") != "layer":
                 bad.append("timing")
+        if lm and g("scan_pass_idx") is not None and g("scan_pass_idx") != int(lm.group(3) or 0):
+            bad.append("scan_pass_idx")
         if bad:
             self.emit("FILE-05", M, None, ";".join("meta." + b for b in bad), x["lay"])
         sid = g("scan_id")
+        if sid is not None and g("scan_pass_idx") is not None:
+            pm = re.search(r"_p(\d{2})$", sid)
+            if (g("scan_pass_idx") == 0 and pm) or (g("scan_pass_idx") > 0 and (not pm or int(pm.group(1)) != g("scan_pass_idx"))):
+                self.emit("X-MET-54", M, None, "meta.scan_id", sid)
+        # 저장소 뿌리 기준 파일 (명세 0.1절)
+        if self.repo_exists is not None:
+            if isinstance(g("gcode_file"), str) and not self.repo_exists(g("gcode_file")):
+                self.emit("FILE-17", M, None, "meta.gcode_file", g("gcode_file"))
+            if isinstance(g("slicer_profile_file"), str) and not self.repo_exists(g("slicer_profile_file")):
+                self.emit("FILE-18", M, None, "meta.slicer_profile_file", g("slicer_profile_file"))
         if sid is not None and g("timing") is not None:
-            m = re.match(r"^S\d{2}_r\d{2}(?:_L(\d{3}))?$", sid)
+            m = re.match(r"^S\d{2}_r\d{2}(?:_L(\d{3}))?(?:_p\d{2})?$", sid)
             if m:
                 if g("timing") == "layer" and (m.group(1) is None or (g("layer_idx") is not None and int(m.group(1)) != g("layer_idx"))):
                     self.emit("X-MET-01", M, None, "meta.scan_id", sid)
@@ -948,9 +1067,19 @@ class Validator:
         if g("thermal_state") == "cooled" and g("cool_wait_s") is not None and g("wait_after_layer_s") is not None:
             if abs(g("cool_wait_s") - g("wait_after_layer_s")) > 0.001 + 1e-9:
                 self.emit("X-MET-34", M, None, "meta.cool_wait_s", g("cool_wait_s"))
-        if g("firmware") is not None and g("firmware_name") is not None and g("firmware_version") is not None:
-            if g("firmware") != f"{g('firmware_name')}-{g('firmware_version')}":
-                self.emit("X-MET-36", M, None, "meta.firmware", g("firmware"))
+        fw = g("firmware")
+        if fw is not None and g("firmware_name") is not None and g("firmware_version") is not None:
+            # [<제조사>-]<firmware_name>-<판>[-<git 해시 7자리>] (T14, 명세 13절)
+            core = re.escape(f"{g('firmware_name')}-{g('firmware_version')}")
+            fm = re.fullmatch(rf"([a-z0-9]+-)?{core}(-[0-9a-f]{{7}})?", fw)
+            if not fm:
+                self.emit("X-MET-36", M, None, "meta.firmware", fw)
+            elif fm.group(1) and g("firmware_fork") is not None and g("firmware_fork") != "vendor":
+                self.emit("X-MET-59", M, None, "meta.firmware", fw)
+        if g("bed_motion") == "y" and g("scan_axis") is not None and g("scan_axis") not in ("+X", "-X"):
+            self.emit("W-MET-57", M, None, "meta.scan_axis", g("scan_axis"))
+        if g("zero_ref_method") == "z_only":
+            self.emit("W-MET-63", M, None, "meta.zero_ref_method", "z_only")
         if g("source") == "real" and g("lens_focus_locked") is False:
             self.emit("W-MET-38", M, None, "meta.lens_focus_locked", False)
         if g("laser_power_mw") is not None and g("laser_power_mw") > 1.0:
@@ -1001,6 +1130,22 @@ class Validator:
             if g("cam_interface") == "usb2" and fps and r0["roi_w_px"] and r0["roi_h_px"] and r0["bit_depth"]:
                 if r0["roi_w_px"] * r0["roi_h_px"] * r0["bit_depth"] / 8 * fps > 60e6:
                     self.emit("X-MET-37", M, None, "meta.cam_interface", "usb2")
+            # 트리거 (T14): 이 스캔의 frame.trigger_mode로 trigger_pin · trigger_period_s 조건을 봄
+            modes = {r["trigger_mode"] for r in fr if r["trigger_mode"] is not None}
+            if len(modes) == 1:
+                mode = next(iter(modes))
+                pin = g("trigger_pin")
+                if pin is not None and ((mode in ("hw", "gate")) == (pin == "none")):
+                    self.emit("X-MET-60", M, None, "meta.trigger_pin", pin)
+                tp = g("trigger_period_s")
+                if mode == "hw" and tp is None:
+                    self.emit("REQ.meta.trigger_period_s", M, None, "meta.trigger_period_s", "", "trigger_mode = hw인데 칸이 빔")
+                if mode != "hw" and tp is not None:
+                    self.emit("CROSS-EMPTY.meta.trigger_period_s", M, None, "meta.trigger_period_s", tp)
+        tp = g("trigger_period_s")
+        if tp is not None and fps:
+            if abs(tp * fps - 1) > 0.001 + 1e-12:
+                self.emit("X-MET-61", M, None, "meta.trigger_period_s", tp)
         # 위치 로그
         self._pos_cross(x)
 
@@ -1021,22 +1166,31 @@ class Validator:
                 if k in last and r["t_ns"] <= last[k]:
                     self.emit("X-POS-02", P, ln, "pos.t_ns", r["t_ns"])
                 last[k] = r["t_ns"]
-            if g("timing") == "layer" and r["layer_idx"] is not None and g("layer_idx") is not None and r["layer_idx"] != g("layer_idx"):
+            if r["layer_idx"] is not None and g("layer_idx") is not None and r["layer_idx"] != g("layer_idx"):
                 self.emit("X-POS-08", P, ln, "pos.layer_idx", r["layer_idx"])
             if r["acc_x_mm_s2"] is not None and (r["acc_y_mm_s2"] is None or r["acc_z_mm_s2"] is None):
                 self.emit("X-POS-10", P, ln, "pos.acc_x_mm_s2", r["acc_x_mm_s2"])
 
-        def host(r):
-            if r["t_ns"] is None:
-                return None
-            if r["clock"] == "host":
-                return r["t_ns"]
-            if r["clock"] == "mcu" and r["clock_offset_ns"] is not None:
-                return r["t_ns"] + r["clock_offset_ns"]
-            return None
-
+        host = _host_t
+        ev = [r["event"] for r in rows]
+        # 식힘·재개 이벤트 (T14)
+        if g("z_drive") == "belt" and g("timing") == "post" and "motor_off" in ev:
+            self.emit("X-MET-58", P, None, "pos.event", "motor_off")
+        if g("timing") == "post" and "resume" in ev:
+            self.emit("X-POS-13", P, None, "pos.event", "post 스캔에 resume")
+        if g("timing") == "layer" and ("cool_start" in ev or "cool_end" in ev):
+            self.emit("X-POS-14", P, None, "pos.event", "layer 스캔에 cool_start·cool_end")
         starts = [r for r in rows if r["event"] == "scan_start"]
         ends = [r for r in rows if r["event"] == "scan_end"]
+        if g("timing") == "post":
+            cs = [r for r in rows if r["event"] == "cool_start"]
+            ce = [r for r in rows if r["event"] == "cool_end"]
+            if len(cs) != 1 or len(ce) != 1:
+                self.emit("X-POS-14", P, None, "pos.event", f"cool_start {len(cs)}, cool_end {len(ce)}")
+            elif len(starts) == 1:
+                a, b, s0 = host(cs[0]), host(ce[0]), host(starts[0])
+                if None not in (a, b, s0) and not (a < b <= s0):
+                    self.emit("X-POS-14", P, None, "pos.event", "cool_start < cool_end ≤ scan_start 아님")
         if len(starts) != 1 or len(ends) != 1:
             self.emit("X-POS-09", P, None, "pos.event", f"scan_start {len(starts)}, scan_end {len(ends)}")
             return
@@ -1046,6 +1200,11 @@ class Validator:
         if S >= E or rows.index(starts[0]) > rows.index(ends[0]):
             self.emit("X-POS-09", P, None, "pos.event", "scan_end가 scan_start보다 먼저")
             return
+        if g("timing") == "layer":
+            rs = [i for i, r in enumerate(rows) if r["event"] == "resume"]
+            ie = rows.index(ends[0])
+            if len(rs) > 1 or any(i < ie for i in rs) or any(host(rows[i]) is not None and host(rows[i]) < E for i in rs):
+                self.emit("X-POS-13", P, None, "pos.event", f"resume {len(rs)}개")
         if g("scan_start_t_ns") is not None and g("scan_start_t_ns") != S:
             self.emit("X-MET-12", M, None, "meta.scan_start_t_ns", g("scan_start_t_ns"))
         if g("scan_y0_mm") is not None and starts[0]["y_mm"] is not None and abs(g("scan_y0_mm") - starts[0]["y_mm"]) > 0.01 + 1e-9:
@@ -1065,8 +1224,12 @@ class Validator:
             if not (all(v >= 0 for v in d) or all(v <= 0 for v in d)):
                 self.emit("X-POS-04", P, None, "pos.y_mm", f"source {src}")
         zs = [r["z_mm"] for r in seg if r["source"] == "cmd" and r["z_mm"] is not None]
+        x["seg_z"] = zs
         if zs and max(zs) - min(zs) > 0.001 + 1e-9:
             self.emit("X-POS-05", P, None, "pos.z_mm", f"{min(zs)}~{max(zs)}")
+        pas = [r["pass_idx"] for r in sorted(seg, key=host) if r["pass_idx"] is not None]
+        if pas and (pas[0] != 0 or any(b - a not in (0, 1) for a, b in zip(pas, pas[1:]))):
+            self.emit("X-POS-12", P, None, "pos.pass_idx", ",".join(map(str, pas[:20])))
         es = [r["e_mm"] for r in seg if r["e_mm"] is not None]
         if es and max(es) != min(es):
             self.emit("X-POS-06", P, None, "pos.e_mm", f"{min(es)}~{max(es)}")
@@ -1081,9 +1244,29 @@ class Validator:
         by_id = {x["meta"].get("scan_id"): x for x in metas if x["meta"].get("scan_id")}
         # post 정확히 1개 (FILE-04)
         for sr, layers in sorted(s["specreps"].items()):
-            n = sum(1 for x in metas if x["sr"] == sr and x["meta"].get("timing") == "post")
+            n = sum(1 for x in metas if x["sr"] == sr and x["meta"].get("timing") == "post" and x["meta"].get("scan_pass_idx") in (0, None))
             if n != 1:
                 self.emit("FILE-04", f"{sbase}/{sr}", None, "meta.timing", str(n))
+        # 줄 번호 (scan_pass_idx): 같은 시편·반복·층 (post끼리) 안에서 0부터 빈 번호 없이
+        passes: dict = {}
+        for x in metas:
+            m = x["meta"]
+            if m.get("scan_pass_idx") is None or m.get("timing") is None:
+                continue
+            key = (x["sr"], "post" if m["timing"] == "post" else m.get("layer_idx"))
+            passes.setdefault(key, []).append(m["scan_pass_idx"])
+        for (sr, lay), ps in sorted(passes.items(), key=str):
+            if sorted(ps) != list(range(len(ps))):
+                self.emit("X-MET-55", f"{sbase}/{sr}", None, "meta.scan_pass_idx", f"{lay}: {sorted(ps)}")
+        # 모든 층 스캔 (D-18, 판정 거부 X7). D-21 대기라 기본 끔 (W-MET-56)
+        for sr in sorted(s["specreps"]):
+            ins = [x["meta"] for x in metas if x["sr"] == sr and x["meta"].get("thermal_state") == "in_process"]
+            counts = {m.get("layer_count") for m in ins if m.get("layer_count") is not None}
+            if ins and len(counts) == 1:
+                have = {m.get("layer_idx") for m in ins}
+                miss = [i for i in range(next(iter(counts))) if i not in have]
+                if miss:
+                    self.emit("W-MET-56", f"{sbase}/{sr}", None, "meta.layer_idx", f"빠진 층 {miss[:20]}")
         # 세션 기준 (bed_bare)
         bed = [(rid, r) for rid, ref in srefs.items() for r in ref["rows"] if r["kind"] == "bed_bare"]
         layer_scans = [x for x in metas if x["meta"].get("timing") == "layer" and x["meta"].get("layer_idx") is not None]
@@ -1097,6 +1280,11 @@ class Validator:
                 self.emit("X-REF-02", f"{sbase}/reference", None, "ref.kind", "bed_bare 없음")
             elif first_end is not None and all(r["t_start_ns"] is not None and r["t_start_ns"] >= first_end for _, r in bed):
                 self.emit("X-REF-02", f"{sbase}/reference", None, "ref.t_start_ns", "첫 층보다 늦음")
+            if first_end is not None:
+                for rid, ref in srefs.items():
+                    for r in ref["rows"]:
+                        if r["kind"] == "feeler" and r["t_start_ns"] is not None and r["t_start_ns"] >= first_end:
+                            self.emit("X-REF-10", f"{ref['base']}/ref_index.csv", None, "ref.t_start_ns", r["t_start_ns"])
         bed_ids = {r["ref_id"] for _, r in bed}
         for key, rid in (("bed_ref_id", "X-MET-26"), ("z_offset_mm", "X-MET-27"), ("bed_mesh_file", "X-MET-32")):
             vals = {json.dumps(x["meta"].get(key)) for x in metas if x["meta"].get(key) is not None}
@@ -1122,6 +1310,13 @@ class Validator:
                     self.emit("X-MET-29", M, None, "meta.zero_ref_method", zr)
             if zr == "ref_tower" and "ref_tower" not in pairs:
                 self.emit("X-MET-30", M, None, "meta.zero_ref_method", zr)
+            if zr == "step_gauge" and "step_gauge" not in pairs:
+                self.emit("X-MET-62", M, None, "meta.zero_ref_method", zr)
+            # X4 (D-21 대기, 기본 끔): bed_bare 기준의 교정 ID = 이 스캔 교정 ID
+            if m.get("bed_ref_id") is not None and m.get("calibration_id") is not None:
+                for _rid, r in bed:
+                    if r["ref_id"] == m["bed_ref_id"] and r["calibration_id"] is not None and r["calibration_id"] != m["calibration_id"]:
+                        self.emit("W-REF-11", M, None, "meta.calibration_id", f"{m['calibration_id']} ≠ {r['calibration_id']}")
             if m.get("mesh_enabled") is True and m.get("bed_mesh_file") is not None:
                 if not m["bed_mesh_file"].startswith("printer/") or m["bed_mesh_file"][len("printer/"):] not in s["printer"]:
                     self.emit("FILE-14", M, None, "meta.bed_mesh_file", m["bed_mesh_file"])
@@ -1177,6 +1372,24 @@ class Validator:
                 if r["t_start_ns"] is not None and y["frames"] and y["frames"][0]["t_host_ns"] is not None:
                     if abs(r["t_start_ns"] - y["frames"][0]["t_host_ns"]) > 600e9:
                         self.emit("X-REF-07", Rp, None, "ref.t_start_ns", r["t_start_ns"])
+                if r["kind"] == "step_gauge":
+                    if r["gauge_height_mm"] is not None and ym.get("layer_z_mm") is not None and not r["gauge_height_mm"] < ym["layer_z_mm"]:
+                        self.emit("X-REF-15", Rp, None, "ref.gauge_height_mm", r["gauge_height_mm"])
+                    # 같은 Z 연속 측정 (D-16): 기준 위치 로그 스캔 구간 Z ≈ 짝 스캔 스캔 구간 Z (≤ 0.001 mm)
+                    rz, sz = scan_segment_z(ref["pos"]), y.get("seg_z") or []
+                    if rz and sz and abs(sum(rz) / len(rz) - sum(sz) / len(sz)) > 0.001 + 1e-9:
+                        self.emit("X-REF-16", Rp, None, "pos.z_mm", f"{sum(rz) / len(rz)} vs {sum(sz) / len(sz)}")
+            # 기준물 ID · 높이 ↔ 교정 (같은 캠페인 cal_manifest.csv)
+            gb = r["gauge_block_id"]
+            if gb is not None and r["kind"] in ("step_gauge", "feeler"):
+                crs = [c for rows_ in self.cal_rows.values() for c in rows_ if c.get("gauge_block_id") == gb]
+                if not crs:
+                    self.emit("X-REF-12", Rp, None, "ref.gauge_block_id", gb)
+                elif r["gauge_height_mm"] is not None:
+                    key = "gauge_block_height_mm" if r["kind"] == "step_gauge" else "gauge_measured_mm"
+                    vals = [c[key] for c in crs if c.get(key) is not None]
+                    if vals and not any(abs(v - r["gauge_height_mm"]) <= 1e-9 for v in vals):
+                        self.emit("X-REF-14", Rp, None, "ref.gauge_height_mm", r["gauge_height_mm"])
             if r["line_peak_pct"] is not None and r["kind"] is not None:
                 p = last_peak.get(r["kind"])
                 if p is not None and r["line_peak_pct"] < 0.8 * p:
@@ -1188,7 +1401,30 @@ class Validator:
             files = [p[len(base) + 1:] for p in self.paths if p.startswith(base + "/")]
             meta = owner["meta"] if owner and owner["meta"] else (metas[0]["meta"] if metas else None)
             self.check_frames(base, files, ref["frames"], meta, r["scan_id"] if r["scan_id"] is not None else "S00_r00",
-                              r["layer_idx"], False, f"{base}/frames_index.csv")
+                              r["layer_idx"] if r["layer_idx"] is not None else -1, False, f"{base}/frames_index.csv")
+
+
+def _host_t(r):
+    """위치 로그 행의 호스트 시계 시각 (mcu는 clock_offset_ns를 더함). 모르면 None."""
+    if r["t_ns"] is None:
+        return None
+    if r["clock"] == "host":
+        return r["t_ns"]
+    if r["clock"] == "mcu" and r["clock_offset_ns"] is not None:
+        return r["t_ns"] + r["clock_offset_ns"]
+    return None
+
+
+def scan_segment_z(rows: list[dict]) -> list[float]:
+    """위치 로그의 스캔 구간 (scan_start ~ scan_end) 명령 Z. 구간 표시가 없으면 모든 cmd 행."""
+    starts = [r for r in rows if r["event"] == "scan_start"]
+    ends = [r for r in rows if r["event"] == "scan_end"]
+    if len(starts) == 1 and len(ends) == 1 and _host_t(starts[0]) is not None and _host_t(ends[0]) is not None:
+        S, E = _host_t(starts[0]), _host_t(ends[0])
+        seg = [r for r in rows if _host_t(r) is not None and S <= _host_t(r) <= E]
+    else:
+        seg = rows
+    return [r["z_mm"] for r in seg if r["source"] == "cmd" and r["z_mm"] is not None]
 
 
 def summarize(findings: list[Finding]) -> dict:

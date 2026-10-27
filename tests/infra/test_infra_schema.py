@@ -20,8 +20,9 @@ def test_field_rows_match_spec():
     names = re.findall(r"^\| `((?:frame|pos|cal|ref|meta|blt|rep|truth)\.[a-z0-9_]+)` \|", text, re.M)
     fields, _, _ = schema()
     assert [f["field"] for f in fields] == names
-    assert len(fields) == 248
+    assert len(fields) == 245  # T1 2차: blt 26필드 빠지고 23필드 더함
     assert sum(f["group"] == "truth" for f in fields) == 22
+    assert not any(f["group"] == "blt" for f in fields)
 
 
 def test_extract_is_deterministic():
@@ -92,16 +93,33 @@ def test_parse_examples():
     assert ss.parse_regex("정규식 `^a$` 또는 `^b$`. 끝") == "^a$||^b$"
 
 
-def test_blt_group_switch():
-    """blt는 기본으로 꺼짐 (D-14). 끄지 않고 뽑으면 blt 자동 규칙이 구현 상태가 됨."""
+def test_blt_excluded_by_spec():
+    """SV13: 명세 6절이 blt를 제외로 표기 (D-14). 사유는 명세 절, blt 필드·규칙 0, 비활성은 D-21 대기 2개뿐."""
+    text = SPEC.read_text(encoding="utf-8")
+    assert ss.spec_excluded_groups(text) == {"blt": "명세 6절 제외 표기 (D-14)"}
+    # 본문에 `pos.pass_idx` 같은 이름이 있어도 다른 묶음은 제외로 읽지 않음
+    assert ss.spec_excluded_groups("제외 묶음: blt. `pos.x` `meta.y`\n") == {"blt": "명세 '제외 묶음' 표기"}
+    _, rules, fc = schema()
+    assert not any("blt." in r["fields"] for r in rules)
+    assert sorted(r["rule_id"] for r in rules if r["status"] == "비활성") == ["W-MET-56", "W-REF-11"]
+    assert not any(k.startswith("probe_") for k in fc)
+    assert "blt (명세 6절" in (SPEC_DIR / "SOURCE.txt").read_text(encoding="utf-8")
+
+
+def test_sv13_held_rules():
+    """SV13 보류 정리: 구현으로 옮긴 것 · 설명문으로 옮긴 것 · 그대로 보류."""
     _, rules, _ = schema()
-    blt = [r for r in rules if r["fields"].startswith("blt.")]
-    assert blt and all(r["status"] == "비활성" for r in blt)
-    assert not any(r["kind"] == "CROSS" and "blt." in r["fields"] and not r["rule_id"].startswith("CROSS-EMPTY") for r in rules)
-    on = ss.extract(SPEC, {})
-    assert all(f["excluded"] == "false" for f in on)
-    on_rules = rl.build_rules(on)
-    assert any(r["rule_id"] == "DTYPE.blt.t_ns" and r["status"] == "구현" for r in on_rules)
+    ids = {r["rule_id"]: r for r in rules}
+    for gone in ("H-FMT-01", "H-CAL-15", "H-CAL-16", "H-MET-21", "H-MET-22", "H-MET-35", "H-MET-53"):
+        assert gone not in ids, gone
+    for kept in ("H-MET-23", "H-MET-28", "H-MET-31"):
+        assert ids[kept]["status"] == "보류"
+    for new in ("FILE-17", "FILE-18", "REGEX.meta.layer_macro_version", "CROSS-EMPTY.cal.image_file",
+                "CROSS-EMPTY.cal.nozzle_touch_z_mm", "X-TRU-01"):
+        assert ids[new]["status"] == "구현", new
+    assert ids["ENUM.meta.firmware_name"]["severity"] == "ERROR"  # [대기: T14] 풀림
+    for d21 in ("W-REF-11", "W-MET-56"):
+        assert ids[d21]["severity"] == "WARN" and "D-21" in ids[d21]["reason"]
 
 
 def test_bad_cell_count_fails(tmp_path):

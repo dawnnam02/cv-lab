@@ -2,6 +2,7 @@
 
     PYTHONPATH=src python scripts/validate_dataset.py data/raw/VC-2026-11-20-A [--report out.json]
     PYTHONPATH=src python scripts/validate_dataset.py --selftest [--report out.json]
+    PYTHONPATH=src python scripts/validate_dataset.py data/raw/VC-… --enable-rule W-REF-11 --enable-rule W-MET-56   # D-21 대기 X4 · X7 켬
 
 종료 코드: 0 통과 (ERROR 0) · 1 위반 · 2 사용법·스키마 오류.
 `data/_truth` 아래 경로는 열지 않고 2로 끝낸다 (청사진 §5.2).
@@ -25,7 +26,11 @@ def main(argv=None) -> int:
     ap.add_argument("campaign", nargs="?", help="캠페인 폴더 (data/raw/<campaign_id>)")
     ap.add_argument("--report", help="보고 JSON 경로")
     ap.add_argument("--selftest", action="store_true", help="정상·경계·고장 표본 자체 시험")
-    ap.add_argument("--enable-group", action="append", default=[], help="꺼 둔 묶음을 켬 (예: blt)")
+    ap.add_argument("--enable-group", action="append", default=[], help="명세가 제외한 묶음을 켬 (지금은 없음: blt 필드표가 명세에서 빠짐)")
+    ap.add_argument("--enable-rule", action="append", default=[],
+                    help="기본으로 꺼 둔 규칙을 켬 (D-21 대기: W-REF-11 = X4, W-MET-56 = X7). config/default.yaml validate.enable_rules와 합침")
+    ap.add_argument("--repo-root", help="meta.gcode_file 등 저장소 뿌리 기준 경로를 볼 저장소 뿌리. "
+                                        "없으면 캠페인이 <뿌리>/data/raw/<campaign_id>일 때 그 뿌리, 아니면 검사 안 함")
     try:
         a = ap.parse_args(argv)
     except SystemExit as e:
@@ -85,7 +90,24 @@ def main(argv=None) -> int:
     if not root.is_dir():
         print(f"폴더가 아님: {root}", file=sys.stderr)
         return 2
-    v = Validator(fields, rules, file_cols, set(a.enable_group))
+    try:
+        # T6 소유 config/default.yaml의 validate 절만 읽음 (다른 담당 yaml이 바뀌어도 검증기가 멈추지 않게)
+        import yaml
+        with open(ROOT / "config" / "default.yaml", encoding="utf-8") as fh:
+            cfg_rules = list(((yaml.safe_load(fh) or {}).get("validate") or {}).get("enable_rules") or [])
+    except (OSError, yaml.YAMLError, AttributeError) as e:  # 설정 오류는 사용법 오류로
+        print(f"설정 오류: {e}", file=sys.stderr)
+        return 2
+    repo = Path(a.repo_root) if a.repo_root else None
+    if repo is None:
+        p = root.resolve()
+        if p.parent.name == "raw" and p.parent.parent.name == "data":
+            repo = p.parent.parent.parent
+    try:
+        v = Validator(fields, rules, file_cols, set(a.enable_group), set(a.enable_rule) | set(cfg_rules), repo_root=repo)
+    except KeyError as e:
+        print(f"사용법 오류: {e}", file=sys.stderr)
+        return 2
     findings = v.run(DirFS(root), root.name)
     s = summarize(findings)
     for f in findings[:50]:

@@ -24,13 +24,14 @@ GROUP_FILES = {
     "cal": "cal_manifest.csv;cal_results.csv",
     "ref": "ref_index.csv",
     "meta": "meta.json",
-    "blt": "probe_points.csv;probe_accuracy.csv",
+    "blt": "",  # 명세 6절: 제외 (D-14), 파일 없음
     "rep": "design.csv;design_executed.csv",
     "truth": "truth.json",
 }
 
-# 팀장 지시 (D-14 BLTouch 교차검증 제외): 명세에 제외 표기가 생기기 전이라도 묶음 단위로 끈다.
-DEFAULT_EXCLUDED_GROUPS = {"blt": "D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27, 명세 개정 전)"}
+# D-14 BLTouch 교차검증 제외. 명세 T1 2차 (2026-10-27)부터 6절 제목에 "제외 (D-14)"가 붙고 blt 필드표가 없다.
+# 명세 표기가 있으면 `spec_excluded_groups()`의 사유 (명세 절)가 이 사유보다 먼저다.
+DEFAULT_EXCLUDED_GROUPS = {"blt": "D-14 BLTouch 교차검증 제외 (팀장 지시 2026-10-27)"}
 
 FIELD_COLUMNS = [
     "field", "group", "meaning", "unit", "dtype", "req", "example", "rule_text",
@@ -123,26 +124,30 @@ def parse_range(rule_text: str) -> tuple[str, str, str, str]:
 
 
 def _file_columns(text: str) -> dict[str, list[str]]:
-    """명세 본문에 적힌 파일별 열 구성 (cal_results.csv, probe_accuracy.csv)."""
+    """명세 본문에 적힌 파일별 열 구성 (cal_results.csv)."""
     out: dict[str, list[str]] = {}
     m = re.search(r"`calibration/<cal_id>/cal_results.csv`[^\n]*?열: ([^\n]*?)\. 단계", text)
     if m:
         out["cal_results.csv"] = [f.split(".", 1)[1] for f in re.findall(r"`(cal\.[a-z0-9_]+)`", m.group(1))]
-    m = re.search(r"probe_accuracy.csv는 ([^\n]*?) 열입니다", text)
-    if m:
-        out["probe_accuracy.csv"] = [f.split(".", 1)[1] for f in re.findall(r"`(blt\.[a-z0-9_]+)`", m.group(1))]
-    m = re.search(r"probe_points.csv는 아래 표에서 `blt\.accuracy_\*`를 뺀 열", text)
-    if m:
-        out["probe_points.csv"] = ["!accuracy_"]
     return out
 
 
 def spec_excluded_groups(text: str) -> dict[str, str]:
-    """명세가 묶음을 제외로 표기했는지 본다 (SV13). 표기 형식: '## 6. … (제외 …)' 또는 '제외 묶음: blt'."""
+    """명세가 묶음을 제외로 표기했는지 본다 (SV13).
+
+    표기 형식: 절 제목 `## 6. … (blt) — 제외 (D-14)` 또는 본문 줄 `제외 묶음: blt.`
+    사유는 명세 절 번호와 제목 괄호 안 결정 번호로 적는다.
+    """
     out = {}
+    listed: set[str] = set()
+    for m in re.finditer(r"^제외 묶음: ([a-z]+(?:, [a-z]+)*)\.", text, re.M):
+        listed.update(x.strip() for x in m.group(1).split(","))
     for g in GROUPS:
-        if re.search(rf"^## \d+\. [^\n]*\({g}\)[^\n]*제외", text, re.M) or re.search(rf"제외 묶음:[^\n]*\b{g}\b", text):
-            out[g] = "명세에 제외 표기"
+        h = re.search(rf"^## (\d+)\. [^\n]*\({g}\)[^\n]*제외(?: \(([^)]*)\))?", text, re.M)
+        if h:
+            out[g] = f"명세 {h.group(1)}절 제외 표기" + (f" ({h.group(2)})" if h.group(2) else "")
+        elif g in listed:
+            out[g] = "명세 '제외 묶음' 표기"
     return out
 
 
@@ -186,12 +191,12 @@ def extract(spec_path: str | Path, exclude_groups: dict[str, str] | None = None)
 
 
 def file_columns(spec_path: str | Path) -> dict[str, list[str]]:
-    """파일별 열 목록 (접두어 뺀 이름, 필드표 순서)."""
+    """파일별 열 목록 (접두어 뺀 이름, 필드표 순서). 고정 파일 이름은 명세 8절."""
     text = Path(spec_path).read_text(encoding="utf-8")
     fields = extract(spec_path)
-    by_group: dict[str, list[str]] = {}
+    by_group: dict[str, list[str]] = {g: [] for g in GROUPS}
     for r in fields:
-        by_group.setdefault(r["group"], []).append(r["field"].split(".", 1)[1])
+        by_group[r["group"]].append(r["field"].split(".", 1)[1])
     extra = _file_columns(text)
     out: dict[str, list[str]] = {}
     out["frames_index.csv"] = by_group["frame"]
@@ -203,9 +208,6 @@ def file_columns(spec_path: str | Path) -> dict[str, list[str]]:
     res = extra.get("cal_results.csv", [])
     out["cal_results.csv"] = [c for c in by_group["cal"] if c in res]
     out["cal_manifest.csv"] = [c for c in by_group["cal"] if c not in ("reproj_rms_px", "plane_rms_um")]
-    acc = extra.get("probe_accuracy.csv", [])
-    out["probe_accuracy.csv"] = [c for c in by_group["blt"] if c in acc]
-    out["probe_points.csv"] = [c for c in by_group["blt"] if not c.startswith("accuracy_")]
     return out
 
 

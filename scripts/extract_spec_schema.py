@@ -4,7 +4,7 @@
 fields·rules CSV는 두 번 돌려도 같은 바이트다. SOURCE.txt는 뽑은 시각 줄만 달라진다.
 
     PYTHONPATH=src python scripts/extract_spec_schema.py
-    PYTHONPATH=src python scripts/extract_spec_schema.py --exclude-groups ""      # blt도 켬
+    PYTHONPATH=src python scripts/extract_spec_schema.py --exclude-groups ""      # 명령줄 기본 제외 없음 (명세 표기는 그대로)
     PYTHONPATH=src python scripts/extract_spec_schema.py --check                  # 다시 뽑은 결과와 파일이 같은지만 봄
 """
 
@@ -32,13 +32,18 @@ def build(spec: Path, exclude: dict[str, str]) -> dict[str, bytes]:
     sha = ss.sha256_file(spec)
     now = datetime.now(KST).isoformat(timespec="seconds")
     n = {g: sum(f["group"] == g for f in fields) for g in ss.GROUPS}
+    # 명세 표기 사유가 명령줄 기본 사유보다 먼저 (SV13)
+    excl = dict(ss.spec_excluded_groups(spec.read_text(encoding="utf-8")))
+    for g, why in exclude.items():
+        excl.setdefault(g, why)
+    st = {s: sum(r["status"] == s for r in rules) for s in ("구현", "비활성", "보류")}
     source = "\n".join([
         f"spec_file: docs/{spec.name}",
         f"spec_sha256: {sha}",
         f"extracted_at: {now}",
         f"fields: {len(fields)} ({', '.join(f'{g} {n[g]}' for g in ss.GROUPS)})",
-        f"excluded_groups: {', '.join(f'{g} ({why})' for g, why in sorted(exclude.items())) or '-'}",
-        f"rules: {len(rules)}",
+        f"excluded_groups: {', '.join(f'{g} ({why})' for g, why in sorted(excl.items())) or '-'}",
+        f"rules: {len(rules)} (구현 {st['구현']}, 비활성 {st['비활성']}, 보류 {st['보류']})",
         "extractor: scripts/extract_spec_schema.py (cvlab.io.spec_schema, cvlab.io.rules)",
         "",
     ])
