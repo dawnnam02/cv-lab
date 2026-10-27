@@ -148,6 +148,41 @@ def test_macro_between_extrusions_error_but_start_end_ok():
         parse_text(PRE + "G1 X110 Y100 E0.5\nMY_MACRO\nG1 X110 Y110 E0.5\n")
 
 
+def test_macro_reposition_rule_g1():
+    """G-1: 매크로 뒤 절대 X·Y·Z + (상대 E 또는 G92 E)면 통과 + 경고, 아니면 오류."""
+    head = PRE + "G1 X110 Y100 E0.5\nMY_MACRO\n"
+    # 상대 E (PRE가 M83) + 절대 X·Y·Z → 통과, 경고에 줄 번호와 매크로 이름
+    r = parse_text(head + "G1 X110 Y100 Z0.2\nG1 X110 Y110 E0.5\n")
+    assert len(r.extrusions()) == 2
+    assert any("위치를 다시 정해 통과" in w and "MY_MACRO" in w for w in r.warnings)
+    # 축을 여러 줄에 나눠 정해도 됨
+    parse_text(head + "G1 Z0.2\nG1 X110 Y100\nG1 X110 Y110 E0.5\n")
+    # 상대 좌표 (G91)로 옮긴 축은 세지 않음
+    with pytest.raises(GCodeError, match="Z"):
+        parse_text(head + "G1 X110 Y100\nG91\nG1 Z0\nG90\nM83\nG1 X110 Y110 E0.5\n")
+    # 압출하는 줄 자신이 X·Y·Z를 정해도 시작점을 모르므로 오류
+    with pytest.raises(GCodeError):
+        parse_text(head + "G1 X110 Y110 Z0.2 E0.5\n")
+    # 절대 E: G92 E 있어야 통과
+    abs_e = PRE.replace("M83", "M82") + "G1 X110 Y100 E0.5\nMY_MACRO\nG1 X110 Y100 Z0.2\n"
+    with pytest.raises(GCodeError, match="G92 E"):
+        parse_text(abs_e + "G1 X110 Y110 E1.0\n")
+    r = parse_text(abs_e + "G92 E0.5\nG1 X110 Y110 E1.0\n")
+    assert np.isclose(r.extrusions().de_mm.sum(), 1.0)
+    # G92 E가 매크로 앞이면 세지 않음
+    with pytest.raises(GCodeError):
+        parse_text(PRE.replace("M83", "M82") + "G1 X110 Y100 E0.5\nG92 E0\nMY_MACRO\n"
+                   "G1 X110 Y100 Z0.2\nG1 X110 Y110 E0.5\n")
+    # 두 번째 매크로가 오면 다시 정해야 함
+    with pytest.raises(GCodeError):
+        parse_text(head + "G1 X110 Y100 Z0.2\nOTHER_MACRO\nG1 X110 Y110 E0.5\n")
+    # EDGE 명령 (T<n>)도 같은 규칙
+    parse_text(PRE + "G1 X110 Y100 E0.5\nT1\nG1 X110 Y100 Z0.2\nG1 X110 Y110 E0.5\n")
+    # G28 뒤엔 그 축을 다시 정해야 함
+    with pytest.raises(GCodeError):
+        parse_text(head + "G1 X110 Y100 Z0.2\nG28 Z\nG1 X110 Y110 E0.5\n")
+
+
 def test_non_strict_counts_and_warns():
     r = parse_text(PRE + "G1 X110 Y100 E0.5\nM999\nG1 X110 Y110 E0.5\n", GCodeParams(strict_unknown=False))
     assert r.unknown == {"M999": 1} and any("M999" in w for w in r.warnings)

@@ -147,6 +147,8 @@ def evaluate(row: dict):
         ref = ref_of(f)
         iy, ix = index_of(ref.grid, x, y)
         v = float(ref.height_at_layer(n)[iy, ix]); return v, _close(v, exp, tol)
+    if item == "경고 포함":
+        hits = [w for w in r.warnings if exp in w]; return hits, bool(hits)
     if item.startswith("층0 안쪽 빈칸"):
         ref = ref_of(f)
         h = ref.height_at_layer(0)

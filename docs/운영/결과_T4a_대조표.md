@@ -120,3 +120,46 @@ d3d18d442ec8b141c1da8fc4175d393862d0caaa3ca977bda6cd286a78551230  data/gcode_can
 3. Klipper의 G90/G91 E 동작과 원호 P 뜻 [확인 필요]. 후보 파일에는 영향 없음.
 4. 정답 지도 속도 (voron24 약 100 s, 150층 이상은 안 돌려 봄).
 5. `width_model: extrusion`에서 w_eff가 명목값보다 아주 조금 작으면 채움 사이 가운데 칸 줄이 빔.
+
+## 후속 G-1~G-3 시작 확인 (2026-10-27)
+
+> 기준: [팀장검증_3차](팀장검증_3차.md) §3.5 · §3.6 · §7 (G-1 10-31, G-2 · G-3 11-04)
+
+| 항목 | 확인 내용 |
+|---|---|
+| HEAD | `18cff0c` (팀장 3차 검증 커밋). 내 소유 경로 (`src/cvlab/gcode/` · `tests/gcode/` · `config/gcode.yaml` · `scripts/gcode_reference.py` · `data/gcode_samples/hand/` · `docs/G코드-해석.md`) 미커밋 변경 0 |
+| 후보 폴더 지문 | 7개 모두 1차 시작 절과 같음 |
+| 쓰지 않을 곳 | `data/gcode_candidates/` (읽기만), `scripts/method_screening/` · `tests/test_method_screening.py`, 다른 작업 폴더. 탐색 출력은 세션 스크래치 |
+
+**할 일을 내 말로**
+
+| ID | 한 줄 | 완료 기준 |
+|---|---|---|
+| G-1 | 압출 사이 매크로 (EDGE 포함) 뒤, 다음 압출 전에 절대 좌표 G0/G1로 X · Y · Z가 모두 다시 정해지고 E가 상대 모드이거나 G92 E가 있으면 통과 + 경고. 아니면 지금처럼 오류. 허용 목록 기본값 `[]` 그대로 | 손 G코드 3개 (오류 2 · 통과+경고 1), xyz_cube_10mm 층 50 · benchy_helix 층 240 탐색 실행 통과, 문서 §2 · 기대값.csv 갱신 |
+| G-2 | 정답 지도 만들기를 빠르게, 결과는 그대로 | voron24 `build_reference` 79.9 s → 15 s 이하, 옛 방식과 새 방식의 `footprint` · `type_at`이 H20 · H21 · voron24 모든 층에서 `np.array_equal`, 옛·새 비교 시험 추가, voron_design_cube 시간 기록 |
+| G-3 | 넘길 것 · 한계 문장 | 문서 §8에 PRIME 선분 · 격자 원점 · 격자 간격 두 곳 세 줄, §9에 층 표시 없는 파일의 퍼지선 한 줄 |
+
+## 후속 종료 대조 (2026-10-27, G-1 · G-2 · G-3 모두 기한 전 마침)
+
+| ID | 완료 기준 | 결과 | 근거 | 판정 |
+|---|---|---|---|---|
+| G-1 | 압출 사이 매크로 (EDGE 포함) 뒤, 다음 압출 전 절대 G0/G1로 X · Y · Z가 정해지고 E 상대 또는 G92 E면 통과 + 경고 (줄 번호 · 매크로 이름), 아니면 오류 | `parser.py`에 규칙 넣음. 상대 이동 · `G92 X/Y/Z` · 매크로 앞 `G92 E` · 압출하는 줄 자신의 좌표는 세지 않음, 매크로 뒤 `G28` 축은 다시 정해야 함, 매크로가 또 오면 다시 셈. G·M·T 꼴 모르는 코드는 그대로 바로 오류. `allow_commands` 기본 `[]` 그대로 | `test_macro_reposition_rule_g1` (경우 10가지) | 통과 |
+| G-1 | 손 G코드 3개 (`_mimic`) | H25 매크로 → 바로 압출 = 오류 · H26 매크로 → X · Y만 = 오류 (메시지에 "다시 정하지 않은 축 Z") · H27 M82 → 매크로 → M83 + X · Y · Z 절대 = 통과 + 경고. 기대값 6행 더해 84행, 손 G코드 27개 | `기대값.csv`, `test_expected_value[H25…H27]`, `gcode_helpers.evaluate` 항목 "경고 포함" 추가 | 통과 |
+| G-1 | 후보 xyz_cube_10mm · benchy_helix 읽기만 탐색 실행 | xyz: 층 50 = 50 = 선언 50, 통과 경고 49 (줄 249 ← 줄 230 `TIMELAPSE_TAKE_FRAME` …), 필라멘트 +0.0015 %. benchy: 층 240 = 240 = 240, 통과 경고 239, 0.0 %. 나머지 후보 결과는 1차와 같음 (voron24 · voron_design_cube · simple_cura · caliper 통과, orca_calib_cube 층 누락 멈춤) | 스크래치 `g1_probe.py` · `g1_probe.json` | 통과 |
+| G-1 | 문서 §2 · 기대값.csv | §2에 규칙 · 세지 않는 것 · 후보 꼴, §0 · §6 후보 표 갱신. `config/gcode.yaml` 허용 목록 예시에서 `TIMELAPSE_TAKE_FRAME` 뺌 (규칙으로 대신) | `docs/G코드-해석.md` | 통과 |
+| G-2 | voron24 `build_reference` 15 s 이하 | **1.46 s** (같은 기기에서 1차 판 34.0 s, 팀장 측정 79.9 s는 기기 부하 때). 방법: `capsule_cells` — 선분 경계 상자 안에서 행마다 캡슐이 닿을 수 있는 x 범위 (반지름 + 2칸 + 앞뒤 1칸)만 계산, 칸 좌표·t·거리 식은 1차 판과 글자 그대로 같음 | 스크래치 `g2_bench.py` · `g2_voron24_test_box.json` | 통과 |
+| G-2 | 지금 구현과 결과 같음 (`np.array_equal`) | voron24 모든 층 발자국 16/16 · `type_at` 16/16 · packbits 모두 같음, 격자·층 Z·종류 이름 같음. xyz_cube도 50/50 · 50/50. H20 · H21 · H23 · H24 · H05는 시험에서 모든 층 같음 | `test_band_equals_window_build_reference` (5개), `test_band_equals_window_random_segments` (선분 308개: 점 선분 · 거의 수평/수직 · 격자 밖 · 끝 걸침) | 통과 |
+| G-2 | 옛·새 비교 시험 추가, voron_design_cube 시간 기록 | 1차 판은 `build_reference(method="window")` · `capsule_window`로 남김. voron_design_cube (150층, 압출 선분 65 420, 1581 × 1581) band **18.35 s** | 스크래치 `g2_voron_design_cube.json` | 통과 |
+| G-3 | §8 세 줄 · §9 한 줄 | §8: PRIME 선분은 `segments`에 종류 PRIME · 층 −1로 남음 / 판정 칸 경계는 격자 원점 (경계 상자 − 1 mm를 0.02 mm 배수로 내림)을 따름, 0.4 mm 배수 맞춤은 T4b · T10 / 격자 간격이 `default.yaml` · `gcode.yaml` 두 곳. §9: 층 표시 없는 파일은 퍼지선이 첫 층과 같은 Z면 층 0에 섞이고, 더 높은 Z면 "Z 내려감" 오류 (지어낸 조각으로 확인). §8 허용 목록 문장과 §9 속도 문장도 새 결과로 바꿈 | `docs/G코드-해석.md` §8 · §9 | 통과 |
+
+**검증 명령 결과**
+
+- `python -m pytest tests/gcode -q` → `155 passed, 1 skipped in 3.20s` (skip은 GC12 "사용자 선택 대기"). 시험 함수 66 → 69개 (펼쳐 156개).
+- 후보 폴더 지문 7개 = 시작 절과 같음, 파일 수 같음. 후보 폴더 안에 만든 파일 0 (탐색 출력은 모두 스크래치).
+- 바꾼 파일: `src/cvlab/gcode/parser.py` · `reference.py`, `tests/gcode/gcode_helpers.py` · `test_gcode_parser.py` · `test_gcode_reference.py`, `config/gcode.yaml` (주석 한 줄), `data/gcode_samples/hand/` (H25–H27 · 기대값.csv · README), `docs/G코드-해석.md`, 이 대조표. `scripts/method_screening/` · `tests/test_method_screening.py` 손대지 않음. git 쓰기 · pip install 없음.
+
+**남은 문제**
+
+1. GC12 시험 `test_picked_samples_pass_checks`는 `unknown == 0`을 요구한다. xyz_cube · benchy는 규칙으로 통과해도 `TIMELAPSE_TAKE_FRAME`이 모르는 명령으로 50 · 240번 세어져 이 조건에 걸린다. 사용자가 둘 중 하나를 고르면 조건을 "엄격 모드로 파싱 성공 + 모르는 명령은 위치 다시 정하기로 통과한 매크로뿐"으로 바꿀지 팀장 판단 필요.
+2. 매크로 속에서 모드 (G91 · M82 · 단위)를 바꾸고 되돌리지 않는 경우는 이 규칙으로 못 잡는다. 매크로 뒤에 슬라이서가 쓰는 M83 · G90 같은 상태 줄이 없으면 앞 상태를 그대로 믿는다.
+3. 정답 지도는 선분마다 파이썬 반복이라 선분 수에 비례 (150층 18 s). `height_at_layer`의 층 누적 계산은 손대지 않음.

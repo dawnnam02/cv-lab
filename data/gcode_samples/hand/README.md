@@ -3,7 +3,7 @@
 - 모든 값은 **시험용 입력**이며 출력물 설계가 아님. 기대값은 손계산이고 식은 `기대값.csv`의 `근거식` 열에 있음.
 - 이름에 `_mimic`이 붙은 파일은 슬라이서 형식을 흉내 낸 것으로 **실제 슬라이서 출력 아님**.
 - E 값: E = bead_area(w, h)·L / A_f, A_f = π·(1.75/2)², 소수 다섯째 자리 반올림.
-- 후보 G코드의 함정을 옮긴 파일: H22 (voron24_test_box 겹친 층 표시), H23 (simple_cura 퍼지선), H24 (benchy·xyz 나선 Z홉·가운데 원점).
+- 후보 G코드의 함정을 옮긴 파일: H22 (voron24_test_box 겹친 층 표시), H23 (simple_cura 퍼지선), H24 (benchy·xyz 나선 Z홉·가운데 원점), H25–H27 (benchy·xyz 층 사이 `TIMELAPSE_TAKE_FRAME`, 위치 다시 정하기 규칙 G-1).
 
 | 파일 | 내용 (첫 줄 주석) |
 |---|---|
@@ -31,3 +31,6 @@
 | `H22_double_marker_mimic.gcode` | H22_mimic Orca 꼴: 층 표시가 두 번씩 (실제 슬라이서 출력 아님, 시험용 입력) |
 | `H23_cura_purge_mimic.gcode` | H23_mimic Cura 꼴: ;TYPE 없는 시작 퍼지선 (실제 슬라이서 출력 아님, 시험용 입력) |
 | `H24_helix_hop_mimic.gcode` | H24_mimic Orca 꼴: 압출 없는 G3 나선 Z홉, 베드 원점 가운데 (실제 슬라이서 출력 아님, 시험용 입력) |
+| `H25_macro_extrude_mimic.gcode` | H25_mimic Klipper 꼴: 층 사이 매크로 뒤 바로 압출 (실제 슬라이서 출력 아님, 시험용 입력) |
+| `H26_macro_xy_only_mimic.gcode` | H26_mimic Klipper 꼴: 층 사이 매크로 뒤 X·Y만 다시 정하고 압출 (실제 슬라이서 출력 아님, 시험용 입력) |
+| `H27_macro_reposition_mimic.gcode` | H27_mimic Klipper 꼴: 층 사이 매크로 뒤 X·Y·Z 절대 + M83 (실제 슬라이서 출력 아님, 시험용 입력) |

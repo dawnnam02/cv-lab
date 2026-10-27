@@ -138,3 +138,50 @@ def test_extrusion_width_model():
     ref_n = build_reference(r, params=GCodeParams())
     ref_e = build_reference(r)
     assert ref_e.footprint(0).sum() <= ref_n.footprint(0).sum()
+
+
+# ---------------------------------------------------------------- G-2 빠른 판 = 1차 판 (비트 단위)
+from cvlab.gcode.reference import capsule_cells, capsule_window  # noqa: E402
+
+
+def _window_cells(grid, *a):
+    w = capsule_window(grid, *a)
+    if w is None:
+        return None
+    sy, sx, m = w
+    iy, ix = np.nonzero(m)
+    return iy + sy.start, ix + sx.start
+
+
+def test_band_equals_window_random_segments():
+    """옛 함수 capsule_window와 새 함수 capsule_cells가 같은 칸을 고름 (각도·길이·끝 걸침·점 선분)."""
+    rng = np.random.default_rng(20261027)
+    grid = make_grid(0.0, 30.0, 0.0, 20.0, 0.02, 1.0)
+    cases = [(5.0, 5.0, 5.0, 5.0, 0.21), (0.0, 0.0, 30.0, 20.0, 0.21), (10.0, 3.0, 10.0, 18.0, 0.225),
+             (2.0, 7.0, 28.0, 7.0, 0.2), (-3.0, -3.0, 2.0, 1.0, 0.3), (40.0, 40.0, 45.0, 41.0, 0.2),
+             (10.0, 10.0, 10.000000000001, 15.0, 0.21), (3.0, 4.0, 23.0, 4.0000000001, 0.21)]
+    for _ in range(300):
+        x0, y0 = rng.uniform(-2, 32), rng.uniform(-2, 22)
+        L, a = rng.choice([0.05, 0.5, 3.0, 25.0]), rng.uniform(0, 2 * math.pi)
+        cases.append((x0, y0, x0 + L * math.cos(a), y0 + L * math.sin(a), rng.uniform(0.1, 0.4)))
+    for c in cases:
+        old, new = _window_cells(grid, *c), capsule_cells(grid, *c)
+        if old is None:
+            assert new is None, c
+            continue
+        a = np.zeros((grid["ny"], grid["nx"]), bool); a[old] = True
+        b = np.zeros_like(a); b[new] = True
+        assert np.array_equal(a, b), c
+
+
+@pytest.mark.parametrize("key", ["H20", "H21", "H23", "H24", "H05"])
+def test_band_equals_window_build_reference(key):
+    """같은 입력으로 1차 판 (window)과 빠른 판 (band) 정답 지도가 모든 층에서 같음."""
+    r = parse_file(hand(key), P042)
+    a, b = build_reference(r, params=P042, method="window"), build_reference(r, params=P042, method="band")
+    assert a.grid == b.grid and np.array_equal(a.z_layers, b.z_layers) and a.type_names == b.type_names
+    for n in range(a.n_layers):
+        assert np.array_equal(a.footprint(n), b.footprint(n))
+        assert np.array_equal(a.type_at(n), b.type_at(n))
+    with pytest.raises(ValueError):
+        build_reference(r, params=P042, method="fast")

@@ -184,6 +184,9 @@ def parse_text(text: str, params: GCodeParams | None = None, *, sha256: str | No
     n_bad = 0
     first_extrude_seen = False
     pending: list = []           # 첫 압출 뒤 만난 위치 불명 명령 (line, cmd)
+    # G-1 위치 다시 정하기: 마지막 pending 명령 뒤 절대 G0/G1로 정한 축, G92 E 여부
+    re_axes: set = set()
+    re_e = False
     arc_p_warned = False
     g9x_flip_warned = False
     unknown_pos_prime: list = []  # 첫 층 표시 앞, 위치를 모르는 압출 줄
@@ -198,10 +201,24 @@ def parse_text(text: str, params: GCodeParams | None = None, *, sha256: str | No
         if kind == "extrude":
             if pending:
                 msg = "; ".join(f"줄 {ln} {c}" for ln, c in pending)
-                if p.strict_unknown:
-                    raise GCodeError(f"줄 {line_no}: 위치를 바꿀 수 있는 명령 뒤에 압출 ({msg})")
-                warnings.append(f"압출 사이 명령 무시 ({msg})")
-                pending.clear()
+                xyz_ok = re_axes >= {"X", "Y", "Z"}
+                e_ok = e_relative() or re_e
+                if xyz_ok and e_ok:
+                    # 매크로 속을 믿지 않아도 됨: 압출 전에 위치와 E 기준이 다시 정해짐 (팀장검증_3차 G-1)
+                    warnings.append(f"줄 {line_no}: 압출 사이 명령 뒤 위치를 다시 정해 통과 ({msg})")
+                    pending.clear()
+                elif p.strict_unknown:
+                    lack = []
+                    if not xyz_ok:
+                        lack.append("절대 좌표로 다시 정하지 않은 축 "
+                                    + "·".join(k for k in "XYZ" if k not in re_axes))
+                    if not e_ok:
+                        lack.append("E가 절대 모드인데 G92 E 없음")
+                    raise GCodeError(f"줄 {line_no}: 위치를 바꿀 수 있는 명령 뒤에 압출 ({msg}; "
+                                     + ", ".join(lack) + ")")
+                else:
+                    warnings.append(f"압출 사이 명령 무시 ({msg})")
+                    pending.clear()
             if not all(map(math.isfinite, (x0, y0, z0, x1, y1, z1))):
                 if st.marker >= 0:
                     raise GCodeError(f"줄 {line_no}: 위치를 모르는 채로 압출 (G28 뒤 절대 이동 없음 등)")
@@ -288,6 +305,8 @@ def parse_text(text: str, params: GCodeParams | None = None, *, sha256: str | No
                     warnings.append(f"줄 {line_no}: 시작 구간의 모르는 명령 {cmd} 통과")
             else:
                 pending.append((line_no, cmd))
+                re_axes.clear()
+                re_e = False
             continue
         if cls == "nomotion" or cmd in TEXT_COMMANDS:
             continue
@@ -310,6 +329,8 @@ def parse_text(text: str, params: GCodeParams | None = None, *, sha256: str | No
             st.unit = 25.4 if cmd == "G20" else 1.0
             continue
         if cmd == "G92":
+            if pending and ("E" in words or not any(k in words for k in "XYZE")):
+                re_e = True  # E 기준을 다시 정함 (X·Y·Z를 G92로 바꾸는 것은 위치 확인이 아님)
             if not any(k in words for k in "XYZE"):
                 st.x = st.y = st.z = 0.0
                 st.e = 0.0
@@ -322,6 +343,7 @@ def parse_text(text: str, params: GCodeParams | None = None, *, sha256: str | No
             axes = [k for k in "XYZ" if k in words]
             for k in axes or ["X", "Y", "Z"]:
                 setattr(st, k.lower(), math.nan)
+                re_axes.discard(k)
             continue
         if cmd in ("G10", "G11"):
             if words:
@@ -361,6 +383,9 @@ def parse_text(text: str, params: GCodeParams | None = None, *, sha256: str | No
             if kind is not None:
                 add_row(line_no, kind, False, x0, y0, z0, x1, y1, z1, de)
             st.x, st.y, st.z = x1, y1, z1
+            if pending and st.abs_xyz:
+                # 이 줄이 끝난 뒤부터 위치를 앎 (이 줄 자체의 압출은 시작점을 몰라 위 add_row에서 걸림)
+                re_axes.update(k for k in "XYZ" if k in words and words[k] is not None)
             continue
 
         # 원호

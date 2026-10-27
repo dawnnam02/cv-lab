@@ -4,7 +4,7 @@ gcode:
   arc_seg_mm: 0.1              # G1 결정: 원호 현 길이 상한 (처짐 s²/8r, r=2 mm에서 0.6 µm)
   g9x_sets_e: true             # G1 결정 (Marlin 동작: G90/G91이 E 모드도 바꿈). Klipper는 docs/G코드-해석.md §2 [확인 필요]
   strict_unknown: true         # MF-GCD-04: 모르는 명령이 압출 사이에 있으면 멈춤
-  allow_commands: []           # 예: [{name: TIMELAPSE_TAKE_FRAME, reason: "사진 뒤 위치 복귀"}] 이유 필수
+  allow_commands: []           # 예: [{name: MY_MACRO, reason: "..."}] 이유 필수. 압출 사이 매크로는 먼저 위치 다시 정하기 규칙 (docs/G코드-해석.md §2, G-1)
   layer_source: both           # both | comment | z  (MF-GCD-05)
   layer_z_tol_mm: 0.0001       # 명세 meta.layer_z_mm 규칙
   line_width_mm: null          # 머리말 값 우선. 없으면 실행 때 지정

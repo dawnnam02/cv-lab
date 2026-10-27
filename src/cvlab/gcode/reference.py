@@ -41,6 +41,59 @@ def capsule_window(grid: dict, x0, y0, x1, y1, r):
     return slice(iya, iyb + 1), slice(ixa, ixb + 1), d2 <= (r + _EPS) ** 2
 
 
+def capsule_cells(grid: dict, x0, y0, x1, y1, r):
+    """capsule_window와 같은 칸을 (iy, ix) 첨자 배열로 돌려줌 (G-2 빠른 판).
+
+    capsule_window의 창 안에서, 행마다 캡슐이 닿을 수 있는 x 범위 (여유 2칸 + 앞뒤 1칸)만 계산한다.
+    칸 좌표·t·거리 식은 capsule_window와 글자 그대로 같아 결과가 비트 단위로 같다
+    (시험 test_band_equals_window_*). 대각 25 mm 선분에서 보는 칸이 약 150만 → 약 7만.
+    """
+    res, gx0, gy0 = grid["res_mm"], grid["x0_mm"], grid["y0_mm"]
+    ixa = max(int(np.floor((min(x0, x1) - r - gx0) / res)) - 1, 0)
+    ixb = min(int(np.ceil((max(x0, x1) + r - gx0) / res)) + 1, grid["nx"] - 1)
+    iya = max(int(np.floor((min(y0, y1) - r - gy0) / res)) - 1, 0)
+    iyb = min(int(np.ceil((max(y0, y1) + r - gy0) / res)) + 1, grid["ny"] - 1)
+    if ixa > ixb or iya > iyb:
+        return None
+    dx, dy = x1 - x0, y1 - y0
+    rows = np.arange(iya, iyb + 1)
+    yr = gy0 + rows * res
+    R = r + 2.0 * res  # 범위 계산용 여유 (반올림 오차보다 훨씬 큼)
+    if abs(dy) < 1e-12:
+        ta = np.zeros(len(rows))
+        tb = np.ones(len(rows))
+        valid = np.ones(len(rows), bool)
+    else:
+        t1 = (yr - R - y0) / dy
+        t2 = (yr + R - y0) / dy
+        tlo, thi = np.minimum(t1, t2), np.maximum(t1, t2)
+        valid = (tlo <= 1.0) & (thi >= 0.0)
+        ta, tb = np.clip(tlo, 0.0, 1.0), np.clip(thi, 0.0, 1.0)
+    xa, xb = x0 + ta * dx, x0 + tb * dx
+    lo = np.minimum(xa, xb) - R
+    hi = np.maximum(xa, xb) + R
+    ia = np.maximum(np.floor((lo - gx0) / res).astype(np.int64) - 1, ixa)
+    ib = np.minimum(np.ceil((hi - gx0) / res).astype(np.int64) + 1, ixb)
+    cnt = np.where(valid, np.maximum(ib - ia + 1, 0), 0)
+    total = int(cnt.sum())
+    if total == 0:
+        return np.zeros(0, np.int64), np.zeros(0, np.int64)
+    start = np.cumsum(cnt) - cnt
+    iy = np.repeat(rows, cnt)
+    ix = np.arange(total) - np.repeat(start, cnt) + np.repeat(ia, cnt)
+    # ---- 여기부터 capsule_window와 같은 식
+    X = gx0 + ix * res
+    Y = gy0 + iy * res
+    L2 = dx * dx + dy * dy
+    if L2 > 0:
+        t = np.clip(((X - x0) * dx + (Y - y0) * dy) / L2, 0.0, 1.0)
+    else:
+        t = 0.0
+    d2 = (X - (x0 + t * dx)) ** 2 + (Y - (y0 + t * dy)) ** 2
+    m = d2 <= (r + _EPS) ** 2
+    return iy[m], ix[m]
+
+
 def segment_widths(result, params: GCodeParams) -> np.ndarray:
     """압출 선분 (층 ≥ 0)마다 선폭. 머리말 명목값 → config → (extrusion 모델이면 w_eff 우선)."""
     seg = result.extrusions()
@@ -132,7 +185,11 @@ class RefStack:
             return cls(grid, d["z_layers"], packed, [c.copy() for c in codes], json.loads(str(d["type_names"])))
 
 
-def build_reference(result, grid: dict | None = None, params: GCodeParams | None = None) -> RefStack:
+def build_reference(result, grid: dict | None = None, params: GCodeParams | None = None,
+                    method: str = "band") -> RefStack:
+    """정답 지도. method="band" (기본, 빠른 판 capsule_cells) · "window" (1차 판 capsule_window, 대조용)."""
+    if method not in ("band", "window"):
+        raise ValueError(f"method는 band 또는 window: {method}")
     p = params or result.params or GCodeParams()
     seg = result.extrusions()
     if seg.empty:
@@ -158,6 +215,14 @@ def build_reference(result, grid: dict | None = None, params: GCodeParams | None
         cols = sk[["x0_mm", "y0_mm", "x1_mm", "y1_mm", "type"]].to_numpy()
         for j in order:
             x0, y0, x1, y1, t = cols[j]
+            if method == "band":
+                cells = capsule_cells(grid, float(x0), float(y0), float(x1), float(y1), wk[j] / 2.0)
+                if cells is None:
+                    continue
+                iy, ix = cells
+                fp[iy, ix] = True
+                tc[iy, ix] = code_of[t]
+                continue
             win = capsule_window(grid, float(x0), float(y0), float(x1), float(y1), wk[j] / 2.0)
             if win is None:
                 continue
