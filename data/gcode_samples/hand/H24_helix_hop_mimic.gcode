@@ -1,0 +1,29 @@
+; H24_mimic Orca 꼴: 압출 없는 G3 나선 Z홉, 베드 원점 가운데 (실제 슬라이서 출력 아님, 시험용 입력)
+; line_width = 0.42
+; filament_diameter = 1.75
+G21
+G90
+M83
+G28
+G17
+;LAYER_CHANGE
+;Z:0.2
+G1 Z.2 F600
+G1 X-5 Y-5 F3000
+;TYPE:Outer wall
+G1 X5 Y-5 E0.31354
+G1 X5 Y5 E0.31354
+G1 X-5 Y5 E0.31354
+G1 X-5 Y-5 E0.31354
+G1 E-.8 F2100
+G3 Z.6 I1.2 J0 P1 F21000
+G1 X-5 Y-5
+;LAYER_CHANGE
+;Z:0.4
+G1 Z.4
+G1 E.8 F2100
+;TYPE:Outer wall
+G1 X5 Y-5 E0.31354
+G1 X5 Y5 E0.31354
+G1 X-5 Y5 E0.31354
+G1 X-5 Y-5 E0.31354
