@@ -1,4 +1,4 @@
-"""G코드 파일 하나 → 판정 영역 요약 한 줄 (REGION {json}) + (선택) 층별 표 CSV · 처리안 표 · 영역 npz · 그림.
+"""G코드 파일 하나 → 판정 영역 요약 한 줄 (REGION {json}) · 식힘 비교 영역 한 줄 (POST {json}) + (선택) 층별 표 CSV · 처리안 표 · 영역 npz · 그림.
 
 예) PYTHONPATH=src python scripts/region_mask.py file.gcode --summary --out results/region_t4b --csv --npz --png
 출력 폴더 기본 results/region_t4b/ (Git 밖). data/ 아래 쓰기는 거부한다.
@@ -22,9 +22,11 @@ SUMMARY_KEYS = ["file", "gcode_sha256", "layers", "grid_ny_nx", "passes", "band_
                 "dof_mm", "dof_top_mm", "region_pct_total", "region_cells_cell02_total", "depth_layers",
                 "last_layer_depth_pct_object", "coverage_final_top_pct", "build_s"]
 # 주 코드 그림 색 (dataviz 기본 범주 팔레트 순서). 0 = 영역
-CODE_COLORS = {0: "#d9d9d6", 1: "#2a78d6", 2: "#eb6834", 3: "#1baf7a", 4: "#eda100", 5: "#ffffff", 9: "#6250d6"}
+CODE_COLORS = {0: "#d9d9d6", 1: "#2a78d6", 2: "#eb6834", 3: "#1baf7a", 4: "#eda100", 5: "#ffffff", 6: "#6250d6"}
 CODE_LABELS = {0: "판정 영역", 1: "1 엣지 띠", 2: "2 가림 예측", 3: "3 시야 밖", 4: "4 제외 종류·PRIME",
-               5: "5 출력물 없음", 9: "9 심도 밖 (J-2 뒤 6)"}
+               5: "5 출력물 없음", 6: "6 심도 밖"}
+POST_KEYS = ["post_rule", "post_band_mm", "post_delta_t_c", "post_n_region", "post_region_cell02",
+             "post_region_cell04"]
 
 
 def out_is_forbidden(out_dir: str) -> bool:
@@ -98,7 +100,7 @@ def save_png(rs, ref, path_png, layer):
         except Exception:
             pass
     plt.rcParams["axes.unicode_minus"] = False
-    codes = [0, 1, 2, 3, 4, 5, 9]
+    codes = [0, 1, 2, 3, 4, 5, 6]
     idx = {c: i for i, c in enumerate(codes)}
     code = rs.exclusion_code(layer)
     img = np.vectorize(idx.get)(code)
@@ -190,6 +192,8 @@ def main(argv=None) -> int:
         os.makedirs(a.out, exist_ok=True)
     if a.summary:
         print("REGION " + json.dumps(summary_line(a.gcode, rs), ensure_ascii=False))
+        # 식힌 재측정 비교 영역 (R-2). REGION 줄 키는 고정이라 따로 한 줄
+        print("POST " + json.dumps({k: rs.info[k] for k in POST_KEYS}, ensure_ascii=False))
     print(f"# 정답 지도 {t_ref:.1f} s, 판정 영역 {rs.info['build_s']:.1f} s, 격자 {g['ny']} × {g['nx']}, "
           f"PRIME {rs.info['prime']}", file=sys.stderr)
     if a.plan:

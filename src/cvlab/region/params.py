@@ -45,6 +45,8 @@ class RegionParams:
     extend_scan_len: bool = False
     lead_in_mm: float = 5.0          # LM-T14-2
     scan_speed_mm_s: float = 2.4     # meta.scan_speed_mm_s
+    post_edge_band_mm: float | None = None  # None = max(2·res, α·반폭·ΔT) [추정] (팀장검증 5차 R-2, P-B)
+    post_delta_t_c: float = 30.0     # 식힘 온도차 ΔT [추정] (팀장검증 5차 §3.4). post 띠 자동값에만 씀
 
     def __post_init__(self) -> None:
         self.validate()
@@ -59,7 +61,7 @@ class RegionParams:
         if isinstance(self.exclude_types, str) or not all(isinstance(t, str) for t in self.exclude_types):
             raise ValueError("exclude_types는 문자열 목록")
         self.exclude_types = tuple(str(t).strip().upper() for t in self.exclude_types)
-        for name in ("edge_band_mm", "step_mm"):
+        for name in ("edge_band_mm", "step_mm", "post_edge_band_mm"):
             v = getattr(self, name)
             if v is not None:
                 setattr(self, name, _num(name, v, pos=True))
@@ -82,6 +84,7 @@ class RegionParams:
             raise ValueError("extend_scan_len은 true/false")
         self.lead_in_mm = _num("lead_in_mm", self.lead_in_mm, nonneg=True)
         self.scan_speed_mm_s = _num("scan_speed_mm_s", self.scan_speed_mm_s, pos=True)
+        self.post_delta_t_c = _num("post_delta_t_c", self.post_delta_t_c, nonneg=True)
 
     def to_dict(self) -> dict:
         d = asdict(self)

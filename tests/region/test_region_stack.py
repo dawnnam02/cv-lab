@@ -22,7 +22,7 @@ def _rule(v: int) -> int:
     """§6.2 우선순위를 글 그대로 옮긴 기준 함수."""
     if v & B["no_material"]:
         return 4 if v & B["prime"] else 5
-    for name, c in (("type", 4), ("fov", 3), ("depth", 9), ("occlusion", 2), ("edge", 1)):
+    for name, c in (("type", 4), ("fov", 3), ("depth", 6), ("occlusion", 2), ("edge", 1)):
         if v & B[name]:
             return c
     return 0
@@ -31,7 +31,9 @@ def _rule(v: int) -> int:
 def test_region_codes_priority_all_combinations():
     v = np.arange(128, dtype=np.uint8)
     assert codes_from_bits(v).tolist() == [_rule(int(x)) for x in v]
-    assert REASON_CODE["depth"] == 9 and set(REASON_CODE.values()) <= set(EXCLUSION_CODES)
+    # R-3: 심도 밖 = judge 코드 6 "심도 밖" (J-2). 코드 9 (기타)는 영역 쪽에서 내지 않음
+    assert REASON_CODE["depth"] == 6 and EXCLUSION_NAMES[6] == "심도 밖"
+    assert set(REASON_CODE.values()) <= set(EXCLUSION_CODES) and 9 not in codes_from_bits(v).tolist()
 
 
 def test_region_region_iff_bits0_iff_code0_all_layers():
@@ -152,9 +154,10 @@ def test_region_summary_columns_and_totals():
             assert tot[c] == body[c].sum()
     assert tot.region_pct == pytest.approx(100.0 * tot.n_region / tot.n_material)
     cells = rs.grid["nx"] * rs.grid["ny"]
-    codes = body[[f"code_{c}" for c in (1, 2, 3, 4, 5, 9)]].sum(axis=1) + body.n_region
+    codes = body[[f"code_{c}" for c in (1, 2, 3, 4, 5, 6)]].sum(axis=1) + body.n_region
     assert (codes == cells).all()                                  # 주 코드는 겹치지 않음
-    assert (body.n_region + body.code_1 + body.code_2 + body.code_3 + body.code_9
+    assert "code_9" not in s.columns and tot.code_6 > 0            # R-3 (합성 탑 50층은 심도 밖 있음)
+    assert (body.n_region + body.code_1 + body.code_2 + body.code_3 + body.code_6
             + body.bit_type <= body.n_material).all()
 
 
@@ -212,6 +215,70 @@ def test_region_t15_link_pass_and_counts():
     assert out["primary"].cooled is not None and out["primary"].cooled["layer_idx"] == rs.n_layers - 1
 
 
+def test_region_depth_code6_reaches_judge():
+    """R-3: 심도 밖 칸이 judge by_code "심도 밖"으로 들어가고 "기타"는 0 (합성 탑 50층, x1 = 2)."""
+    r, g, ref, rs = built_tower(50, x1=2.0)
+    Ls = [rs.layer_input(k, np.where(rs.region(k), 0.0, np.nan)) for k in range(rs.n_layers)]
+    jp = JudgeParams(T_mm=0.2, U_mm=0.0209, U_source="T4b 시험")
+    by = judge_print_fine(Ls, jp, res_mm=g["res_mm"])["primary"].exclusions["by_code"]
+    assert by["심도 밖"] > 0 and by["기타"] == 0 and by["이유 없음"] == 0
+
+
+def _post_parts(rs):
+    n = rs.n_layers - 1
+    return n, rs.reasons(n), rs.post_reasons(), rs.post_region(), rs.region(n)
+
+
+def test_region_post_region_rules():
+    """R-2: post 영역 = 마지막 층 출력물 칸에서 type · fov · depth · occlusion · 출력물 없음은 그대로 빼고,
+    엣지는 좁은 띠 (자동 max(2·res, α·반폭·ΔT))만 뺌. 판정 영역 (region)은 바뀌지 않음."""
+    for rs in (built_tower(10)[3], built_tower(50, x1=2.0)[3], built_hand("H20_block.gcode")[3]):
+        n, bits, pb, pr, reg = _post_parts(rs)
+        keep = B["type"] | B["fov"] | B["depth"] | B["occlusion"] | B["no_material"] | B["prime"]
+        assert np.array_equal(pb & keep, bits & keep)                 # 엣지 밖 이유는 그대로
+        assert not (pb & ~bits & B["edge"]).any()                     # 좁은 띠 ⊂ 원래 띠
+        assert (pr | ~reg).all() and pr.sum() > reg.sum()             # post ⊇ 판정 영역, 더 넓음
+        assert np.array_equal(pr, pb == 0)
+        assert np.array_equal(rs.post_exclusion_code() == 0, pr)
+        assert set(np.unique(rs.post_exclusion_code()).tolist()) <= set(EXCLUSION_CODES)
+        assert rs.info["post_rule"] == "P-B 좁은 엣지 띠" and rs.info["post_n_region"] == int(pr.sum())
+        assert rs.info["post_band_mm"] == pytest.approx(0.04)          # 작은 물체: 2·res가 이김
+        assert rs.info["post_region_cell02"] == region_cells(pr, 10, 1.0)
+        assert np.array_equal(reg, rs.reasons(n) == 0)                # 판정 영역은 그대로
+
+
+def test_region_post_band_auto_and_fallback():
+    from cvlab.region.stack import post_band_auto
+    p = RegionParams()
+    # caliper 경계 상자 긴 변 42.451 mm → 68e-6 × 21.2255 × 30 = 0.0433 mm (팀장검증 5차 §3.4)
+    assert post_band_auto(p, (114.371, 135.629, 83.871, 126.322), 0.02) == pytest.approx(0.0433, abs=1e-4)
+    assert post_band_auto(p, (0.0, 10.0, 0.0, 10.0), 0.02) == pytest.approx(0.04)
+    # 좁은 띠도 영역을 다 덮을 만큼 넓으면 엣지 포함 (P-A)으로 넘어가고 규칙 이름을 남김
+    r, g, ref, _ = built_tower(10)
+    wide = build_region(r, ref, RegionParams(post_edge_band_mm=50.0))
+    n, bits, pb, pr, reg = _post_parts(wide)
+    assert wide.info["post_rule"] == "P-A 엣지 포함" and pr.sum() > 0
+    assert not (pb & B["edge"]).any() and np.array_equal(pr, (bits & ~np.uint8(B["edge"])) == 0)
+
+
+def test_region_post_input_uses_post_region():
+    r, g, ref, rs = built_tower(10)
+    n = rs.n_layers - 1
+    d = np.zeros((g["ny"], g["nx"]))
+    P = rs.post_input(d)
+    assert P.layer_idx == n and P.thermal_state == "cooled"
+    assert np.array_equal(P.region, rs.post_region()) and np.array_equal(P.exclusion_code, rs.post_exclusion_code())
+    L = rs.layer_input(n, d)
+    assert np.array_equal(L.region, rs.region(n))                     # 진행 중 층은 판정 영역 그대로
+    # judge 연결: post가 받아들여지고 판정은 바뀌지 않음
+    Ls = [rs.layer_input(k, np.where(rs.region(k), 0.0, np.nan)) for k in range(rs.n_layers)]
+    jp = JudgeParams(T_mm=0.2, U_mm=0.0209, U_source="T4b 시험")
+    a = judge_print_fine(Ls, jp, res_mm=g["res_mm"])
+    b = judge_print_fine(Ls, jp, res_mm=g["res_mm"], post=rs.post_input(np.where(rs.post_region(), 0.0, np.nan)))
+    assert a["primary"].verdict == b["primary"].verdict == "pass"
+    assert a["primary"].counts == b["primary"].counts
+
+
 def test_region_layer_input_checks():
     rs = built_tower(10)[3]
     with pytest.raises(ValueError):
@@ -234,6 +301,7 @@ def test_region_save_load_and_repeat():
         assert np.array_equal(back.region(n), rs.region(n))
         assert np.array_equal(back.exclusion_code(n), rs.exclusion_code(n))
     assert back.summary().equals(rs.summary())
+    assert np.array_equal(back.post_reasons(), rs.post_reasons()) and back.info == rs.info
     again = build_region(r, ref)
     for n in range(rs.n_layers):
         assert np.array_equal(again.reasons(n), rs.reasons(n))

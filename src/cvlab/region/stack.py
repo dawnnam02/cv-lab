@@ -4,8 +4,12 @@ build_region은 G코드 (ParseResult) · 정답 지도 (RefStack) · 설정만 �
 
 이유 비트 (uint8, 겹침 허용) → T15 코드 (int8, 칸마다 하나, §6.2 우선순위):
   출력물 없는 칸: PRIME이 덮으면 4, 아니면 5.
-  출력물 있는 칸: type (4) > fov (3) > depth (9) > occlusion (2) > edge (1). 이유가 없으면 영역 칸, 코드 0.
-  depth는 T15 코드표에 "심도 밖"이 없어 9 (기타)로 낸다. 코드 6 추가는 T15 후속 J-2.
+  출력물 있는 칸: type (4) > fov (3) > depth (6) > occlusion (2) > edge (1). 이유가 없으면 영역 칸, 코드 0.
+  depth는 T15 코드표 6 "심도 밖" (J-2, 7ae82ce). 처음 판은 9 (기타)였음 (팀장검증 5차 R-3).
+
+식힌 재측정 비교 영역 (post_region, 팀장검증 5차 R-2): 마지막 층 비트에서 엣지 비트만 좁은 띠
+(max(2·res, α·반폭·ΔT) [추정])로 바꾼 것. type · fov · depth · occlusion · 출력물 없음은 그대로 뺀다.
+좁은 띠로도 0칸이면 엣지를 빼지 않는다 (P-A, 규칙 이름을 info["post_rule"]에 남김). 판정 영역 (region)은 그대로.
 """
 from __future__ import annotations
 
@@ -23,16 +27,18 @@ from cvlab.judge.aggregate import cell_factor
 
 from .coverage import coverage_mask, pass_counts, plan_passes
 from .grid import is_aligned, object_bbox
-from .masks import edge_band_update, grow, predict_occlusion, prime_mask
+from .masks import edge_band, edge_band_update, grow, predict_occlusion, prime_mask
 from .params import RegionParams
 
 REASON_BITS = {"edge": 1, "occlusion": 2, "fov": 4, "type": 8, "no_material": 16, "depth": 32, "prime": 64}
-REASON_CODE = {"edge": 1, "occlusion": 2, "fov": 3, "type": 4, "no_material": 5, "depth": 9, "prime": 4}
+REASON_CODE = {"edge": 1, "occlusion": 2, "fov": 3, "type": 4, "no_material": 5, "depth": 6, "prime": 4}
+POST_RULE_NARROW = "P-B 좁은 엣지 띠"
+POST_RULE_EDGE_IN = "P-A 엣지 포함"
 # 출력물 있는 칸의 우선순위 (앞이 이김)
 MATERIAL_PRIORITY = ("type", "fov", "depth", "occlusion", "edge")
 SUMMARY_COLUMNS = ["layer_idx", "layer_z_mm", "n_material", "n_region", "region_pct",
                    "bit_edge", "bit_occlusion", "bit_fov", "bit_type", "bit_depth", "bit_prime",
-                   "code_1", "code_2", "code_3", "code_4", "code_5", "code_9",
+                   "code_1", "code_2", "code_3", "code_4", "code_5", "code_6",
                    "n_region_cell02", "n_region_cell04"]
 PLAN_COLUMNS = ["layer_idx", "layer_z_mm", "spread_mm", "n_heights", "depth_pct", "recover_cells_B",
                 "extra_scan_s_B"]
@@ -85,8 +91,10 @@ def _same(a, b) -> bool:
 
 class RegionStack:
     def __init__(self, grid: dict, z_layers, bits: list, passes: list, params: RegionParams,
-                 info: dict, stats: list):
+                 info: dict, stats: list, post_edge=None):
         self.grid = dict(grid)
+        # 마지막 층 post 엣지 띠 (출력물 칸만, P-A면 모두 False). None = 옛 저장 파일 (R-2 전)
+        self._post_edge = None if post_edge is None else np.asarray(post_edge, bool)
         self.z_layers = np.asarray(z_layers, float)
         self._bits = bits
         self.passes = [dict(p) for p in passes]
@@ -114,6 +122,22 @@ class RegionStack:
     def exclusion_code(self, n: int) -> np.ndarray:
         self._check(n)
         return codes_from_bits(self._bits[n])
+
+    # ---- 식힌 재측정 비교 영역 (R-2)
+    def post_reasons(self) -> np.ndarray:
+        """마지막 층 이유 비트에서 엣지 비트만 좁은 띠 (P-B) 또는 없음 (P-A)으로 바꾼 것."""
+        if self._post_edge is None:
+            raise ValueError("post 엣지 띠가 없음 (R-2 전 저장 파일). build_region으로 다시 만들 것")
+        b = self._bits[self.n_layers - 1] & np.uint8(~_B["edge"] & 0xFF)
+        return b | self._post_edge.view(np.uint8)
+
+    def post_region(self) -> np.ndarray:
+        """식힌 재측정 비교 영역 (bool, 격자 모양). 판정 영역 region(마지막 층)을 포함한다."""
+        return self.post_reasons() == 0
+
+    def post_exclusion_code(self) -> np.ndarray:
+        """post_region 밖 칸의 T15 코드 (int8, 영역 안 0). 우선순위는 codes_from_bits와 같음."""
+        return codes_from_bits(self.post_reasons())
 
     # ---- 표
     def summary(self) -> pd.DataFrame:
@@ -153,16 +177,20 @@ class RegionStack:
 
     # ---- T15 연결
     def layer_input(self, n: int, delta_mm, thermal_state: str = "in_process") -> LayerInput:
-        """cvlab.judge.LayerInput. 식힌 재측정 (cooled)은 마지막 층 영역을 그대로 씀 (§6.4)."""
+        """cvlab.judge.LayerInput. 식힌 재측정 (cooled)은 마지막 층 번호로, 영역은 post_region (R-2)."""
         d = np.asarray(delta_mm, float)
         if d.shape != self._shape:
             raise ValueError(f"delta 모양 {d.shape} ≠ 격자 {self._shape}")
-        if thermal_state == "cooled" and n != self.n_layers - 1:
-            raise ValueError("식힌 재측정 (cooled)은 마지막 층 영역만 씀")
+        if thermal_state == "cooled":
+            if n != self.n_layers - 1:
+                raise ValueError("식힌 재측정 (cooled)은 마지막 층 번호만 씀")
+            return LayerInput(layer_idx=int(n), thermal_state=thermal_state, delta_mm=d,
+                              region=self.post_region(), exclusion_code=self.post_exclusion_code())
         return LayerInput(layer_idx=int(n), thermal_state=thermal_state, delta_mm=d,
                           region=self.region(n), exclusion_code=self.exclusion_code(n))
 
     def post_input(self, delta_mm) -> LayerInput:
+        """식힌 재측정 LayerInput (layer_idx = 마지막 층, thermal_state = cooled, region = post_region())."""
         return self.layer_input(self.n_layers - 1, delta_mm, thermal_state="cooled")
 
     # ---- 저장
@@ -173,11 +201,14 @@ class RegionStack:
             flat = b.ravel()
             for j in range(_N_BITS):
                 planes[n, j] = np.packbits(((flat >> j) & 1).astype(bool))
+        extra = {}
+        if self._post_edge is not None:
+            extra["post_edge"] = np.packbits(self._post_edge.ravel())
         np.savez_compressed(
             path, grid=np.array(json.dumps(self.grid)), z_layers=self.z_layers, planes=planes,
             passes=np.array(json.dumps(self.passes)), params=np.array(json.dumps(self.params.to_dict())),
             info=np.array(json.dumps(self.info, ensure_ascii=False)),
-            stats=np.array(json.dumps(self._stats, ensure_ascii=False)))
+            stats=np.array(json.dumps(self._stats, ensure_ascii=False)), **extra)
 
     @classmethod
     def load(cls, path) -> "RegionStack":
@@ -191,9 +222,12 @@ class RegionStack:
                 for j in range(_N_BITS):
                     b |= (np.unpackbits(planes[n, j], count=size).astype(np.uint8) << j)
                 bits.append(b.reshape(grid["ny"], grid["nx"]))
+            pe = None
+            if "post_edge" in d.files:
+                pe = np.unpackbits(d["post_edge"], count=size).astype(bool).reshape(grid["ny"], grid["nx"])
             return cls(grid, d["z_layers"], bits, json.loads(str(d["passes"])),
                        RegionParams.from_dict(json.loads(str(d["params"]))),
-                       json.loads(str(d["info"])), json.loads(str(d["stats"])))
+                       json.loads(str(d["info"])), json.loads(str(d["stats"])), post_edge=pe)
 
 
 def region_cells(region, f: int, fill_min: float) -> int:
@@ -285,7 +319,7 @@ def build_region(result, ref, params: RegionParams | None = None, passes=None) -
         for name in ("edge", "occlusion", "fov", "type", "depth"):
             s[f"bit_{name}"] = int(cnt[_MAT_V & ((_V & _B[name]) > 0)].sum())
         s["bit_prime"] = int(cnt[(_V & _B["prime"]) > 0].sum())  # 퍼지선은 출력물 없는 칸에만 있음
-        for c in (1, 2, 3, 4, 5, 9):
+        for c in (1, 2, 3, 4, 5, 6):
             s[f"code_{c}"] = int(cnt[_CODE_LUT == c].sum())
         s["n_region_cell02"] = region_cells(region, f02, fill)
         s["n_region_cell04"] = region_cells(region, f04, fill)
@@ -302,6 +336,9 @@ def build_region(result, ref, params: RegionParams | None = None, passes=None) -
         denom |= birth & ((b & (_B["type"] | _B["fov"] | _B["edge"])) == 0)
         covered |= exposed & region
 
+    post_edge, post = _post_band(p, bbox, res, step, h if N else None, mat if N else None,
+                                 bits_all[-1] if N else None, f02, f04, fill, shape)
+
     nd = int(denom.sum())
     nc = int((covered & denom).sum())
     npx, npy = pass_counts(passes)
@@ -313,6 +350,38 @@ def build_region(result, ref, params: RegionParams | None = None, passes=None) -
         "aligned": is_aligned(grid, p.cell_mm), "prime": prime_info,
         "coverage_denominator": nd, "coverage_covered": nc,
         "coverage_final_top_pct": (100.0 * nc / nd) if nd else float("nan"),
+        **post,
         "build_s": round(time.perf_counter() - t0, 3),
     }
-    return RegionStack(grid, z, bits_all, passes, p, info, stats)
+    return RegionStack(grid, z, bits_all, passes, p, info, stats, post_edge=post_edge)
+
+
+def post_band_auto(params: RegionParams, bbox, res_mm: float) -> float:
+    """post 엣지 띠 자동값 = max(2·res, α·반폭·ΔT) [추정] (팀장검증 5차 §3.4 · R-2).
+
+    α = JudgeParams.cooled_alpha_um_per_m_c (µm/(m·°C)), 반폭 = 물체 경계 상자 긴 변의 반 (mm), ΔT = post_delta_t_c.
+    """
+    half = max(bbox[1] - bbox[0], bbox[3] - bbox[2]) / 2.0
+    shrink = JudgeParams.cooled_alpha_um_per_m_c * 1e-6 * half * params.post_delta_t_c
+    return round(max(2.0 * res_mm, shrink), 9)
+
+
+def _post_band(p, bbox, res, step, h, mat, b_last, f02, f04, fill, shape):
+    """마지막 층 post 엣지 띠와 info 항목. 좁은 띠로 0칸이면 P-A (엣지 안 뺌)."""
+    band = p.post_edge_band_mm if p.post_edge_band_mm is not None else post_band_auto(p, bbox, res)
+    rule = POST_RULE_NARROW
+    if h is None:  # 층 없음
+        pe = np.zeros(shape, bool)
+        reg = np.zeros(shape, bool)
+    else:
+        base = b_last & np.uint8(~_B["edge"] & 0xFF)  # 엣지 비트만 지운 마지막 층 비트
+        pe = edge_band(h, res, band, step) & mat
+        reg = (base | pe.view(np.uint8)) == 0
+        if not reg.any():
+            pe = np.zeros(shape, bool)
+            reg = base == 0
+            rule = POST_RULE_EDGE_IN
+    info = {"post_rule": rule, "post_band_mm": float(band), "post_delta_t_c": p.post_delta_t_c,
+            "post_n_region": int(reg.sum()),
+            "post_region_cell02": region_cells(reg, f02, fill), "post_region_cell04": region_cells(reg, f04, fill)}
+    return pe, info

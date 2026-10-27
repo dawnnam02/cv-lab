@@ -88,3 +88,45 @@
 - caliper 전체 영역 비율 10.1 %: 판정 시험 파일로 쓰기에 영역이 작다 (T5 다시 슬라이스 판단에 참고).
 - 장착 방향 (`camera_side`) · `dof_top_mm`는 [추정]. 실측 지도와 대조 전.
 - 시험 시간은 기기 부하 (OneDrive 동기화 등)에 따라 73 – 167 s로 흔들림. 120 s 목표는 부하 없을 때만 충족.
+
+## 후속 R-1 · R-2 · R-3 시작 확인 (2026-10-28)
+
+> 기준: [팀장검증_5차](팀장검증_5차.md) §3 · §6 R-1 · R-2 · R-3. HEAD `0f16275` (팀장검증 5차). 남의 미커밋 변경 (T14 · T7a 대조표, 펌웨어 문서, V2 `scripts/method_screening/`)은 건드리지 않음.
+
+| ID | 내 말로 | 완료 기준 |
+|---|---|---|
+| R-1 | 시험에서 `build_s <= 120` · `<= 30` 단정문을 뺀다. 속도는 REGION 줄 `build_s`로만 본다 | CPU 부하와 무관하게 tests/region 통과 |
+| R-2 | 식힌 재측정 비교 영역 `post_region()`: 마지막 층 출력물 칸에서 type · fov · depth · occlusion은 계속 빼고, 엣지는 좁은 띠 max(2 × res, α × 반폭 × ΔT) [추정]만 뺀다. 0칸이면 엣지 포함 (P-A)으로 넘어가고 규칙 이름을 남긴다. `post_input`이 이 영역을 넘긴다. 판정 영역 (`region()`)은 그대로 | caliper post 0.2 mm 칸 약 940, voron24 판정 · 칸 수 그대로, 문서 §9 한 줄 |
+| R-3 | `REASON_CODE["depth"]` 9 → 6, `summary()` 열 `code_9` → `code_6`, 시험 · 문서 §2 · §12 | judge 연결 시험 통과, caliper "기타" 0 |
+
+쓰기 범위: `src/cvlab/region/` · `tests/region/` · `config/region.yaml` · `scripts/region_mask.py` · `docs/판정-영역.md` · 이 대조표. judge 코드는 읽기만.
+
+## 후속 R-1 · R-2 · R-3 종료 대조 (2026-10-28)
+
+| ID | 결과 | 근거 위치 | 판정 |
+|---|---|---|---|
+| R-1 | `test_region_local.py`의 `build_s <= 120` · `<= 30` 단정문 삭제 (시험 이름 `test_region_voron_no_depth_and_speed` → `test_region_voron_no_depth`). tests/region 안 시간 단정문 0건 (grep `build_s`는 REGION 키 목록 · 주석뿐). 속도는 REGION 줄 `build_s`로만 판정 (문서 §8) | 시험 · 문서 §8 | ○ (CPU 95 % 이상 재현은 안 함, 아래) |
+| R-2 | `RegionStack.post_region()` · `post_reasons()` · `post_exclusion_code()` 신설. `post_input` · `layer_input(..., "cooled")`가 이 영역 · 코드를 넘김. 띠 자동값 max(2·res, α·반폭·ΔT) [추정], 0칸이면 P-A. **caliper: 띠 0.0433 mm, 고운 288 360 · 0.2 mm 940 · 0.4 mm 72칸 (팀장 값과 같음)**, 마지막 층 판정 영역 0 그대로. voron24: 0.2 mm 판정 칸 합 141 760 그대로, post 15 348칸. `config/region.yaml`에 `post_edge_band_mm: null` · `post_delta_t_c: 30.0` 추가. 저장 npz에 `post_edge` 비트 평면 추가 (옛 파일은 불러오되 post 호출 때 오류). 스크립트에 `POST {json}` 줄 (REGION 줄 키는 그대로). 문서 §9 덮임률 분모 한 줄, §10 · §12 갱신 | 시험 `test_region_post_*` · `test_region_caliper_post_region_r2` · 문서 §0 · §9 · §10 | ○ |
+| R-3 | `REASON_CODE["depth"]` = 6, `summary()` 열 `code_9` → `code_6`, 그림 범례 6. 128 조합 시험이 9를 안 냄 확인. judge 연결: 합성 탑 by_code "심도 밖" > 0 · "기타" 0 (시험 `test_region_depth_code6_reaches_judge`). **caliper 전 층 `judge_print_fine`: pass, 주 칸 by_code 심도 밖 251 488 · 기타 0 · 이유 없음 0** (스크래치 실행, 팀장 기대와 같음) | 시험 · 문서 §0 · §2 · §5 · §8 · §12 | ○ |
+
+**시험**: `python -m pytest tests/region -q` → **51 passed in 90.34 s** (skip 0). 돌리기 전 · 뒤 CPU 부하 68 % · 56 % (Win32_Processor LoadPercentage). `tests/judge` 91 passed (judge 코드는 고치지 않음, `git diff src/cvlab/judge` 없음).
+
+**J-3에 넘길 인터페이스** (cvlab.region.RegionStack)
+
+| 이름 | 반환 | 뜻 |
+|---|---|---|
+| `post_region()` | `np.ndarray` bool, 격자 (ny, nx) | 식힌 재측정 비교 영역. `region(마지막 층)`을 포함 |
+| `post_exclusion_code()` | `np.ndarray` int8, (ny, nx) | 영역 밖 칸의 T15 코드 (영역 안 0, 값 ⊂ {1 … 6}) |
+| `post_reasons()` | `np.ndarray` uint8, (ny, nx) | 마지막 층 비트에서 엣지 비트만 좁은 띠로 바꾼 것 |
+| `post_input(delta_mm)` | `cvlab.judge.LayerInput` (layer_idx = 마지막 층, thermal_state = "cooled", region = `post_region()`, exclusion_code = `post_exclusion_code()`) | `judge_print_fine(..., post=...)`에 그대로 |
+| `info["post_rule"]` · `["post_band_mm"]` · `["post_n_region"]` · `["post_region_cell02"]` · `["post_region_cell04"]` · `["post_delta_t_c"]` | str · float · int | 규칙 이름 ("P-B 좁은 엣지 띠" / "P-A 엣지 포함")과 칸 수. 결과 보고에 규칙 이름을 남길 때 씀 |
+
+- J-3에서 바꿀 곳 (읽기만 함): `verdict.py` `judge_print`의 `cooled_difference(last.delta_mm, post.delta_mm, region=last.region & post.region)`. 지금은 마지막 층 판정 영역과 교집합이라 caliper에서 계속 `cooled = None` (스크래치 실행에서 확인). `region=post.region`으로 바꾸고, 진행 중 마지막 층 Δ가 판정 영역 밖에서 NaN이면 두 Δ 유효 칸 교집합으로 줄어든다는 점을 J-3이 정해야 함 (진행 중 측정을 판정 영역 밖에도 남기는지).
+- `fine_to_cell_layer`로 0.2 mm로 묶으면 caliper post 940칸 (`region_fill_min` 1.0).
+
+**남은 것 · 확인 못 한 것**
+
+- R-1 완료 기준의 "CPU 95 % 이상에서 통과"는 과열 우려로 부하를 일부러 걸지 않았다. 시험에 시간 단정문이 없어 부하로 실패할 길은 없음 (grep 근거).
+- α · ΔT · 반폭 정의는 [추정]. caliper 반폭 = 경계 상자 긴 변 42.451 ÷ 2 = 21.23 mm (팀장 21 mm).
+- 세부청사진 T4b §6.8 `code_9` 문구 · RG15 문구 수정은 팀장 몫 (이 작업 쓰기 범위 밖).
+- Python 파일은 모두 Edit 도구로 고침 (heredoc · sed 0건). 대조표 덧붙이기만 heredoc.

@@ -19,3 +19,5 @@ region:
   extend_scan_len: false   # true면 Y는 스캔 길이를 늘려 패스 1개
   lead_in_mm: 5.0          # LM-T14-2 lead_in [출처: docs/프린터-펌웨어-선정.md §9]. B안 추가 시간 계산에만 씀
   scan_speed_mm_s: 2.4     # meta.scan_speed_mm_s (명세 5절, LM-T14-2 scan_speed). B안 추가 시간 계산에만 씀
+  post_edge_band_mm: null  # 식힌 재측정 비교 영역 (post_region) 엣지 띠. null = max(2·res, α·반폭·ΔT) [추정] (팀장검증 5차 R-2 P-B). α = judge cooled_alpha_um_per_m_c, 반폭 = 물체 경계 상자 긴 변의 반
+  post_delta_t_c: 30.0     # 식힘 온도차 ΔT [추정] (팀장검증 5차 §3.4). post 띠 자동값에만 씀

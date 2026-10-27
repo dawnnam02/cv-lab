@@ -42,13 +42,34 @@ def test_region_caliper_coverage_and_skirt_type():
     assert "SKIRT" in ref.type_names and rs.summary().bit_type.iloc[-1] > 0
     # 스커트를 뺀 격자는 T4a 기본 격자 (2790 × 1735)보다 작음
     assert g["ny"] * g["nx"] < 2790 * 1735
-    assert rs.info["build_s"] <= 120.0
+    # 속도 (build_s)는 시험에서 단정하지 않음. REGION 줄로 부하와 함께 기록 (팀장검증 5차 R-1)
 
 
-def test_region_voron_no_depth_and_speed():
+def test_region_voron_no_depth():
     r, g, ref, rs = built_local(VORON)
     layers, pct = _depth(rs)
     assert layers == [] and pct == 0.0
     assert rs.info["coverage_final_top_pct"] == pytest.approx(100.0)
-    assert rs.info["build_s"] <= 30.0
     assert rs.info["passes_xy"] == [2, 1]
+    # R-2 · R-3 뒤에도 판정 영역 칸 수 그대로 (팀장검증 5차 §3.3: 0.2 mm 141 760칸)
+    assert int(rs.summary().n_region_cell02.iloc[-1]) == 141760
+    assert rs.info["post_rule"] == "P-B 좁은 엣지 띠" and rs.info["post_band_mm"] == pytest.approx(0.04)
+
+
+def test_region_caliper_post_region_r2():
+    """R-2: caliper 마지막 층 판정 영역 0칸 → post 영역 (좁은 띠 0.0433 mm) 고운 288 360 · 0.2 mm 940 · 0.4 mm 72칸
+    (팀장검증 5차 §3.4 표 P-B 0.04 mm와 같음. 0.0433과 0.04는 격자 거리 √k × 0.02에서 같은 칸을 고름)."""
+    r, g, ref, rs = built_local(CALIPER)
+    n = rs.n_layers - 1
+    assert int(rs.region(n).sum()) == 0
+    assert rs.info["post_rule"] == "P-B 좁은 엣지 띠"
+    assert rs.info["post_band_mm"] == pytest.approx(0.0433, abs=1e-4)
+    assert rs.info["post_n_region"] == 288360
+    assert rs.info["post_region_cell02"] == 940 and rs.info["post_region_cell04"] == 72
+    pr, bits = rs.post_region(), rs.reasons(n)
+    from cvlab.region import REASON_BITS as B
+    for name in ("type", "fov", "depth", "occlusion", "no_material"):
+        assert not (pr & ((bits & B[name]) > 0)).any()
+    # R-3: 심도 밖은 코드 6 (기타 9 없음)
+    s = rs.summary()
+    assert "code_9" not in s.columns and int(s.code_6.iloc[-1]) == 24626619
