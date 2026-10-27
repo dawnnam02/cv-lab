@@ -1,0 +1,5 @@
+# keep byte-exact line endings for data-like text (hashes depend on them)
+*.gcode -text
+*.csv -text
+*.npy binary
+*.npz binary
