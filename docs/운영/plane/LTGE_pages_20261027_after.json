@@ -1,0 +1,43 @@
+[
+ {
+  "id": "046b5af4-ff88-408f-9858-25e8f5a2a191",
+  "name": "LTGE 과제 안내 (2026-10-27 기준)",
+  "parent": null
+ },
+ {
+  "id": "61a64de6-e788-4754-b415-03b7821fac63",
+  "name": "LTGE ① 과제 개요와 현재 결정",
+  "parent": "LTGE 과제 안내 (2026-10-27 기준)"
+ },
+ {
+  "id": "f95b39ce-c0b6-4dc3-a1b4-7e484b9b7734",
+  "name": "LTGE ② 진행 방식",
+  "parent": "LTGE 과제 안내 (2026-10-27 기준)"
+ },
+ {
+  "id": "6b33ab0c-0a53-4b59-82c4-feaabed90223",
+  "name": "LTGE ③ 측정 방법 선정 결과",
+  "parent": "LTGE 과제 안내 (2026-10-27 기준)"
+ },
+ {
+  "id": "7663ea62-d0dc-4f02-b5c0-dd7f3a58fba4",
+  "name": "LTGE ④ 작업 지도",
+  "parent": "LTGE 과제 안내 (2026-10-27 기준)"
+ },
+ {
+  "id": "aef4fcba-1b9b-4b4c-abb2-5ca2e2b850fb",
+  "name": "LTGE ⑤ 하드웨어 데이터 명세",
+  "parent": "LTGE 과제 안내 (2026-10-27 기준)"
+ },
+ {
+  "id": "983c2bfd-265d-47a3-ad7d-652bb9c226ec",
+  "name": "LTGE ⑥ 측정 실패 사례",
+  "parent": "LTGE 과제 안내 (2026-10-27 기준)"
+ },
+ {
+  "id": "782ead33-1fe3-4dfa-a32f-3f8af8cdc9c0",
+  "name": "📘 과제 청사진 개요 — 레이저 삼각측량 G코드 오차 측정",
+  "parent": null,
+  "note": "기존 페이지, 손대지 않음"
+ }
+]
