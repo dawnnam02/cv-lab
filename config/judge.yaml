@@ -1,0 +1,18 @@
+# 합격 판정 설정 (T15). 규칙 문서: docs/판정-규칙.md
+# 모르는 키는 오류입니다. 값을 바꾸면 주석의 근거도 함께 고칩니다.
+judge:
+  T_mm: 0.20               # D-05 확정 (허용 오차)
+  U_mm: null               # 실행 때 반드시 지정. T12 (C8) 전까지 임시값, U_source 필수
+  U_source: null           # U의 출처 문자열 (예: "T2 5.2 기본 RSS 31.7 µm"). 없으면 판정 거부 (MF-JDG-01)
+  pass_min_pct: 95         # D-08 (전체 층 합산, 합격점 ≥ 95 %면 합격)
+  fail_max_pct: 5          # 청사진 §2.3 (불합격점 > 5 %면 불합격)
+  valid_min_pct: 90        # 청사진 §2.3 안 → 판정-규칙 §14 결정 요청
+  cell_mm: 0.2             # 청사진 §2.3 안 → §14
+  cell_mm_alt: 0.4         # MF-JDG-04 함께 보고 (비드 간격 약 0.4 mm)
+  cell_fill_min: 0.5       # 팀장 안 (영역 고운 칸 중 Δ 있는 비율)
+  region_fill_min: 1.0     # 팀장 안 (묶음 전부가 판정 영역일 때만 영역 칸, MF-JDG-03)
+  cell_stat: mean          # 팀장 안 (평균은 결함을 숨기지 않음, median은 비교용)
+  layer_fail_warn_pct: 50  # T2 MF-JDG-06 예시
+  outlier_primary: worse   # 팀장 안 → §14 (이상치 전후 중 덜 유리한 쪽이 주 판정)
+  cooled_delta_max_um: 5   # §6.7 안 → §14 (T2 심각도 S2 상한 5 µm) [추정]
+  cooled_alpha_um_per_m_c: 68  # PLA 열팽창 계수, 청사진 §1.2 (사용자 제시)
