@@ -1,0 +1,21 @@
+# 판정 영역 설정 (T4b · G4). 문서: docs/판정-영역.md
+# 모르는 키는 오류입니다. 값을 바꾸면 주석의 근거도 함께 고칩니다.
+# 명세 값 (meta.triang_angle_deg · meta.scan_length_mm · meta.scan_speed_mm_s)은 이 파일 한 곳에만 둡니다.
+region:
+  res_mm: 0.02             # G3 결정. config/gcode.yaml grid_res_mm과 같아야 함 (다르면 오류)
+  cell_mm: 0.4             # 원점 맞춤 단위 = judge cell_mm_alt (D-20 R1)
+  margin_mm: 1.0           # T4a grid_margin_mm (팀장 안)
+  exclude_types: [SKIRT, BRIM, SUPPORT, PRIME-TOWER]   # G4 §4 결정 (부속 구조)
+  edge_band_mm: null       # null = 외벽 선폭/2 + 2·res (E2 §4 · G4 §2)
+  step_mm: null            # null = 최소 층 높이/2 (E2 §4 · G4 §4)
+  theta_deg: 30.0          # meta.triang_angle_deg (명세 5절, 청사진 §1, M54: 레이저 수직 + 카메라 30°)
+  camera_side: both        # +y | -y | both. 명세 0.4 스캔 = 프린터 Y. 장착 방향 [미상] → 두 쪽 합 [추정, 보수적]
+  occlusion_grow_cells: 2  # E2 §4 (θ 오차로 그림자 경계가 1–2칸 어긋남)
+  dof_mm: 8.0              # 청사진 §1 (M54 8.4 [계산])
+  dof_top_mm: 0.0          # [추정] 지금 층 윗면 = 심도 위 끝. D4 교정 (T8)과 meta.scan_z_hop_mm 뒤 확정
+  fov_mm: 20.0             # 청사진 §1 (M54 20.2 [계산]), 레이저 선 길이 = X 방향 시야
+  scan_len_mm: 40.0        # meta.scan_length_mm (M54 · LM-T14-2 scan_len)
+  pass_overlap_mm: 2.0     # MF-GCD-08 (패스끼리 2 mm 겹치게)
+  extend_scan_len: false   # true면 Y는 스캔 길이를 늘려 패스 1개
+  lead_in_mm: 5.0          # LM-T14-2 lead_in [출처: docs/프린터-펌웨어-선정.md §9]. B안 추가 시간 계산에만 씀
+  scan_speed_mm_s: 2.4     # meta.scan_speed_mm_s (명세 5절, LM-T14-2 scan_speed). B안 추가 시간 계산에만 씀
