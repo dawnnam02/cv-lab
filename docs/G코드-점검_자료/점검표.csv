@@ -1,0 +1,49 @@
+항목,파일,값,근거
+01 파일 · 지문,voron24_test_box,test_box_25mm_PLA_3m17s.gcode · sha256 d3d18d442ec8… · MANIFEST 같음,"[계산] sha256 전체 대조, MANIFEST.csv"
+02 슬라이서 · 판,voron24_test_box,OrcaSlicer 2.4.2,줄 2
+03 방언,voron24_test_box,원문 klipper → meta.gcode_flavor klipper,줄 3126
+04 프린터 프로필,voron24_test_box,Voron 2.4 350 / Voron 2.4r2 350 0.4 nozzle,줄 3324 · 3326
+05 노즐 지름 vs SV08,voron24_test_box,0.4 mm vs SV08 0.4 mm → 같음,줄 3259 · SV08 값 [추정] (T14 문서에 노즐 값 없음)
+06 선폭 (외벽 · 기본),voron24_test_box,외벽 0.4 · 기본 0.4 · 첫 층 0.5 mm,줄 3279 · 3210
+07 층 수 (주석 · 압출 Z · 선언),voron24_test_box,16 · 16 · 16,"[계산] T4a 파서 layer_check · 머리말 {'total layers count': 16, 'total layer number': 32}"
+08 층 높이 (첫 층 · 나머지 · 가변),voron24_test_box,0.200 · 0.200 mm · 가변 아니오,[계산] 층 표 layer_h_mm · 줄 3206
+09 최대 Z vs 심도 → bed_marker,voron24_test_box,3.20 mm ≤ 8 mm → bed_marker 가능,[계산] 층 표 · 명세 0.4 (8 mm 넘는 층은 bed_marker 불가)
+10 물체 경계 상자 W × H,voron24_test_box,"25.100 × 25.100 mm (선폭 반 0.250 포함) vs 시야 20 · 스캔 40 → X 넘음, Y 안",[계산] §6.2 약속 (제외 종류 뺀 압출 끝점 + 선폭 최댓값 반)
+11 패스 수 (0° · 90° · extend),voron24_test_box,"2 (2×1) · 2 (2×1) · 2 (2×1, L 25.1 mm) → 권장 extend","[계산] n = max(1, ⌈(크기 − 2) ÷ (F 또는 L − 2)⌉, nm 정수)"
+12 층당 스캔 · 전체 추가 시간,voron24_test_box,"0°: 식① 52.92 s · 식② 33.33 s/층, 전체 45.0 분 (식①, 식힘 대기 30분 포함) · 권장 extend: 40.5 s/층, 41.5 분","[계산] §6.3 식 ① · ② (이동 5 s · 대기 1,800 s [추정, T14 §9])"
+13 윗면 높이 폭 > 8 mm 층 수,voron24_test_box,"0층 (첫 층 [미상], 최대 폭 3.0 mm)","[계산] 정답 지도 0.02 mm, 꼭대기 종류가 제외 종류 아닌 칸"
+14 스커트 · 브림 · PRIME · 서포트 · 아이롱,voron24_test_box,"압출 종류 FILL 326, SKIN 1089, WALL-INNER 128, WALL-OUTER 64 / 설정 skirt_loops=0, brim_type=auto_brim, brim_width=5, enable_support=0, ironing_type=no ironing, enable_prime_tower=0","[계산] 선분 표 · 줄 3387, 2965, 2967, 3014, 3201, 3013"
+15 모르는 명령 · 압출 사이 매크로,voron24_test_box,"모르는 명령 0 · 압출 사이 매크로 SET_VELOCITY_LIMIT 260, EXCLUDE_OBJECT_END 15, SET_PRINT_STATS_INFO 15, EXCLUDE_OBJECT_START 15",[계산] T4a 파서 summary · 줄 130–2899 안 첫 단어
+16 SV08 + Klipper에서 그대로 못 쓰는 명령,voron24_test_box,"4종 (START_PRINT×1, G21×1, T0×1, END_PRINT×1)",[출처 1] Klipper G-Codes 목록 · [추정] 일부 (문서 §5 표)
+17 펌웨어 리트랙트 · 원호,voron24_test_box,G10 33 · G11 32 · G2 0 · G3 0 / use_firmware_retraction=1 · 원호 맞춤=0 → [firmware_retraction] 필요,[계산] 명령 세기 · 줄 3507 · 3005 · [출처 1]
+18 시작 · 끝 매크로 이름,voron24_test_box,START_PRINT · END_PRINT,줄 98 · 2906
+19 층 변경 칸에 SCAN_LAYER 자리,voron24_test_box,";BEFORE_LAYER_CHANGE 16곳 (첫 줄 108, 끝 2403) 바로 뒤","줄 108, 315 … · T14 §9 슬라이서 칸 표"
+20 끝 G코드에 마지막 층 스캔 + COOL_RESCAN 자리,voron24_test_box,줄 2906 앞 (마지막 압출 줄 2899 뒤),줄 2906 · T14 §9
+21 베드 좌표 · 물체 위치,voron24_test_box,"베드 0x0,350x0,350x350,0x350 · 물체 중심 (175.00, 175.00) → SV08 중심 (175, 175)으로 옮길 양 (+0.00, +0.00) mm",줄 3319 · [계산] 경계 상자 중심 · T14 §1
+22 필러게이지 · 기준 탑 · 계단 기준물 자리,voron24_test_box,"옮긴 뒤 물체 X 162.4–187.6 · Y 162.4–187.6, 계단 첫 블록 X 230까지 42.45 mm (Y 165–185) → 겹침 없음. 필러게이지 자리 [미상] (LM-T14-2 '베드 빈 곳')",[계산] LM-T14-2 ref_xs · ref_y0 · [미상] 필러게이지 좌표
+23 다시 슬라이스 필요,voron24_test_box,예 (층 변경 칸 SCAN_LAYER · 끝 G코드 (LM-T14-2) · 패스 2 이상 (매크로 scan_x 한 줄)),문서 §6 · T14 §1
+24 meta.specimen_role,voron24_test_box,public_gcode,명세 5절 (884daac) · D-19
+01 파일 · 지문,caliper_pyramid,caliper pyramid test.prusaproject_0.6n_0.35mm_PLA_MK3SMMU2S_16m.gcode · sha256 0fab35b2c7d9… · MANIFEST 같음,"[계산] sha256 전체 대조, MANIFEST.csv"
+02 슬라이서 · 판,caliper_pyramid,PrusaSlicer 2.5.0+win64,줄 1
+03 방언,caliper_pyramid,원문 marlin → meta.gcode_flavor marlin,줄 8239
+04 프린터 프로필,caliper_pyramid,MK3SMMU2S / Prusa MK3S+ MMU2S 0.6 nozzle - 2022-09-21,줄 8313 · 8315
+05 노즐 지름 vs SV08,caliper_pyramid,0.6 mm vs SV08 0.4 mm → 다름,줄 8297 · SV08 값 [추정] (T14 문서에 노즐 값 없음)
+06 선폭 (외벽 · 기본),caliper_pyramid,외벽 0.68 · 기본 0.65 · 첫 층 0.65 mm,줄 8184 · 8195
+07 층 수 (주석 · 압출 Z · 선언),caliper_pyramid,64 · 64 · [미상],[계산] T4a 파서 layer_check · 선언 키 없음
+08 층 높이 (첫 층 · 나머지 · 가변),caliper_pyramid,0.200 · 0.350 mm · 가변 아니오,[계산] 층 표 layer_h_mm · 줄 8263
+09 최대 Z vs 심도 → bed_marker,caliper_pyramid,22.25 mm > 8 mm → bed_marker 불가 (8 mm 넘는 층),[계산] 층 표 · 명세 0.4 (8 mm 넘는 층은 bed_marker 불가)
+10 물체 경계 상자 W × H,caliper_pyramid,"21.258 × 42.451 mm (선폭 반 0.340 포함) vs 시야 20 · 스캔 40 → X 넘음, Y 넘음",[계산] §6.2 약속 (제외 종류 뺀 압출 끝점 + 선폭 최댓값 반)
+11 패스 수 (0° · 90° · extend),caliper_pyramid,"4 (2×2) · 3 (3×1) · 2 (2×1, L 42.451 mm) → 권장 extend","[계산] n = max(1, ⌈(크기 − 2) ÷ (F 또는 L − 2)⌉, nm 정수)"
+12 층당 스캔 · 전체 추가 시간,caliper_pyramid,"0°: 식① 90.42 s · 식② 66.67 s/층, 전체 128.0 분 (식①, 식힘 대기 30분 포함) · 권장 extend: 54.96 s/층, 89.5 분","[계산] §6.3 식 ① · ② (이동 5 s · 대기 1,800 s [추정, T14 §9])"
+13 윗면 높이 폭 > 8 mm 층 수,caliper_pyramid,"41층 (첫 층 23, 최대 폭 22.05 mm)","[계산] 정답 지도 0.02 mm, 꼭대기 종류가 제외 종류 아닌 칸 · T4a §6 값 41과 대조"
+14 스커트 · 브림 · PRIME · 서포트 · 아이롱,caliper_pyramid,"압출 종류 FILL 522, SKIN 859, SKIRT 272, WALL-INNER 731, WALL-OUTER 701 / 설정 skirts=1, brim_type=outer_and_inner, brim_width=3, support_material=0, ironing=0, ironing_type=top, wipe_tower=0","[계산] 선분 표 · 줄 8343, 8163, 8164, 8357, 8257, 8261, 8408"
+15 모르는 명령 · 압출 사이 매크로,caliper_pyramid,모르는 명령 0 · 압출 사이 매크로 없음,[계산] T4a 파서 summary · 줄 222–8094 안 첫 단어
+16 SV08 + Klipper에서 그대로 못 쓰는 명령,caliper_pyramid,"13종 (M201×1, M203×1, M205×2, M862.3×1, M862.1×1, M115×1, G28×1, G80×1, M403×5, T0×1, G21×1, M900×3, M702×1)",[출처 1] Klipper G-Codes 목록 · [추정] 일부 (문서 §5 표)
+17 펌웨어 리트랙트 · 원호,caliper_pyramid,G10 0 · G11 0 · G2 0 · G3 0 / use_firmware_retraction=0 · 원호 맞춤=[미상] → 설정 요구 없음,[계산] 명령 세기 · 줄 8397 · [출처 1]
+18 시작 · 끝 매크로 이름,caliper_pyramid,"매크로 없음 (시작 블록 M862.3…, 끝 블록 Z 올림 · M84)",줄 148 · 8106 · M84 줄 8133
+19 층 변경 칸에 SCAN_LAYER 자리,caliper_pyramid,";BEFORE_LAYER_CHANGE 64곳 (첫 줄 206, 끝 8061) 바로 뒤","줄 206, 868 … · T14 §9 슬라이서 칸 표"
+20 끝 G코드에 마지막 층 스캔 + COOL_RESCAN 자리,caliper_pyramid,줄 8106 앞 (마지막 압출 줄 8094 뒤),줄 8106 · T14 §9
+21 베드 좌표 · 물체 위치,caliper_pyramid,"베드 0x0,250x0,250x210,0x210 · 물체 중심 (125.00, 105.10) → SV08 중심 (175, 175)으로 옮길 양 (+50.00, +69.90) mm",줄 8150 · [계산] 경계 상자 중심 · T14 §1
+22 필러게이지 · 기준 탑 · 계단 기준물 자리,caliper_pyramid,"옮긴 뒤 물체 X 164.4–185.6 · Y 153.8–196.2, 계단 첫 블록 X 230까지 44.37 mm (Y 165–185) → 겹침 없음. 필러게이지 자리 [미상] (LM-T14-2 '베드 빈 곳')",[계산] LM-T14-2 ref_xs · ref_y0 · [미상] 필러게이지 좌표
+23 다시 슬라이스 필요,caliper_pyramid,예 (노즐 · 방언 · 층 변경 칸 SCAN_LAYER · 끝 G코드 (LM-T14-2) · 패스 2 이상 (매크로 scan_x 한 줄) · 베드 좌표),문서 §6 · T14 §1
+24 meta.specimen_role,caliper_pyramid,public_gcode,명세 5절 (884daac) · D-19

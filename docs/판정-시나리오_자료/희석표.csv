@@ -1,0 +1,4 @@
+specimen,n_layers,total_cells,layer_cells_min,layer_cells_median,layer_cells_max,fail_area_one_layer_mm2,layer_area_median_mm2,whole_layers_to_fail,r7_area_median_layer_mm2,single_layer_can_fail
+plate20,10,98980,9898,9898.0,9898,197.96,395.92,1,197.96,예
+voron24_test_box,16,245814,15176,15376.0,15376,491.63,615.04,1,307.52,예
+caliper_pyramid,64,459256,3854,5398.5,10870,918.51,215.94,5,107.97,아니오
