@@ -97,3 +97,45 @@ e84a6a1c457e54f908c55f3be795d406dd24b4730183a8f4f9781c078480571a *scripts/method
 3. 명세와 다른 점 (docs/좌표계.md §8): ③ {M} 축 방향을 {S}와 같게 두고 스캔 축 a_S를 따로 씀 (팀장 확인 필요), ⑦ `frame.file` 조건부 vs 필수 열. 명세는 고치지 않음.
 4. `extract_centers`에 키워드 인자 `bit_depth=`를 더함 (공개 이름 표에는 없음, 기존 호출은 그대로 됨). 안 넘기면 그릇으로 추정하므로 T9는 `frame.bit_depth`를 꼭 넘겨야 함.
 5. 그림 (선택 산출물)은 만들지 않음.
+
+## 후속 T-1 · T-2 · T-3 시작 확인 (2026-10-28 00:12)
+
+> 기준: [팀장검증_5차](팀장검증_5차.md) §4.4 · §4.5 · §6 (T-1 · T-2 · T-3). 마감 11-03 18:00.
+
+| 항목 | 확인 내용 |
+|---|---|
+| HEAD | `0f16275` (팀장검증 5차). 브랜치 그대로 |
+| `git status` 기준선 | M: `scripts/method_screening/*` · `tests/test_method_screening.py` · T14 대조표 · 프린터 문서. ??: 결과_v3 · 프린터 자료. 모두 남의 작업, 손대지 않음 |
+| 쓸 곳 | `src/cvlab/triangulation/` · `tests/triangulation/` · `config/triangulation.yaml` · `docs/레이저선-추출*` · 이 대조표. 파이썬은 Edit 도구로만 고침 |
+| 차단 | `data/_truth` · `src/cvlab/sim` · 시나리오 파일 안 읽음. `cvlab.io` · `cv2` import 안 함. git 쓰기 · pip 없음 |
+
+| 번호 | 목표 (내 말로) | 완료 기준 |
+|---|---|---|
+| T-1 | 안내선을 만들 때 봉우리가 둘 이상인 열을 빼고 이웃으로 메워, 기울어진 선에서도 반사 쪽으로 끌리지 않게 함 | 반사 자리 u 100 · 300 · 600 · 900 · 1100 × ±12 px (21열, 1.5배) = 10곳을 bench와 시험에 넣고 cog 안내 켬 p95 < 0.2 px 10/10 (팀장 기준 0.3보다 엄격), 그 열 multi_peak ≥ 95 %. 기본 시나리오 RMS 변화 ≤ 0.002 px |
+| T-3 | uint16 입력에서 bit_depth가 없으면 오류 (`extract_centers` · `line_quality`) | uint16 + None → ValueError, 8비트 PNG → `load_frame` → `bit_depth=8` → saturated 켜짐. uint8 · 실수 · bit_depth 준 호출은 그대로 |
+| T-2 | T-1 뒤 bench 다시 → CSV 속도 열 갱신, CPU 부하 함께 적음 | 속도 밖 칸은 기존 행과 같음 (새 반사 행만 추가), 측정 때 CPU % 기록, LX10 판정 갱신 |
+
+## 후속 T-1 · T-2 · T-3 종료 대조 (2026-10-28 00:25)
+
+| 목표 | 결과 | 근거 | 판정 |
+|---|---|---|---|
+| T-1 반사 안내 | `_analyze`에서 안내선 계산 때 봉우리 ≥ 2인 열을 빼고 이웃으로 메움. 봉우리 문턱 = max(전체 문턱, 배경 + 0.3 × (p0 밝기 − 배경)) (`multi_peak_ratio` 재사용, 새 설정 키 없음). 전체 문턱만 쓴 첫 안은 8비트 기본 영상 단차 열 (u 500)에서 외톨이 잡음 화소 때문에 1열 NaN · 1열 4.5 px 오차가 나서 버림 | `extract.py` `_analyze` · `_core.global_bg` | 통과 |
+| T-1 10곳 | bench (10장 × 21열): cog 안내 켬 P95 **0.132 – 0.152 px** (10/10 < 0.2), 최대 0.19 – 0.28 px, 유효 100 %. 끔 12.08 – 12.11 px. 시험 (3장씩): 10/10 P95 < 0.2, `multi_peak` ≥ 95 % (실측 100 %). T-1 전 코드로는 u 100 · 600 · 1100에서 P95 12.06 – 12.09 px | CSV `refl_u*` 20행 (cog) · `test_reflection_sites_on_sloped_line[10개]` | 통과 |
+| T-1 기울어진 선 시험 | 기울기 0.3 px/열 + 21열 반사 (−12 px, 1.6배): P95 0.16 px (T-1 전 12.09 px) | `test_reflection_on_steep_line` | 통과 |
+| T-1 기본 영상 변화 | bench 기존 156행의 속도 밖 15칸 **차이 0** (첫 안은 f1_basic_8bit 12행이 달랐음 → 고친 안으로 0). cog RMS T-1 전 · 뒤 같음: nominal 0.071488 · f1 0.071501 · sigma08 0.056473 · sigma30 0.099054 · saturated 0.049271 · low 0.189724 · no_line 0.071373 (10장 독립 씨앗) | 스크래치 비교 (HEAD 코드 사본 vs 새 코드) · CSV 비교 | 통과 |
+| T-1 회귀 시험 | 8비트 기본 영상 10장 (bench 씨앗) 단차 열 포함 전 열 유효 · 오차 < 1 px | `test_guide_keeps_step_columns_without_reflection` | 통과 |
+| T-3 bit_depth | `_core.sat_level`: uint16 (uint8 밖 정수 그릇 모두) + None → ValueError. `extract_centers` · `line_quality` 둘 다 이 함수를 거침. uint8 + None = bit_depth 8과 같은 결과, 실수 + None = 포화 없음 (그대로) | `test_bit_depth_required_for_uint16_and_validation` (예전 `test_bit_depth_inference_and_validation`을 바꿈: 짐작이 맞다는 시험이었음) | 통과 |
+| T-3 PNG 경로 | 8비트 PNG (255 포화) → `load_frame` → uint16 → `bit_depth=8` → saturated > 99 %, bias < 0.05 px. bit_depth 빠뜨리면 ValueError | `test_8bit_png_via_load_frame_needs_bit_depth` | 통과 |
+| T-3 기존 호출 | 저장소 안 `extract_centers` · `line_quality` 호출을 grep: uint16 영상은 모두 bit_depth를 넘김 (고칠 호출 없음). 남의 모듈에서 부르는 곳 없음 | grep | 통과 |
+| T-2 속도 | bench 다시 (00:20:25 – 00:21:42, 79.8 s). 속도 시나리오 때 CPU 35.2 · 33.3 % (8 논리 코어, PC 전체). cog 안내 켬 **ROI 5.2 ms · 전체 14.5 ms** (끔 3.3 · 8.3). 곧바로 5회 반복: ROI 5.8 – 10.6 · 전체 17.3 – 22.6 ms (CPU 84 → 39 %). T-1 전 코드와 번갈아 재면 T-1 몫 ROI 약 +1 ms · 전체 약 +5 ms | CSV 276행 · 문서 §4 속도 표 ⓒ | **LX10 ○** (모든 측정이 ROI ≤ 15 · 전체 ≤ 30 ms) |
+| 문서 | `docs/레이저선-추출.md` §0 · §1 (공개 이름 `*, bit_depth`, uint16 필수) · §2 단계 2 · §3 시나리오표 · 비교표 행 수 · §4 반사 10곳 표 · 속도 표 ⓒ · §5 · §7 · §10. `config/triangulation.yaml` `multi_peak_ratio` 주석 | | 통과 |
+| 시험 | `python -m pytest tests/triangulation -q` → **106 passed, 13.0 s** (93 → 106: 반사 자리 10 + 기울어진 선 1 + 단차 회귀 1 + PNG 1, bit_depth 시험 1개는 바꿈) | | 통과 |
+| 차단 | grep (`_truth` · `cvlab.sim` · `cvlab.io` · `cv2` · `scenario_expected` · `판정-시나리오`) exit 1. git 쓰기 · pip 없음. 파이썬 파일은 Edit 도구로만 고침 | | 통과 |
+
+남은 것 · 알릴 것
+
+1. CSV는 모든 행의 `ms_per_frame` 칸이 바뀜 (bench가 시나리오마다 시간을 적음). 그 밖 15칸은 기존 156행에서 바이트 같음. 새 반사 자리 120행이 끝에 붙음 (156 → 276행). 시나리오를 `tri_synth.SCENARIOS` 끝에 붙여 기존 씨앗 (SEED + 1000 × 순번)은 그대로.
+2. T-1 속도 몫이 팀장 실험 (+0.5 ms)보다 큼: 전체 영상 약 +5 ms (봉우리 세기가 800행 전체를 훑음). 기준 안이라 줄이지 않음. 줄이려면 봉우리 세기를 p0 ± 일정 범위로 좁히는 안이 있으나 먼 반사를 놓칠 수 있어 하지 않음.
+3. 반사 열과 25 px 단차가 겹치는 경우, 반사만 있고 참 선이 가려진 긴 구간은 시험 안 함 (문서 §10).
+4. 3점 방법 · max는 반사 자리에서 안내 켬 P95 0.37 – 0.90 px (방법 자체 잡음, 기본 영상과 같은 수준). 기본 방법 cog 판정에는 영향 없음.
+5. 세부청사진 · 팀장검증 문서는 고치지 않음 (팀장검증 5차 §7의 세부청사진 수정은 팀장 몫).

@@ -28,8 +28,9 @@ def as_image(img) -> np.ndarray:
 def sat_level(a: np.ndarray, bit_depth) -> float:
     """포화값 = 2^bit_depth − 1 (그릇 최댓값이 아님, 명세 1절).
 
-    bit_depth가 없으면: uint8 → 8, uint16 → 최댓값이 들어가는 가장 작은 {10, 12, 16} [추정],
-    실수 영상 → 포화 없음 (inf). 실측 처리에서는 항상 `frame.bit_depth`를 넘깁니다.
+    bit_depth가 없으면: uint8 → 8, 실수 영상 → 포화 없음 (inf).
+    uint16 (그 밖 정수 그릇 포함)은 그릇만으로 8 · 10 · 12 · 16비트를 가를 수 없어 ValueError (T-3).
+    `load_frame`은 8비트 PNG도 uint16으로 돌려주므로 짐작하면 8비트 포화 (255)를 놓침 (팀장검증 5차 §4.5).
     """
     if bit_depth is not None:
         b = int(bit_depth)
@@ -41,11 +42,8 @@ def sat_level(a: np.ndarray, bit_depth) -> float:
     if a.dtype == np.uint8:
         return 255.0
     if a.dtype.kind in "ui":
-        m = int(a.max())
-        for b in (10, 12, 16):
-            if m <= 2 ** b - 1:
-                return float(2 ** b - 1)
-        raise ValueError(f"화소 최댓값 {m}이 16비트를 넘음")
+        raise ValueError(f"{a.dtype} 영상은 bit_depth (frame.bit_depth)를 꼭 넘겨야 함 "
+                         f"(그릇으로는 8 · 10 · 12 · 16비트를 가를 수 없음)")
     return math.inf
 
 
@@ -79,13 +77,19 @@ def argmax_rows(f, block=16):
     return ib * block + hit.argmax(axis=0)
 
 
-def global_threshold(f, k):
-    """영상 전체의 거친 문턱 (성긴 표본의 중앙값 + k × 1.4826 MAD). 안내선 메움용으로만 씀."""
+def global_bg(f):
+    """영상 전체의 거친 배경 (성긴 표본의 중앙값, σ = 1.4826 MAD). 안내선 계산용으로만 씀."""
     s = np.sort(f[::8, ::8].astype(np.float32).ravel())
     med = float(s[s.size // 2])
     d = np.sort(np.abs(s - med))
     mad = float(d[d.size // 2])
-    return med + k * max(1.4826 * mad, SIGMA_FLOOR_DN)
+    return med, max(1.4826 * mad, SIGMA_FLOOR_DN)
+
+
+def global_threshold(f, k):
+    """영상 전체의 거친 문턱 (성긴 표본의 중앙값 + k × 1.4826 MAD). 안내선 메움용으로만 씀."""
+    med, sig = global_bg(f)
+    return med + k * sig
 
 
 def bg_stats(f: np.ndarray, p: np.ndarray, hw: int):

@@ -9,6 +9,6 @@ triangulation:
   guide_band_px: 8             # F1 §4: 안내선 ± 띠. null이면 안내 끔
   low_peak_factor: 3.0         # F1 §4: 피크 < 3 × 문턱이면 low_peak
   wide_factor: 2.0             # F1 §4: FWHM > 2 × 정상 폭이면 wide
-  multi_peak_ratio: 0.3        # [추정] 둘째 봉우리 높이 / 첫째 (배경 위 높이) > 0.3이면 multi_peak
+  multi_peak_ratio: 0.3        # [추정] 둘째 봉우리 높이 / 첫째 (배경 위 높이) > 0.3이면 multi_peak. 안내선에서 뺄 열 (봉우리 ≥ 2)을 세는 문턱에도 씀 (T-1)
   steger_sigma_px: 1.5         # F1: Steger 1차원 가우시안 미분 σ
   gaussfit_max_iter: 10        # [추정] 가우시안 + 상수 맞춤 반복 수 (합성 영상에서 5회 안에 수렴)

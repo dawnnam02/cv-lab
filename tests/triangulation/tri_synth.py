@@ -30,6 +30,15 @@ SCENARIOS = {
     "speed_full_10bit": dict(bit=10, sigma=1.5, peak=720, bg=32, read=8, H=800),
 }
 
+# T-1 (팀장검증 5차 §4.4): 반사 자리 5곳 × 부호 2개. 선 기울기가 자리마다 다름 (u 100 +0.17, 300 +0.02,
+# 600 −0.19, 900 −0.06, 1100 +0.12 px/열). 뒤에 붙여 기존 시나리오의 bench 씨앗 (SEED + 1000 × 순번)은 그대로
+REFLECTION_SITES = (100, 300, 600, 900, 1100)
+for _u in REFLECTION_SITES:
+    for _dv in (12.0, -12.0):
+        SCENARIOS[f"refl_u{_u:04d}_{'p' if _dv > 0 else 'm'}12_10bit"] = dict(
+            bit=10, sigma=1.5, peak=720, bg=32, read=8, reflection=(_u, _u + 21, _dv, 1.5))
+del _u, _dv
+
 
 def make_vtrue(w=W, h=H, step=(500, 700, 25.0), amp=40.0):
     u = np.arange(w)

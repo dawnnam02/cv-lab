@@ -1,8 +1,8 @@
-"""T7a ROI · 비트 깊이 시험 (LX9)."""
+"""T7a ROI · 비트 깊이 시험 (LX9, T-3)."""
 import numpy as np
 import pytest
 
-from cvlab.triangulation import METHODS, extract_centers, roi_to_full
+from cvlab.triangulation import METHODS, extract_centers, line_quality, roi_to_full
 from tri_synth import SCENARIOS, make_vtrue, synth
 
 
@@ -40,13 +40,44 @@ def test_10bit_in_16bit_container_low_aligned():
         extract_centers(np.clip(img, 0, 255).astype(np.uint8), "cog", bit_depth=10)
 
 
-def test_bit_depth_inference_and_validation():
-    img8, _, _ = synth("saturated_10bit")
-    _, fl_given = extract_centers(img8, "cog", bit_depth=10)
-    _, fl_inf = extract_centers(img8, "cog")          # uint16, 최댓값 1023 → 10비트로 추정
-    assert np.array_equal(fl_given, fl_inf)
+def test_bit_depth_required_for_uint16_and_validation():
+    """T-3: uint16 영상에서 bit_depth를 빠뜨리면 ValueError (extract_centers · line_quality 모두).
+    uint8 (→ 8) · 실수 (포화 없음)는 None을 받음. 허용 밖 값 (11)은 오류."""
+    img16, _, _ = synth("saturated_10bit")
+    assert img16.dtype == np.uint16
+    with pytest.raises(ValueError, match="bit_depth"):
+        extract_centers(img16, "cog")
+    v, _ = extract_centers(img16, "cog", bit_depth=10)
+    with pytest.raises(ValueError, match="bit_depth"):
+        line_quality(img16, v, None)
     with pytest.raises(ValueError):
-        extract_centers(img8, "cog", bit_depth=11)
+        extract_centers(img16, "cog", bit_depth=11)
+    img8, _, _ = synth(dict(SCENARIOS["f1_basic_8bit"], peak=400))
+    assert img8.dtype == np.uint8
+    v8a, f8a = extract_centers(img8, "cog")
+    v8b, f8b = extract_centers(img8, "cog", bit_depth=8)
+    assert np.array_equal(f8a, f8b) and np.array_equal(v8a, v8b, equal_nan=True)
+    assert line_quality(img8, v8a, None)["n_sat"].sum() > 0
+
+
+def test_8bit_png_via_load_frame_needs_bit_depth(tmp_path):
+    """T-3: 8비트 PNG를 load_frame으로 읽으면 uint16. bit_depth=8을 넘기면 255 포화가 saturated로 켜지고,
+    빠뜨리면 (예전처럼 10비트로 짐작해 포화를 놓치는 대신) ValueError."""
+    from PIL import Image
+
+    from cvlab.triangulation import load_frame
+
+    vt = make_vtrue(200, 64, step=None, amp=6.0)
+    img8, _, _ = synth(dict(SCENARIOS["f1_basic_8bit"], peak=400), v_true=vt, rng=21, h=64)
+    assert img8.dtype == np.uint8 and img8.max() == 255
+    (tmp_path / "frames").mkdir()
+    Image.fromarray(img8).save(tmp_path / "frames" / "000000.png")
+    f = load_frame(tmp_path, {"file": "frames/000000.png", "roi_h_px": 64, "roi_w_px": 200})
+    assert f.dtype == np.uint16 and np.array_equal(f, img8)
+    v, fl = extract_centers(f, "cog", bit_depth=8)
+    assert ((fl & 8) > 0).mean() > 0.99 and abs(np.nanmean(v - vt)) < 0.05
+    with pytest.raises(ValueError, match="bit_depth"):
+        extract_centers(f, "cog")
 
 
 def test_8bit_saturation_255():

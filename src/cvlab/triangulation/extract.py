@@ -22,7 +22,10 @@ def roi_to_full(v, roi_y0_px) -> np.ndarray:
 
 
 def _guided_peaks(f, p0, valid0, win, band):
-    """연속성 안내: 1차 최대 행을 51열 중앙값 필터로 매끄럽게 한 안내선 ± band 안에서 다시 최대."""
+    """연속성 안내: 1차 최대 행을 51열 중앙값 필터로 매끄럽게 한 안내선 ± band 안에서 다시 최대.
+
+    valid0가 거짓인 열 (선 없음 · 봉우리 둘 이상)의 1차 최대 행은 쓰지 않고 이웃 열로 메운 뒤 필터에 넣음.
+    """
     H, W = f.shape
     cols = np.arange(W)
     pv = p0.astype(np.float64)
@@ -69,8 +72,19 @@ def _analyze(img, params, background, bit_depth):
     k = float(params.threshold_k_sigma)
     p0 = _core.argmax_rows(f)
     if params.guide_band_px is not None:
-        valid0 = f[p0, cols] > _core.global_threshold(f, k)
-        p = _guided_peaks(f, p0, valid0, params.guide_win_cols, params.guide_band_px) if valid0.any() else p0
+        gmed, gsig = _core.global_bg(f)
+        gthr = gmed + k * gsig
+        pk0 = f[p0, cols].astype(np.float64)
+        valid0 = pk0 > gthr
+        # T-1: 봉우리가 둘 이상인 열 (반사 · 엣지 혼합)은 1차 최대 행이 가짜 피크일 수 있어 안내선 계산에서 빼고
+        # 이웃 열로 메움. 선이 기울면 이런 열이 51열 중앙값을 반사 쪽으로 끌어 가짜 피크가 띠 안에 들어옴 (팀장검증 5차 §4.4).
+        # 봉우리 문턱은 열 최댓값의 multi_peak_ratio (배경 위 높이)로 높여, 외톨이 잡음 화소로 빠지는 열을 막음
+        # (빠진 열이 25 px 단차 바로 옆이면 메운 값이 중앙값을 단차 반대쪽으로 뒤집을 수 있음)
+        mthr = np.maximum(gthr, gmed + float(params.multi_peak_ratio) * (pk0 - gmed))
+        guide_ok = valid0 & (_core.count_peaks(f, mthr) < 2)
+        if not guide_ok.any():
+            guide_ok = valid0
+        p = _guided_peaks(f, p0, guide_ok, params.guide_win_cols, params.guide_band_px) if guide_ok.any() else p0
     else:
         p = p0
     st = _core.column_stats(f, p, params)
@@ -240,7 +254,8 @@ def extract_centers(img, method="cog", params=None, background=None, *, bit_dept
     method     : METHODS 중 하나 ("max", "cog", "parabola3", "gauss3", "gaussfit", "steger").
     params     : TriParams (None이면 기본값 = config/triangulation.yaml). 연속성 안내는 guide_band_px.
     background : 레이저 끈 프레임 (선택). 있으면 빼고 계산.
-    bit_depth  : `frame.bit_depth` (포화값 2^bit − 1). None이면 그릇으로 추정 (_core.sat_level).
+    bit_depth  : `frame.bit_depth` (포화값 2^bit − 1). uint16 영상이면 꼭 넘김 (None이면 ValueError).
+                 None은 uint8 (→ 8) · 실수 영상 (포화 없음)에서만 됨 (_core.sat_level).
     반환       : v float32[W] (ROI 행 좌표, 못 찾으면 NaN), flags uint8[W] (FLAG 비트 합).
     """
     params = params or TriParams()

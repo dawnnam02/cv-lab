@@ -13,7 +13,8 @@ def line_quality(img, v, bit_depth, params=None) -> dict:
     """열마다 품질 지표.
 
     img : [H, W] 영상 (uint8 · uint16 · float). v : [W] 중심 행 (ROI 좌표, NaN 허용).
-    bit_depth : `frame.bit_depth` (포화값 = 2^bit_depth − 1). None이면 그릇으로 추정.
+    bit_depth : `frame.bit_depth` (포화값 = 2^bit_depth − 1). uint16 영상에서 None이면 ValueError
+                (uint8 → 8, 실수 → 포화 없음만 None 허용, extract_centers와 같음).
     반환 키: peak_dn (창 안 원시 최댓값, DN), fwhm_px, n_sat (창 안 포화 화소 수),
     n_peaks (문턱 넘는 봉우리 수, 열 전체), snr ((피크 − 배경) / σ_배경).
     v가 NaN인 열은 그 열 최대 화소 자리를 중심으로 잽니다.

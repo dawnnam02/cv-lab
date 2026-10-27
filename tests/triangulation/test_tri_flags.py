@@ -1,5 +1,6 @@
 """T7a 포화 · 다중 피크 · 선 없음 · 품질 지표 · 표시 비트 시험 (LX4 – LX7)."""
 import numpy as np
+import pytest
 
 from cvlab.triangulation import FLAG, TriParams, extract_centers, line_quality
 from tri_synth import SCENARIOS, make_vtrue, synth
@@ -51,6 +52,44 @@ def test_reflection_guided_p95_and_multi_bit():
     v0, fl0 = extract_centers(img, "cog", params=TriParams(guide_band_px=None), bit_depth=10)
     assert np.percentile(np.abs(v0 - vt)[u0:u1], 95) > 5
     assert _bit(fl0, "multi_peak")[u0:u1].mean() >= 0.95
+
+
+@pytest.mark.parametrize("name", [n for n in SCENARIOS if n.startswith("refl_u")])
+def test_reflection_sites_on_sloped_line(name):
+    """T-1: 반사 자리 5곳 × ±12 px (선 기울기 −0.19 – +0.17 px/열). 3장 모아 21열 P95 < 0.2 px,
+    multi_peak ≥ 95 %. 고치기 전에는 u 100 · 600 · 1100에서 가짜 피크로 감 (P95 ≈ 12 px, 팀장검증 5차 §4.4)."""
+    u0, u1 = SCENARIOS[name]["reflection"][:2]
+    errs, mp = [], []
+    for k in range(3):
+        img, vt, _ = synth(name, rng=300 + k)
+        v, fl = extract_centers(img, "cog", bit_depth=10)
+        errs.append(np.abs(v - vt)[u0:u1])
+        mp.append(_bit(fl, "multi_peak")[u0:u1])
+    assert np.percentile(np.concatenate(errs), 95) < 0.2
+    assert np.concatenate(mp).mean() >= 0.95
+
+
+def test_guide_keeps_step_columns_without_reflection():
+    """T-1 회귀: 반사 없는 기본 8비트 영상 10장 (bench 씨앗)에서 25 px 단차 열 (u 499 · 500)도 값이 맞아야 함.
+    봉우리 문턱을 전체 문턱으로만 두면 외톨이 잡음 화소로 단차 열이 안내선에서 빠지고, 메운 중간값이
+    중앙값을 뒤집어 1열이 NaN · 1열이 4.5 px 틀렸음 (씨앗 SEED + 4 · SEED + 5)."""
+    from tri_synth import SEED
+
+    for k in range(10):
+        img, vt, _ = synth("f1_basic_8bit", rng=SEED + k)
+        v, _ = extract_centers(img, "cog", bit_depth=8)
+        assert np.isfinite(v).all() and np.abs(v - vt).max() < 1.0
+
+
+def test_reflection_on_steep_line():
+    """T-1: 기울기 0.3 px/열 직선 + 21열 반사 (−12 px, 1.6배). 안내선이 반사 쪽으로 끌리지 않아야 함."""
+    vt = 128 + 0.3 * (np.arange(1280) - 640)
+    vt = np.clip(vt, 30, 226)
+    cfg = dict(SCENARIOS["nominal_10bit"], reflection=(400, 421, -12.0, 1.6))
+    img, _, _ = synth(cfg, v_true=vt, rng=9)
+    v, fl = extract_centers(img, "cog", bit_depth=10)
+    assert np.percentile(np.abs(v - vt)[400:421], 95) < 0.2
+    assert _bit(fl, "multi_peak")[400:421].mean() >= 0.95
 
 
 def test_no_line_zero_fake_and_bit():
