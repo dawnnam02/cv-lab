@@ -59,6 +59,23 @@ def test_picked_samples_pass_checks():
         assert s["filament_diff_pct"] is None or abs(s["filament_diff_pct"]) <= 1.0, f
 
 
+def test_manifest_matches_local_copies():
+    """MANIFEST.csv (커밋 대상)는 늘 있음. 복사본이 있는 행만 지문 대조 (클론에는 _local 이 없음)."""
+    import hashlib
+    m = os.path.join(SAMPLES, "MANIFEST.csv")
+    if not os.path.exists(m):
+        pytest.skip("MANIFEST 없음 (사용자 선택 대기)")
+    with open(m, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    need = ["파일", "sha256", "원래경로", "출처URL", "라이선스", "고른날짜", "위치"]
+    assert rows and all(r[k].strip() for r in rows for k in need)
+    assert not [r for r in rows if r["위치"] == "public" and "미상" in r["라이선스"]]
+    for r in rows:
+        cp = os.path.join(SAMPLES, r["위치"], r["파일"])
+        if os.path.exists(cp):
+            assert hashlib.sha256(open(cp, "rb").read()).hexdigest() == r["sha256"], cp
+
+
 def _script():
     import importlib.util
     spec = importlib.util.spec_from_file_location("gcode_reference_script", os.path.join(ROOT, "scripts", "gcode_reference.py"))

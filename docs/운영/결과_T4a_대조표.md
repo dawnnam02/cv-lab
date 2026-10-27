@@ -77,7 +77,7 @@ d3d18d442ec8b141c1da8fc4175d393862d0caaa3ca977bda6cd286a78551230  data/gcode_can
 | GC9 정답 지도 | `RefStack` (footprint · height_at_layer · top_layer_at · type_at · save · load), npz 다시 읽으면 발자국·높이·종류 모두 같음 | 명령 ① (`test_save_load_roundtrip`) | 통과 |
 | GC10 해석해 | ① 높이 = 층 Z (1e-9) ② 선분 하나 면적 상대 차 ≤ 1 % ③ 선폭 간격 채움 안쪽 빈칸 0 ④ 두 번 → `array_equal` ⑤ L자 방향 | 명령 ① | 통과 |
 | GC11 손 G코드 | 24개 (`_mimic` 7개: H12 · H13 · H14 · H15 · H22 · H23 · H24), 기대값 78행, 식 빈 행 0 | 명령 ② | 통과 |
-| GC12 고른 후보 | 대기 (사용자 선택 없음, 복사 0, MANIFEST 없음) | 명령 ③ · ⑤ | 대기 |
+| GC12 고른 후보 | 1차 때는 대기. **10-27 사용자 선택 뒤 반영: 파일 2개 (public 0 · _local 2), 모두 통과** (아래 "GC12 후보 반영" 절) | 명령 ③ · ⑤ | 통과 |
 | GC13 후보 폴더 | 시작·끝 지문 7개 같음, 만든 파일 0 (탐색 출력은 스크래치패드) | 명령 ④ | 통과 |
 | GC14 문서 | `docs/G코드-해석.md` 절 0–9, MF-GCD 8개, 근거 태그 18개 | 명령 ⑥ | 통과 |
 | GC15 시험·차단 | 시험 함수 66개 (펼쳐 143개): 142 통과 · 1 skip (사용자 선택 대기), 10–14 s. 금지 import·`_truth`·후보 경로 0, 소유 위반 0, V2 지문 8개 같음 | 명령 ① · ⑦ · ⑧ | 통과 |
@@ -163,3 +163,49 @@ d3d18d442ec8b141c1da8fc4175d393862d0caaa3ca977bda6cd286a78551230  data/gcode_can
 1. GC12 시험 `test_picked_samples_pass_checks`는 `unknown == 0`을 요구한다. xyz_cube · benchy는 규칙으로 통과해도 `TIMELAPSE_TAKE_FRAME`이 모르는 명령으로 50 · 240번 세어져 이 조건에 걸린다. 사용자가 둘 중 하나를 고르면 조건을 "엄격 모드로 파싱 성공 + 모르는 명령은 위치 다시 정하기로 통과한 매크로뿐"으로 바꿀지 팀장 판단 필요.
 2. 매크로 속에서 모드 (G91 · M82 · 단위)를 바꾸고 되돌리지 않는 경우는 이 규칙으로 못 잡는다. 매크로 뒤에 슬라이서가 쓰는 M83 · G90 같은 상태 줄이 없으면 앞 상태를 그대로 믿는다.
 3. 정답 지도는 선분마다 파이썬 반복이라 선분 수에 비례 (150층 18 s). `height_at_layer`의 층 누적 계산은 손대지 않음.
+
+## GC12 후보 반영 (2026-10-27, 세부청사진 S7)
+
+**사용자 결정 (메인 전달)**: 첫 파이프라인 시험 `voron24_test_box`, 판정 시험 `caliper_pyramid`. 라이선스 [미상]이라 공개 저장소에 커밋하지 않음.
+
+**시작 확인**
+
+| 항목 | 확인 내용 |
+|---|---|
+| 후보 폴더 지문 | 7개 모두 1차 시작 절과 같음 |
+| 무시 경로 | `git check-ignore`: `data/gcode_samples/_local/` (`.gitignore` 12줄), `results/*` (10줄) |
+| 시험 코드 | `test_picked_samples_pass_checks`가 이미 `public/` · `_local/` 둘 다 찾고, 파일이 없으면 skip → 고치지 않음 |
+
+**종료 대조**
+
+| 완료 기준 (GC12) | 결과 | 근거 | 판정 |
+|---|---|---|---|
+| 고른 파일만 복사 | 2개를 `data/gcode_samples/_local/`로 복사. 원본·복사본 sha256 같음 (`d3d18d44…` · `0fab35b2…`). 원본 그대로 | `sha256sum` | 통과 |
+| MANIFEST.csv | `data/gcode_samples/MANIFEST.csv` (커밋 대상) 2행. 열: 이름 · 파일 · sha256 · 원래경로 · 출처URL · 라이선스 · 슬라이서 · 방언 · 층수 · 최대Z_mm · 역할 · 고른날짜 · 위치 · 로컬경로. 라이선스 둘 다 [미상], 위치 둘 다 `_local` | 새 시험 `test_manifest_matches_local_copies` | 통과 (위치 다름, 아래) |
+| 모르는 명령 0 · 체크섬 불량 0 | voron24 0 · 0, caliper 0 · 0 (허용 목록 0) | `scripts/gcode_reference.py --summary` | 통과 |
+| 층 수 주석 = 압출 Z (= 선언) | voron24 16 = 16 = 16, caliper 64 = 64 (선언 없음) | 같음 | 통과 |
+| 층 Z와 주석 Z 차 ≤ 0.0001 mm | 둘 다 0.0 | 같음 | 통과 |
+| GC7 필라멘트 | voron24 +0.0001 %, caliper −0.0001 % | 같음 | 통과 |
+| 파싱 시간 | voron24 0.06–0.12 s, caliper 0.24–0.35 s | 같음 · 스크래치 `gc12_stats.py` | 기록 |
+| 정답 지도 | voron24 16층 · 1331 × 1331 · 1.6 s, caliper 64층 · 2790 × 1735 · 4.2 s (0.02 mm) | `results/gcode_t4a_gc12/*_ref.npz` | 통과 |
+| 첫·가운데·마지막 층 그림 | voron24 층 0 · 8 · 15, caliper 층 0 · 32 · 63. 눈으로 봄: 모양·방향 정상 | `results/gcode_t4a_gc12/*_ref.png` | 통과 (위치 다름, 아래) |
+| 문서 | `docs/G코드-해석.md` §0 · §6 (GC12 표) · §8 (caliper 주의: 심도 초과 · 0.6 노즐 · Marlin · 다시 슬라이스 메모) · §9 | 명령 ⑥ | 통과 |
+| GC13 후보 폴더 | 끝 지문 7개 = 시작, 파일 수 7, 만든 파일 0 | 명령 ④ | 통과 |
+
+**수치 요약 (caliper 심도)**: 스커트·브림 뺀 물체 461 mm², 윗면 0.2 – 22.25 mm. 층 23 (Z ≈ 8.25)부터 41개 층에서 윗면 높이차 > 8 mm, 마지막 층에서 물체 넓이 62 %가 최고점 − 8 mm보다 낮음. voron24는 0층.
+
+**시험**: `python -m pytest tests/gcode -q` → `157 passed in 8.71s` (시험 함수 69 → 70개). `_local/`을 잠시 숨기고 돌리면 GC12 시험 1개 skip ("사용자 선택 대기"), MANIFEST 시험 통과 → 클론에서도 깨지지 않음.
+
+**세부청사진과 다르게 한 것**
+
+- MANIFEST 위치: 세부청사진은 `data/gcode_samples/public/MANIFEST.csv`, 이번 지시는 `data/gcode_samples/MANIFEST.csv`. 지시를 따랐다. 세부청사진의 고정 7열은 모두 넣고 지시가 요구한 열을 더했다. 검증 명령 ⑤는 경로가 `public/`이라 "MANIFEST 없음"이 나오므로 경로를 바꿔 써야 한다.
+- 그림 위치: 세부청사진은 `docs/G코드-해석_자료/`, 이번 지시는 `results/` (Git 밖). 남의 출력 파일에서 나온 그림이라 지시대로 Git 밖에 두고 수치만 문서에 적었다.
+
+**바꾼 파일**: `data/gcode_samples/MANIFEST.csv` (새로), `data/gcode_samples/_local/` 2개 (Git 밖), `tests/gcode/test_gcode_hand.py` (시험 1개 더함), `docs/G코드-해석.md`, 이 대조표. `results/gcode_t4a_gc12/` 6개 (Git 밖). `src/cvlab/gcode/` · `data/gcode_candidates/` 손대지 않음. git 쓰기 · pip install · 슬라이서 실행 없음.
+
+**남은 문제**
+
+1. caliper_pyramid는 Prusa MK3S · 0.6 노즐 · Marlin 출력이라 Voron (Klipper, 0.4 노즐)용으로 다시 슬라이스해야 할 수 있다. 슬라이서 실행 금지라 메모만 남김 (`docs/G코드-해석.md` §8).
+2. caliper 홈 바닥은 심도 밖 (41개 층). 판정에서 뺄 마스크 또는 나눠 스캔은 T4b · T5.
+3. caliper 지도 격자가 스커트·브림까지 덮어 커졌다 (2790 × 1735). 판정 영역에서 SKIRT 빼기는 T4b (G4).
+4. 세부청사진 검증 명령 ⑤의 MANIFEST 경로 (`public/`)와 이번 위치가 다르다. 팀장이 둘 중 하나로 맞춰 주면 됨.
