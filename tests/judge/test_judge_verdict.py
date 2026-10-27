@@ -146,7 +146,7 @@ def test_exclusion_code_inside_region_error():
     with pytest.raises(ValueError):
         layer(np.zeros((2, 2)), exclusion_code=code)
     with pytest.raises(ValueError):
-        layer(np.zeros((2, 2)), region=np.zeros((2, 2), bool), exclusion_code=np.full((2, 2), 6))
+        layer(np.zeros((2, 2)), region=np.zeros((2, 2), bool), exclusion_code=np.full((2, 2), 7))  # 6은 J-2에서 "심도 밖"으로 코드표에 들어감
 
 
 def test_u_source_required():
@@ -158,9 +158,10 @@ def test_u_source_required():
         judge_print([layer(np.zeros((2, 2)))], JudgeParams(U_source="x"))
 
 
-def test_unknown_thermal_state_error():
-    with pytest.raises(ValueError):
-        judge_print([layer(np.zeros((2, 2)), state="hot")], params())
+def test_unknown_thermal_state_rejected_x5():
+    # J-2: in_process · cooled 밖의 열 상태는 오류 대신 판정 거부 X5 (cooled는 여전히 오류, M14)
+    r = judge_print([layer(np.zeros((2, 2)), state="hot")], params())
+    assert r.verdict == "insufficient" and r.reject["codes"] == ["X5"]
 
 
 def test_layer_warn_threshold_exact():

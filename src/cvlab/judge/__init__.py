@@ -6,6 +6,7 @@ from .aggregate import aggregate_to_cells, cell_factor
 from .classify import FAIL, HOLD, NODATA, PASS, classify_cells, thresholds_nm
 from .cooled import cooled_difference, cooling_criterion
 from .params import JudgeParams, load_params
+from .reject import META_FIELDS, REJECT_CODES, check_meta
 from .scoring import score_c12
 from .verdict import (VERDICTS, JudgeResult, LayerInput, decide, fine_to_cell_layer, judge_print,
                       judge_print_fine)
@@ -16,4 +17,5 @@ __all__ = [
     "LayerInput", "JudgeParams", "JudgeResult", "judge_print", "judge_print_fine", "fine_to_cell_layer",
     "decide", "VERDICTS", "load_params",
     "cooled_difference", "cooling_criterion", "score_c12",
+    "META_FIELDS", "REJECT_CODES", "check_meta",
 ]

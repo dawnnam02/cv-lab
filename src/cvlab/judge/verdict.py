@@ -4,6 +4,7 @@
 - 전체 층의 유효 칸을 합쳐서 센다 (층별 비율의 평균이 아님, D-08).
 - 순서: 측정 불충분 → 합격 (합격점 ≥ 95 %) → 불합격 (불합격점 > 5 %) → 보류. 비율은 정수 곱셈으로 비교.
 - 판정에는 thermal_state = in_process 층만 받는다 (D-06, MF-JDG-05).
+- 판정 거부 X1–X7 (reject.py, §16) 중 하나라도 걸리면 측정 불충분. X6 = 위 측정 불충분 (D-20 R2).
 """
 from __future__ import annotations
 
@@ -20,10 +21,12 @@ from .aggregate import (EXCLUSION_CODES, aggregate_exclusion_code, aggregate_mas
 from .classify import FAIL, HOLD, PASS, classify_cells, thresholds_nm, to_nm
 from .cooled import cooled_difference, cooling_criterion
 from .params import JudgeParams
+from .reject import check_meta, reject_block
 
 VERDICTS = ("pass", "hold", "insufficient", "fail")
 VERDICT_RANK = {v: i for i, v in enumerate(VERDICTS)}  # 합격 < 보류 < 측정 불충분 < 불합격
-EXCLUSION_NAMES = {1: "엣지 띠", 2: "가림 예측", 3: "시야 밖", 4: "제외 경로 종류", 5: "출력물 없음", 9: "기타"}
+EXCLUSION_NAMES = {1: "엣지 띠", 2: "가림 예측", 3: "시야 밖", 4: "제외 경로 종류", 5: "출력물 없음",
+                   6: "심도 밖", 9: "기타"}
 
 NOTE_VIRTUAL = ("해석 주의. 가상 데이터로 얻은 U와 판정 정확도는 \"알고리즘이 시뮬레이터가 넣은 오차를 얼마나 "
                 "복원하는가\"입니다. 하드웨어 성능의 증거가 아닙니다.")
@@ -89,10 +92,11 @@ class JudgeResult:
     params: dict
     thresholds: dict
     notes: list = field(default_factory=list)
+    reject: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return _jsonable({
-            "verdict": self.verdict, "counts": self.counts, "pct": self.pct,
+            "verdict": self.verdict, "reject": self.reject, "counts": self.counts, "pct": self.pct,
             "per_layer": self.per_layer, "method_a": self.method_a,
             "outlier_variants": self.outlier_variants, "cooled": self.cooled,
             "metrics": self.metrics, "exclusions": self.exclusions, "warnings": self.warnings,
@@ -199,11 +203,14 @@ def _pct_block(c: dict) -> dict:
 
 
 def judge_print(layers: Sequence[LayerInput], params: JudgeParams, post: LayerInput | None = None, *,
-                height_mm: float | None = None, specimen_temp_c: float | None = None,
-                room_temp_c: float | None = None) -> JudgeResult:
+                meta: dict | None = None, height_mm: float | None = None,
+                specimen_temp_c: float | None = None, room_temp_c: float | None = None) -> JudgeResult:
     """출력물 하나를 판정한다.
 
     post: 식힌 재측정 (thermal_state = cooled, 마지막 층과 같은 layer_idx). 판정을 바꾸지 않음.
+    meta: 판정 거부 X1–X7 검사용 메타데이터 {"scans": [...], "refs": [...]} (reject.META_FIELDS 이름).
+          None이면 X1–X4 · X7은 검사하지 않고 경고만 (X5 입력 층 · X6은 늘 검사).
+          하나라도 걸리면 판정은 insufficient, 걸린 코드는 result.reject (§16).
     height_mm · specimen_temp_c · room_temp_c: '식었다' 기준 안 계산용 (없으면 미상으로 보고).
     """
     if not isinstance(params, JudgeParams):
@@ -217,7 +224,7 @@ def judge_print(layers: Sequence[LayerInput], params: JudgeParams, post: LayerIn
     for L in layers:
         if not isinstance(L, LayerInput):
             raise ValueError("layers: LayerInput이 아닌 값")
-        if L.thermal_state != "in_process":
+        if L.thermal_state == "cooled":
             raise ValueError(f"층 {L.layer_idx}: thermal_state = {L.thermal_state!r}. 판정에는 in_process만 받음 "
                              "(D-06, MF-JDG-05). 식힌 재측정은 post 인자로 넣을 것")
         if L.layer_idx in seen:
@@ -290,11 +297,25 @@ def judge_print(layers: Sequence[LayerInput], params: JudgeParams, post: LayerIn
         if unexplained:
             warns.append(f"판정 영역 밖인데 이유 코드가 0인 칸 {unexplained}개")
 
+    # 판정 거부 X1–X7 (§16). X6 = 칸 수로 낸 측정 불충분 (D-20 R2)
+    hits, meta_checked = check_meta({L.layer_idx: L.thermal_state for L in layers}, meta)
     if verdict == "insufficient":
         if counts["n_region"] == 0:
-            warns.append("판정 영역이 비어 있음 → 측정 불충분")
+            msg = "판정 영역이 비어 있음 → 측정 불충분"
         else:
-            warns.append(f"유효 칸 {counts['n_valid']}/{counts['n_region']} < {float(params.pct('valid_min_pct')):g} % → 측정 불충분")
+            msg = f"유효 칸 {counts['n_valid']}/{counts['n_region']} < {float(params.pct('valid_min_pct')):g} % → 측정 불충분"
+        warns.append(msg)
+        hits.setdefault("X6", []).append(msg)
+    reject = reject_block(hits, meta_checked, verdict, U, params.U_source)
+    if reject["rejected"]:
+        verdict = "insufficient"
+        for c in reject["codes"]:
+            if c != "X6":
+                warns.append(f"판정 거부 {c} ({reject['names'][c]}): {reject['reasons'][c][0]}"
+                             + (f" 외 {reject['n_reasons'][c] - 1}건" if reject["n_reasons"][c] > 1 else "")
+                             + " → 측정 불충분")
+    if not meta_checked:
+        warns.append("메타데이터 없음: 판정 거부 X1–X4 · X7을 검사하지 않음 (실측 판정에는 meta를 넣을 것, §16)")
 
     # 식힌 재측정 (D-06): 판정과 무관
     cooled = None
@@ -328,7 +349,7 @@ def judge_print(layers: Sequence[LayerInput], params: JudgeParams, post: LayerIn
         verdict=verdict, counts=counts, pct=_pct_block(counts), per_layer=per_layer, method_a=method_a,
         outlier_variants=outlier_variants, cooled=cooled, metrics=metrics, exclusions=excl,
         warnings=warns, params=params.to_dict(), thresholds=thresholds,
-        notes=[NOTE_VIRTUAL, NOTE_BLIND, NOTE_HOLD],
+        notes=[NOTE_VIRTUAL, NOTE_BLIND, NOTE_HOLD], reject=reject,
     )
 
 

@@ -14,7 +14,7 @@ from fractions import Fraction
 
 import numpy as np
 
-EXCLUSION_CODES = (0, 1, 2, 3, 4, 5, 9)
+EXCLUSION_CODES = (0, 1, 2, 3, 4, 5, 6, 9)  # 6 심도 밖 (J-2에서 더함, T4b §2 · §5)
 
 
 def cell_factor(cell_mm: float, res_mm: float) -> int:
