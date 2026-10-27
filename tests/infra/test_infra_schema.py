@@ -1,4 +1,4 @@
-"""스키마 추출·규칙표 시험 (SV4 · SV5 · SV13)."""
+"""스키마 추출·규칙표 시험 (SV4 · SV5 · SV13 · v1.0 재동기화)."""
 
 import re
 
@@ -20,8 +20,8 @@ def test_field_rows_match_spec():
     names = re.findall(r"^\| `((?:frame|pos|cal|ref|meta|blt|rep|truth)\.[a-z0-9_]+)` \|", text, re.M)
     fields, _, _ = schema()
     assert [f["field"] for f in fields] == names
-    assert len(fields) == 245  # T1 2차: blt 26필드 빠지고 23필드 더함
-    assert sum(f["group"] == "truth" for f in fields) == 22
+    assert len(fields) == 253  # v1.0 동결 (T1 3차): 2차 245 + 새 필드 8
+    assert sum(f["group"] == "truth" for f in fields) == 26
     assert not any(f["group"] == "blt" for f in fields)
 
 
@@ -88,6 +88,8 @@ def test_parse_examples():
     assert ss.parse_range("= 0.20 (D-05 고정)") == ("0.20", "=", "0.20", "=")
     assert ss.parse_range("−180 < x ≤ 180") == ("-180", "<", "180", "≤")
     assert ss.parse_range("1 ≤ x. kind = static_repeat면 x ≥ 100") == ("1", "≤", "", "")
+    # v1.0: 범위 뒤에 쉼표로 다른 조건이 붙어도 범위는 뽑음 (ref.gauge_height_mm)
+    assert ss.parse_range("필수. 0 ≤ x ≤ 60, x = 0은 GB-00 (베드 면)일 때만") == ("0", "≤", "60", "≤")
     assert ss.parse_enum("값 ∈ {klipper, marlin} [대기: T14]. 관계") == ("klipper,marlin", True)
     assert ss.parse_regex("target = top_face면 정규식 `^S$`") == ""
     assert ss.parse_regex("정규식 `^a$` 또는 `^b$`. 끝") == "^a$||^b$"
@@ -101,7 +103,7 @@ def test_blt_excluded_by_spec():
     assert ss.spec_excluded_groups("제외 묶음: blt. `pos.x` `meta.y`\n") == {"blt": "명세 '제외 묶음' 표기"}
     _, rules, fc = schema()
     assert not any("blt." in r["fields"] for r in rules)
-    assert sorted(r["rule_id"] for r in rules if r["status"] == "비활성") == ["W-MET-56", "W-REF-11"]
+    assert [r["rule_id"] for r in rules if r["status"] == "비활성"] == []  # v1.0: D-21 채택으로 X4 · X7 기본 켬
     assert not any(k.startswith("probe_") for k in fc)
     assert "blt (명세 6절" in (SPEC_DIR / "SOURCE.txt").read_text(encoding="utf-8")
 
@@ -120,6 +122,33 @@ def test_sv13_held_rules():
     assert ids["ENUM.meta.firmware_name"]["severity"] == "ERROR"  # [대기: T14] 풀림
     for d21 in ("W-REF-11", "W-MET-56"):
         assert ids[d21]["severity"] == "WARN" and "D-21" in ids[d21]["reason"]
+        assert ids[d21]["status"] == "구현"  # v1.0: D-21 채택 · 기본 켬
+
+
+def test_v10_resync_rules():
+    """v1.0 동결 (T1 3차) 재동기화: 새 필드 · 정규식 · 허용 값 · 범위 · 새 규칙 · 보류 정리."""
+    fields, rules, _ = schema()
+    fd = {f["field"]: f for f in fields}
+    ids = {r["rule_id"]: r for r in rules}
+    for new in ("cal.material", "cal.color", "ref.scan_pass_idx", "meta.blind", "truth.gauge_block_heights_mm",
+                "truth.gauge_temp_params", "truth.scan_seeds", "truth.scan_factors"):
+        assert new in fd, new
+    assert fd["ref.ref_id"]["regex"] == r"^REF-[A-Z]{3}-\d{3,4}$"
+    assert fd["meta.bed_ref_id"]["regex"] == r"^REF-BED-\d{3,4}$"
+    assert fd["meta.paired_scan_id"]["regex"].endswith(r"(_p\d{2})?$")
+    gb = r"^GB-\d{2}(\.\d{1,3})?(\+\d{2}(\.\d{1,3})?)*$||^FG-0\.[2345]0$"
+    assert fd["cal.gauge_block_id"]["regex"] == gb and fd["ref.gauge_block_id"]["regex"] == gb
+    assert "0.50" in fd["cal.gauge_nominal_mm"]["enum"].split(",")
+    assert (fd["ref.gauge_height_mm"]["min"], fd["ref.gauge_height_mm"]["min_op"], fd["ref.gauge_height_mm"]["max"]) == ("0", "≤", "60")
+    assert (fd["ref.layer_idx"]["min"], fd["ref.layer_idx"]["min_op"]) == ("-1", "≤")
+    for rid in ("REQ.ref.scan_pass_idx", "CROSS-EMPTY.ref.scan_pass_idx", "REQ.cal.material", "CROSS-EMPTY.cal.color",
+                "ENUM.meta.blind", "X-POS-15", "X-CAL-25", "X-CAL-26", "X-CAL-27", "X-REF-17", "X-REF-18", "X-REF-19", "X-REF-20",
+                "X-REF-21", "X-REF-22", "X-REF-23", "X-REF-24", "X-MET-64", "X-MET-65", "X-MET-66", "X-MET-67",
+                "X-TRU-02", "X-TRU-03", "X-TRU-04", "X-TRU-05"):
+        assert ids[rid]["status"] == "구현", rid
+    assert "H-CAL-24" not in ids  # 재료 교차 규칙 구현 (X-CAL-26 · 27)
+    assert "CROSS-EMPTY.ref.layer_idx" not in ids  # bed_bare · feeler는 빈 칸이 아니라 -1 (X-REF-17)
+    assert sum(r["status"] == "보류" for r in rules) == 9
 
 
 def test_bad_cell_count_fails(tmp_path):

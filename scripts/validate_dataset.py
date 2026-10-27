@@ -2,10 +2,13 @@
 
     PYTHONPATH=src python scripts/validate_dataset.py data/raw/VC-2026-11-20-A [--report out.json]
     PYTHONPATH=src python scripts/validate_dataset.py --selftest [--report out.json]
-    PYTHONPATH=src python scripts/validate_dataset.py data/raw/VC-… --enable-rule W-REF-11 --enable-rule W-MET-56   # D-21 대기 X4 · X7 켬
+    PYTHONPATH=src python scripts/validate_dataset.py data/raw/VC-… --disable-rule W-MET-56   # D-21 기본 켬 규칙 끄기 (X4 · X7만)
+    PYTHONPATH=src python scripts/validate_dataset.py C:/cvlab_data/raw/VC-… --repo-root /다른/cv-lab   # 저장소 뿌리 바꾸기
 
-종료 코드: 0 통과 (ERROR 0) · 1 위반 · 2 사용법·스키마 오류.
+종료 코드: 0 통과 (ERROR 0) · 1 위반 · 2 사용법·스키마·설정 오류.
 `data/_truth` 아래 경로는 열지 않고 2로 끝낸다 (청사진 §5.2).
+저장소 뿌리 (meta.gcode_file 등, FILE-17 · 18)는 데이터가 어디 있든 이 스크립트가 있는 cv-lab 저장소가 기본이다
+(명세 0.1 · 8절, 팀장검증 5차 S-5). 쓴 뿌리는 화면과 보고 JSON (`repo_root`)에 적는다.
 """
 
 from __future__ import annotations
@@ -28,9 +31,13 @@ def main(argv=None) -> int:
     ap.add_argument("--selftest", action="store_true", help="정상·경계·고장 표본 자체 시험")
     ap.add_argument("--enable-group", action="append", default=[], help="명세가 제외한 묶음을 켬 (지금은 없음: blt 필드표가 명세에서 빠짐)")
     ap.add_argument("--enable-rule", action="append", default=[],
-                    help="기본으로 꺼 둔 규칙을 켬 (D-21 대기: W-REF-11 = X4, W-MET-56 = X7). config/default.yaml validate.enable_rules와 합침")
+                    help="상태 '비활성' 규칙을 켬 (명세 v1.0에서 0개). config/default.yaml validate.enable_rules와 합침")
+    ap.add_argument("--disable-rule", action="append", default=[],
+                    help="기본 켬 규칙을 끔 (D-21 채택: W-REF-11 = X4, W-MET-56 = X7만). config/default.yaml validate.disable_rules와 합침")
     ap.add_argument("--repo-root", help="meta.gcode_file 등 저장소 뿌리 기준 경로를 볼 저장소 뿌리. "
-                                        "없으면 캠페인이 <뿌리>/data/raw/<campaign_id>일 때 그 뿌리, 아니면 검사 안 함")
+                                        f"없으면 이 스크립트가 있는 cv-lab 저장소 ({ROOT})")
+    ap.add_argument("--config", default=str(ROOT / "config" / "default.yaml"),
+                    help="T6 설정 파일 (기본 config/default.yaml). T6 절만 읽고 검사함")
     try:
         a = ap.parse_args(argv)
     except SystemExit as e:
@@ -90,21 +97,25 @@ def main(argv=None) -> int:
     if not root.is_dir():
         print(f"폴더가 아님: {root}", file=sys.stderr)
         return 2
+    # T6 소유 config/default.yaml만 읽되 T6 절 전부를 SCHEMA · 모르는 키로 검사 (팀장검증 5차 S-4).
+    # 다른 담당 yaml은 읽지 않음 (그 파일이 바뀌어도 검증기가 멈추지 않게)
+    from cvlab.config import ConfigError, load_owned
     try:
-        # T6 소유 config/default.yaml의 validate 절만 읽음 (다른 담당 yaml이 바뀌어도 검증기가 멈추지 않게)
-        import yaml
-        with open(ROOT / "config" / "default.yaml", encoding="utf-8") as fh:
-            cfg_rules = list(((yaml.safe_load(fh) or {}).get("validate") or {}).get("enable_rules") or [])
-    except (OSError, yaml.YAMLError, AttributeError) as e:  # 설정 오류는 사용법 오류로
-        print(f"설정 오류: {e}", file=sys.stderr)
+        vcfg = load_owned(a.config)["validate"]
+    except ConfigError as e:
+        print(f"설정 오류 ({a.config}): {e}", file=sys.stderr)
         return 2
-    repo = Path(a.repo_root) if a.repo_root else None
-    if repo is None:
-        p = root.resolve()
-        if p.parent.name == "raw" and p.parent.parent.name == "data":
-            repo = p.parent.parent.parent
+    # 저장소 뿌리: --repo-root, 없으면 이 스크립트의 cv-lab 저장소 (명세 0.1 · 8절: 데이터 뿌리와 상관없이 cv-lab, S-5)
+    if a.repo_root:
+        repo, repo_src = Path(a.repo_root).resolve(), "--repo-root"
+    else:
+        repo, repo_src = ROOT, "기본 (검증기 저장소 cv-lab, 명세 0.1 · 8절)"
+    if not repo.is_dir():
+        print(f"저장소 뿌리가 폴더가 아님: {repo}", file=sys.stderr)
+        return 2
     try:
-        v = Validator(fields, rules, file_cols, set(a.enable_group), set(a.enable_rule) | set(cfg_rules), repo_root=repo)
+        v = Validator(fields, rules, file_cols, set(a.enable_group), set(a.enable_rule) | set(vcfg["enable_rules"]), repo_root=repo,
+                      disabled_rules=set(a.disable_rule) | set(vcfg["disable_rules"]))
     except KeyError as e:
         print(f"사용법 오류: {e}", file=sys.stderr)
         return 2
@@ -112,9 +123,12 @@ def main(argv=None) -> int:
     s = summarize(findings)
     for f in findings[:50]:
         print(f"{f.severity} {f.rule_id} {f.file}:{f.row or ''} {f.field} {f.value!r} {f.message}")
+    off = sorted(v.disabled_rules)
+    print(f"저장소 뿌리: {repo} ({repo_src})" + (f" · 끈 규칙: {off}" if off else ""))
     print(f"ERROR {s['n_error']} · WARN {s['n_warn']}")
     if a.report:
-        Path(a.report).write_text(json.dumps({"campaign": root.name, "summary": s, "findings": findings_to_json(findings)},
+        Path(a.report).write_text(json.dumps({"campaign": root.name, "repo_root": str(repo), "repo_root_source": repo_src,
+                                              "disabled_rules": off, "summary": s, "findings": findings_to_json(findings)},
                                              ensure_ascii=False, indent=2), encoding="utf-8")
     return 1 if s["n_error"] else 0
 

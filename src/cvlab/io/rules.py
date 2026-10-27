@@ -54,10 +54,15 @@ CONDITIONS: dict[str, tuple[str, bool]] = {
     "cal.gauge_block_u_um": ("cal.target_type = step_gauge", True),
     "cal.material_offset_um": ("cal.target_type = material_sample", True),
     "cal.material_offset_u_um": ("cal.target_type = material_sample", True),
+    # v1.0 (T1 3차, T6 질문 2): 재료 조각의 필라멘트 재료·색
+    "cal.material": ("cal.target_type = material_sample", True),
+    "cal.color": ("cal.target_type = material_sample", True),
     "cal.reproj_rms_px": ("cal_results.csv의 cal.kind = D1 행", True),
     "cal.plane_rms_um": ("cal_results.csv의 cal.kind = D2 행", True),
     "ref.scan_id": ("ref.kind ∈ {bed_marker, ref_tower, step_gauge}", True),
-    "ref.layer_idx": ("ref.kind ∈ {bed_marker, ref_tower, step_gauge}", True),
+    # v1.0: bed_bare · feeler는 -1 (출력 전 부호, 값 검사는 X-REF-17), 그 밖 kind는 선택이라 빈 칸 강제 없음
+    "ref.layer_idx": ("ref.kind ∈ {bed_marker, ref_tower, step_gauge, bed_bare, feeler} (그 밖은 선택)", False),
+    "ref.scan_pass_idx": ("ref.kind = bed_bare", True),
     "ref.marker_id": ("ref.kind = bed_marker", True),
     "ref.marker_x_mm": ("ref.kind = bed_marker", True),
     "ref.marker_y_mm": ("ref.kind = bed_marker", True),
@@ -74,11 +79,11 @@ CONDITIONS: dict[str, tuple[str, bool]] = {
     "meta.paired_scan_id": ("meta.thermal_state = cooled", True),
     "meta.cool_wait_s": ("meta.thermal_state = cooled", True),
     "meta.sim_version": ("meta.source = virtual", True),
-    "meta.sim_seed": ("meta.source = virtual", True),
+    "meta.sim_seed": ("meta.source = virtual이고 meta.blind = false", True),
     # frames_index.csv를 읽은 뒤 스캔 교차 검사에서 봄 (meta.json을 읽을 때는 모름)
     "meta.trigger_period_s": ("이 스캔의 frame.trigger_mode = hw", True),
     "rep.scan_id": ("design_executed.csv (실행 뒤)", True),
-    "rep.noise_seed": ("가상 캠페인 (캠페인 ID 첫 글자 V)", True),
+    "rep.noise_seed": ("가상 캠페인 (캠페인 ID 첫 글자 V)이고 같은 캠페인 meta.blind = false", True),
     "rep.truth_id": ("가상 캠페인 (캠페인 ID 첫 글자 V)", True),
 }
 
@@ -199,7 +204,7 @@ _h("X-POS-01", "CROSS", "ERROR", "구현", "pos.scan_id;meta.scan_id", "pos.scan
 _h("X-POS-02", "CROSS", "ERROR", "구현", "pos.t_ns", "pos.t_ns:같은 clock·source 안에서 증가", "같은 clock·source 안에서 t_ns가 늘지 않음")
 _h("X-POS-03", "CROSS", "ERROR", "구현", "pos.x_mm", "pos.x_mm:스캔 구간에서 변화", "스캔 구간 x_mm 변화 > 0.01")
 _h("X-POS-04", "CROSS", "ERROR", "구현", "pos.y_mm", "pos.y_mm:단조", "스캔 구간 y_mm가 출처별로 단조가 아님")
-_h("X-POS-05", "CROSS", "ERROR", "구현", "pos.z_mm", "pos.z_mm:스캔 구간 변화", "스캔 구간 z_mm (source = cmd) 변화 > 0.001")
+_h("X-POS-05", "CROSS", "ERROR", "구현", "pos.z_mm", "pos.z_mm:source = cmd 행끼리 변화 ≤ 0.001", "스캔 구간 z_mm (source = cmd) 변화 > 0.001")
 _h("X-POS-06", "CROSS", "ERROR", "구현", "pos.e_mm", "pos.e_mm:변화 0;;pos.e_mm:그 구간에 값이 하나 이하면",
    "스캔 구간에서 값이 있는 행끼리 e_mm가 변함 (스캔 중 압출)")
 _h("X-POS-07", "CROSS", "ERROR", "구현", "pos.feed_mm_s;meta.scan_speed_mm_s", "pos.feed_mm_s:±5 %", "스캔 구간 feed 평균이 scan_speed ±5 % 밖")
@@ -216,7 +221,10 @@ _h("X-POS-12", "CROSS", "ERROR", "구현", "pos.pass_idx", "pos.pass_idx:scan_st
 _h("X-POS-13", "CROSS", "ERROR", "구현", "pos.event;meta.timing", "pos.event:resume은",
    "resume이 layer 스캔의 scan_end 뒤 0–1개가 아님 (post 스캔에 있거나, 2개 이상이거나, scan_end 앞)")
 _h("X-POS-14", "CROSS", "ERROR", "구현", "pos.event;pos.t_ns;meta.timing", "pos.event:cool_start · cool_end는",
-   "cool_start·cool_end가 post 스캔에 각 1개가 아니거나 (layer 스캔에 있음 포함) cool_start < cool_end ≤ scan_start가 아님")
+   "cool_start·cool_end가 post 첫 줄 (scan_pass_idx 0)에 각 1개가 아니거나, 다른 post 줄·layer 스캔에 있거나, cool_start < cool_end ≤ scan_start가 아님")
+# v1.0 (T1 3차, LM-T14-3)
+_h("X-POS-15", "CROSS", "ERROR", "구현", "pos.pass_idx;meta.timing", "pos.pass_idx:timing = post 스캔은 모든 행이 0",
+   "timing = post 스캔 위치 로그에 pass_idx ≠ 0 행이 있음 (식힌 재측정은 PASS 0)")
 
 # cal 교차 (§3)
 _h("X-CAL-01", "CROSS", "ERROR", "구현", "cal.target_square_mm;cal.target_cols", "cal.target_square_mm:target_cols × x", "target_cols × target_square_mm > 20.2 (시야 폭)")
@@ -246,20 +254,28 @@ _h("X-CAL-20", "CROSS", "ERROR", "구현", "cal.laser_on;cal.record_type", "cal.
    "영상이 아닌 행 (record_type ≠ image)인데 laser_on = true")
 _h("X-CAL-21", "CROSS", "ERROR", "구현", "cal.gauge_block_id;cal.gauge_nominal_mm", "cal.gauge_block_id:FG면 숫자",
    "FG- 숫자가 gauge_nominal_mm와 다름")
-_h("X-CAL-22", "CROSS", "ERROR", "구현", "cal.gauge_block_height_mm;cal.gauge_block_id", "cal.gauge_block_height_mm:블록 공칭 합과 차",
-   "블록 교정 높이와 GB- 공칭 합의 차 > 0.02 mm (명세 [추정])")
+_h("X-CAL-22", "CROSS", "ERROR", "구현", "cal.gauge_block_height_mm;cal.gauge_block_id",
+   "cal.gauge_block_height_mm:블록 공칭 합 (ID 숫자의 합)과 차;;cal.gauge_block_id:GB면 + 로 나눈 숫자의 합",
+   "블록 교정 높이와 GB- 공칭 합 (+로 나눈 숫자를 소수까지 더함, GB-02+01.8+01.5 = 5.3)의 차 > 0.02 mm (명세 [추정])")
 _h("X-CAL-23", "CROSS", "ERROR", "구현", "cal.gauge_block_height_mm;cal.gauge_block_id;cal.cal_id", "cal.gauge_block_height_mm:같은 cal_id 안",
    "같은 cal_id 안 같은 gauge_block_id인데 gauge_block_height_mm가 다름")
-_h("H-CAL-24", "보류", "ERROR", "보류", "cal.material_offset_um", "cal.material_offset_um:조각은 같은 캠페인;;cal.material_offset_um:재료가 여럿이면",
-   "재료 조각이 스캔과 같은 필라멘트, 재료마다 cal_id 따로",
-   "cal 행에 재료·색 필드가 없어 meta.material·meta.color와 데이터로 대조할 수 없음 (T1에 넘김)")
+# H-CAL-24 (보류)는 v1.0에서 X-CAL-26 · 27로 구현: cal.material · cal.color가 생김 (T6 질문 2)
+# v1.0 (T1 3차)
+_h("X-CAL-25", "CROSS", "ERROR", "구현", "cal.gauge_block_id;cal.target_type", "cal.gauge_block_id:target_type = step_gauge면 GB-로",
+   "target_type = step_gauge인데 GB-로, filler_gauge인데 FG-로 시작하지 않거나, cal 행에 GB-00 (베드 면, cal 행 없음)")
+_h("X-CAL-26", "CROSS", "ERROR", "구현", "cal.material;cal.color;meta.material;meta.color;meta.calibration_id",
+   "cal.material:이 cal_id를 쓰는 스캔;;cal.color:이 cal_id를 쓰는 스캔의 `meta.color`;;cal.material_offset_um:조각은 같은 캠페인",
+   "material_sample 행의 cal.material · cal.color가 그 cal_id를 쓰는 스캔의 meta.material · meta.color와 다름")
+_h("X-CAL-27", "CROSS", "ERROR", "구현", "cal.material;cal.color;cal.cal_id",
+   "cal.color:한 cal_id 안 material_sample 행은;;cal.material_offset_um:재료가 여럿이면",
+   "한 cal_id 안 material_sample 행의 (material, color)가 둘 이상 (재료마다 cal_id 따로)")
 
 # ref 교차 (§4)
 _h("X-REF-01", "CROSS", "ERROR", "구현", "ref.ref_id;ref.kind", "ref.ref_id:가운데 세 글자;;ref.kind:ref_id 약어와 맞음", "ref_id 가운데 세 글자가 kind 약어와 다름")
 _h("X-REF-02", "CROSS", "ERROR", "구현", "ref.kind;ref.t_start_ns;meta.layer_end_t_ns", "ref.kind:bed_bare는 세션마다",
    "세션에 bed_bare가 없거나 bed_bare 시각이 첫 층 layer_end_t_ns보다 늦음")
 _h("X-REF-03", "CROSS", "ERROR", "구현", "ref.scan_id;meta.layer_z_mm", "ref.scan_id:kind = bed_marker면 그 스캔", "bed_marker 짝 스캔의 layer_z_mm > 8.0")
-_h("X-REF-04", "CROSS", "ERROR", "구현", "ref.layer_idx;ref.scan_id;meta.layer_idx", "ref.layer_idx:ref.scan_id가 있으면",
+_h("X-REF-04", "CROSS", "ERROR", "구현", "ref.layer_idx;ref.scan_id;meta.layer_idx", "ref.layer_idx:ref.scan_id가 가리키는 스캔의",
    "ref.layer_idx가 짝 스캔 meta.layer_idx와 다름")
 _h("X-REF-05", "CROSS", "ERROR", "구현", "ref.n_frames", "ref.n_frames:frames_index.csv 행 수", "ref.n_frames ≠ 기준 frames_index.csv 행 수")
 _h("X-REF-06", "CROSS", "ERROR", "구현", "ref.n_frames;ref.kind", "ref.n_frames:static_repeat면", "static_repeat인데 n_frames < 100")
@@ -271,21 +287,44 @@ _h("W-REF-09", "CROSS", "WARN", "구현", "ref.line_peak_pct", "ref.line_peak_pc
 # SV13 (T1 2차)
 _h("X-REF-10", "CROSS", "ERROR", "구현", "ref.kind;ref.t_start_ns;meta.layer_end_t_ns", "ref.kind:feeler도 출력 전",
    "feeler 기준 시각이 그 세션 첫 층 layer_end_t_ns보다 늦음 (출력 전이어야 함)")
-_h("W-REF-11", "CROSS", "WARN", "비활성", "ref.calibration_id;meta.calibration_id;meta.bed_ref_id",
+_h("W-REF-11", "CROSS", "WARN", "구현", "ref.calibration_id;meta.calibration_id;meta.bed_ref_id",
    "ref.calibration_id:kind = bed_bare면 그 기준을;;meta.calibration_id:그 스캔의 `meta.bed_ref_id`가 가리키는",
    "bed_bare 기준의 ref.calibration_id ≠ 그 기준을 가리키는 스캔의 meta.calibration_id (판정 거부 X4)",
-   "D-21 대기 (X4 채택은 사용자 결정 전). 기본 끔. 켜기: validate_dataset.py --enable-rule W-REF-11 또는 config/default.yaml validate.enable_rules")
-_h("X-REF-12", "CROSS", "ERROR", "구현", "ref.gauge_block_id;cal.gauge_block_id", "ref.gauge_block_id:같은 캠페인",
-   "ref.gauge_block_id가 같은 캠페인 cal_manifest.csv의 cal.gauge_block_id에 없음")
-_h("X-REF-13", "CROSS", "ERROR", "구현", "ref.gauge_block_id;ref.kind", "ref.gauge_block_id:step_gauge면 GB-로",
-   "step_gauge인데 GB-로, feeler인데 FG-로 시작하지 않음")
+   "D-21 채택 (10-27) · 기본 켬. 판정 거부는 판정 함수 (T15) 몫이라 WARN. 끄기: validate_dataset.py --disable-rule W-REF-11 "
+   "또는 config/default.yaml validate.disable_rules")
+_h("X-REF-12", "CROSS", "ERROR", "구현", "ref.gauge_block_id;cal.gauge_block_id", "ref.gauge_block_id:GB-00이 아니면 같은 캠페인",
+   "ref.gauge_block_id (GB-00 말고)가 같은 캠페인 cal_manifest.csv의 cal.gauge_block_id에 없음")
+_h("X-REF-13", "CROSS", "ERROR", "구현", "ref.gauge_block_id;ref.kind", "ref.gauge_block_id:step_gauge면 GB- (블록 · 베드 면) 또는 FG-",
+   "step_gauge인데 GB-·FG-로, feeler인데 FG-로 시작하지 않음")
 _h("X-REF-14", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;cal.gauge_block_height_mm;cal.gauge_measured_mm",
-   "ref.gauge_height_mm:step_gauge면 = 그 블록",
-   "ref.gauge_height_mm ≠ cal 교정값 (step_gauge: gauge_block_height_mm, feeler: gauge_measured_mm, 차 > 1e-9)")
-_h("X-REF-15", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;meta.layer_z_mm", "ref.gauge_height_mm:kind = step_gauge면 x <",
-   "step_gauge 높이 ≥ 짝 스캔 layer_z_mm (노즐 충돌)")
-_h("X-REF-16", "CROSS", "ERROR", "구현", "ref.kind;pos.z_mm", "meta.zero_ref_method:step_gauge면 짝",
-   "step_gauge 기준 위치 로그의 스캔 구간 Z (cmd)가 짝 스캔 스캔 구간 Z와 0.001 mm 넘게 다름 (같은 Z 연속 측정, 명세 4절)")
+   "ref.gauge_height_mm:GB- 블록이면 = 그 블록",
+   "ref.gauge_height_mm ≠ cal 교정값 (GB- 블록: gauge_block_height_mm, FG-: gauge_measured_mm, 차 > 1e-9)")
+_h("X-REF-15", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;meta.layer_z_mm", "ref.gauge_height_mm:kind = step_gauge면 **x ≤",
+   "step_gauge 높이 > 짝 스캔 layer_z_mm (노즐 충돌, 같은 높이는 허용, 명세 4절 C2)")
+_h("X-REF-16", "CROSS", "ERROR", "구현", "ref.kind;pos.z_mm;meta.scan_pass_idx", "pos.z_mm:계단 기준물과의 같은 Z 규칙은 4절",
+   "같은 Z 연속 측정 (D-16, 명세 4절): 그 층 다른 줄 스캔 · 두 단 기준 위치 로그의 스캔 구간 cmd 행 하나가 기준 Z "
+   "(첫 줄 스캔 구간 cmd 평균)와 0.001 mm 넘게 다름")
+# v1.0 (T1 3차, LM-T14-3)
+_h("X-REF-17", "CROSS", "ERROR", "구현", "ref.layer_idx;ref.kind", "ref.layer_idx:kind ∈ {bed_bare, feeler}면 -1;;ref.layer_idx:필수이고 0 ≤ x",
+   "bed_bare · feeler인데 ref.layer_idx ≠ -1이거나, 층에 매인 기준 (bed_marker · ref_tower · step_gauge)인데 ref.layer_idx < 0")
+_h("X-REF-18", "CROSS", "ERROR", "구현", "ref.ref_id;ref.t_start_ns",
+   "ref.ref_id:001부터 빈 번호 없이",
+   "같은 세션 · 같은 약어 안 ref_id 숫자가 001부터 빈 번호 없이 t_start_ns 순서로 매겨지지 않음")
+_h("X-REF-19", "CROSS", "ERROR", "구현", "ref.ref_id", "ref.ref_id:세션 안에서 유일", "같은 세션 안에 같은 ref_id가 둘 이상")
+_h("X-REF-20", "CROSS", "ERROR", "구현", "ref.kind;ref.scan_id;ref.gauge_block_id;ref.gauge_height_mm;meta.layer_z_mm;meta.zero_ref_method",
+   "ref.kind:step_gauge는 4절 \"두 단 규칙\";;meta.zero_ref_method:step_gauge면 그 층 첫 줄 스캔을 짝으로",
+   "두 단 규칙 (C1, 명세 4절) 위반: 첫 줄 스캔을 짝으로 하는 step_gauge 행이 2개가 아니거나, 두 ID가 같거나, "
+   "0 < h1 − h2 ≤ 3.04 · h1 ≤ 층 Z · 층 Z − h2 ≤ 8.0 중 하나가 거짓")
+_h("X-REF-21", "CROSS", "ERROR", "구현", "ref.scan_pass_idx;ref.kind;meta.scan_pass_idx",
+   "ref.scan_pass_idx:한 세션의 bed_bare 행은 0부터;;ref.kind:줄 번호 (`meta.scan_pass_idx`)마다 1행 이상",
+   "세션의 bed_bare 줄 번호가 0부터 빈 번호 없이 이어지지 않거나, 그 세션 스캔의 줄 번호 최댓값까지 다 있지 않음")
+_h("X-REF-22", "CROSS", "ERROR", "구현", "ref.scan_pass_idx;pos.x_mm;meta.scan_x_mm;meta.bed_ref_id",
+   "ref.scan_pass_idx:기준 위치 로그 스캔 구간 `pos.x_mm` 평균",
+   "bed_bare 기준 위치 로그 스캔 구간 x_mm 평균이 그 기준을 가리키는 스캔의 meta.scan_x_mm와 0.01 mm 넘게 다름")
+_h("X-REF-23", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;ref.gauge_block_id", "ref.gauge_height_mm:x = 0은 GB-00",
+   "gauge_height_mm = 0인데 GB-00이 아니거나, GB-00인데 gauge_height_mm ≠ 0")
+_h("X-REF-24", "CROSS", "ERROR", "구현", "ref.scan_id;meta.scan_pass_idx", "ref.scan_id:그 스캔의 `meta.scan_pass_idx` = 0",
+   "층에 매인 기준의 ref.scan_id가 가리키는 스캔이 첫 줄 (scan_pass_idx = 0)이 아님")
 
 # meta 교차 (§5)
 _h("X-MET-01", "CROSS", "ERROR", "구현", "meta.scan_id;meta.timing;meta.layer_idx",
@@ -323,7 +362,8 @@ _h("X-MET-24", "CROSS", "ERROR", "구현", "meta.layer_h_mm;meta.nozzle_dia_mm",
 _h("X-MET-25", "CROSS", "ERROR", "구현", "meta.bed_ref_id;ref.ref_id;ref.kind",
    "meta.bed_ref_id:같은 세션 `reference/`;;meta.bed_ref_id:없거나 bed_bare가 아니면 판정 거부 X1",
    "bed_ref_id가 같은 세션 reference/의 bed_bare 기준을 가리키지 않음 (판정 거부 X1)")
-_h("X-MET-26", "CROSS", "ERROR", "구현", "meta.bed_ref_id", "meta.bed_ref_id:세션 안 모든 스캔이 같은 값", "세션 안 bed_ref_id가 다름")
+_h("X-MET-26", "CROSS", "ERROR", "구현", "meta.bed_ref_id;meta.scan_pass_idx", "meta.bed_ref_id:같은 `meta.scan_pass_idx`끼리 같은 값",
+   "세션 안 같은 scan_pass_idx 스캔끼리 bed_ref_id가 다름 (줄마다 bed_bare, LM-T14-3)")
 _h("X-MET-27", "CROSS", "ERROR", "구현", "meta.z_offset_mm", "meta.z_offset_mm:세션 안 모든 스캔이 같은 값", "세션 안 z_offset_mm가 다름 (0점이 바뀜)")
 _h("H-MET-28", "보류", "ERROR", "보류", "meta.z_offset_mm", "meta.z_offset_mm:펌웨어 값의 부호",
    "펌웨어 부호를 명세 부호로 바꿔 적음", "부호 바꾸는 법이 부록 D에서 [T14 대기]")
@@ -334,7 +374,8 @@ _h("H-MET-31", "보류", "ERROR", "보류", "meta.bed_mesh_file", "meta.bed_mesh
    "메시 표가 펌웨어 원본 형식", "형식이 부록 D에서 [T14 대기]")
 _h("X-MET-32", "CROSS", "ERROR", "구현", "meta.bed_mesh_file", "meta.bed_mesh_file:세션 안 모든 스캔이 같은 값", "세션 안 bed_mesh_file이 다름")
 _h("X-MET-33", "CROSS", "ERROR", "구현", "meta.paired_scan_id;meta.layer_count;meta.thermal_state",
-   "meta.paired_scan_id:같은 세션·시편·반복의 스캔", "paired_scan_id가 같은 세션·시편·반복의 마지막 층 in_process 스캔이 아님")
+   "meta.paired_scan_id:같은 세션·시편·반복의 스캔",
+   "paired_scan_id가 같은 세션·시편·반복의 마지막 층 in_process 스캔이 아니거나 줄 번호 (scan_pass_idx)가 다름")
 _h("X-MET-34", "CROSS", "ERROR", "구현", "meta.cool_wait_s;meta.wait_after_layer_s", "meta.cool_wait_s:abs(x −", "abs(cool_wait_s − wait_after_layer_s) > 0.001")
 # H-MET-35는 SV13에서 설명문 (NOTES)으로: 명세가 "판정 규칙 R4 · R5, 보고에만 씀"으로 정함
 _h("X-MET-36", "CROSS", "ERROR", "구현", "meta.firmware;meta.firmware_name;meta.firmware_version",
@@ -358,7 +399,9 @@ _h("X-MET-48", "CROSS", "ERROR", "구현", "meta.calibration_id", "meta.calibrat
 _h("X-MET-49", "CROSS", "ERROR", "구현", "meta.calibration_id;meta.datetime;cal.valid_from;cal.valid_until",
    "meta.calibration_id:datetime이 cal.valid_from", "스캔 datetime이 교정 유효 기간 밖")
 _h("X-MET-50", "CROSS", "ERROR", "구현", "meta.files_sha256", "meta.files_sha256:키 = 상대 경로", "files_sha256 키가 상대 경로가 아니거나 값이 64자 16진수가 아님")
-_h("X-MET-51", "CROSS", "ERROR", "구현", "meta.injected_factors;meta.source", "meta.injected_factors:source = real이면 빈 목록", "실측인데 injected_factors가 빈 목록이 아님")
+_h("X-MET-51", "CROSS", "ERROR", "구현", "meta.injected_factors;meta.source;meta.blind",
+   "meta.injected_factors:source = real이거나 `meta.blind` = true면 빈 목록;;meta.blind:true면 `meta.sim_seed` = null",
+   "실측이거나 blind = true인데 injected_factors가 빈 목록이 아님")
 _h("H-MET-52", "보류", "ERROR", "보류", "meta.slicer_name", "meta.slicer_name:G코드 머리말에서 읽고",
    "slicer_name = G코드 머리말 값", "G코드 해석 (T4a) 결과가 있어야 함")
 # H-MET-53은 SV13에서 뺌: 명세가 정규식 `^LM-T14-\d+$`을 줘 REGEX 자동 규칙으로 구현
@@ -368,24 +411,34 @@ _h("X-MET-54", "CROSS", "ERROR", "구현", "meta.scan_id;meta.scan_pass_idx", "m
 _h("X-MET-55", "CROSS", "ERROR", "구현", "meta.scan_pass_idx",
    "meta.scan_pass_idx:같은 시편·반복·층;;meta.scan_pass_idx:줄이 하나면 0",
    "같은 시편·반복·층 (post끼리)의 scan_pass_idx가 0부터 빈 번호 없이 이어지지 않음")
-_h("W-MET-56", "CROSS", "WARN", "비활성", "meta.layer_idx;meta.layer_count;meta.thermal_state", "meta.layer_idx:모든 층 스캔 (D-18)",
+_h("W-MET-56", "CROSS", "WARN", "구현", "meta.layer_idx;meta.layer_count;meta.thermal_state", "meta.layer_idx:모든 층 스캔 (D-18)",
    "같은 시편·반복의 in_process 스캔에 0 ~ layer_count − 1 층이 다 있지 않음 (판정 거부 X7)",
-   "D-21 대기 (X7 채택은 사용자 결정 전). 기본 끔. 켜기: validate_dataset.py --enable-rule W-MET-56 또는 config/default.yaml validate.enable_rules")
+   "D-21 채택 (10-27) · 기본 켬. 판정 거부는 판정 함수 (T15) 몫이라 WARN. 끄기: validate_dataset.py --disable-rule W-MET-56 "
+   "또는 config/default.yaml validate.disable_rules")
 _h("W-MET-57", "CROSS", "WARN", "구현", "meta.bed_motion;meta.scan_axis",
    "meta.bed_motion:y면 `meta.scan_axis`;;meta.scan_axis:베드가 Y로 움직이는 프린터면",
    "bed_motion = y인데 scan_axis가 ±X가 아님 (권장 위반, T2 MF-MEC-10)")
-_h("X-MET-58", "CROSS", "ERROR", "구현", "meta.z_drive;meta.timing;pos.event", "meta.z_drive:belt면 식힌 재측정 동안",
-   "z_drive = belt인 post 스캔 위치 로그에 motor_off가 있음 (식힌 재측정 동안 모터 유지, T2 MF-SYN-09)")
+_h("X-MET-58", "CROSS", "ERROR", "구현", "meta.z_drive;meta.timing;meta.scan_pass_idx;pos.event",
+   "meta.z_drive:belt면 식힌 재측정 동안;;meta.z_drive:판정은 post 위치 로그의 motor_off;;pos.event:motor_off: `meta.z_drive` = belt면",
+   "z_drive = belt인데 post 첫 줄 위치 로그의 cool_start ~ scan_end 사이나 다른 post 줄 위치 로그에 motor_off가 있음 "
+   "(식힌 재측정 동안 모터 유지, T2 MF-SYN-09)")
 _h("X-MET-59", "CROSS", "ERROR", "구현", "meta.firmware;meta.firmware_fork", "meta.firmware:제조사 접두사는",
    "meta.firmware에 제조사 접두사가 있는데 firmware_fork ≠ vendor")
 _h("X-MET-60", "CROSS", "ERROR", "구현", "meta.trigger_pin;frame.trigger_mode", "meta.trigger_pin:이 스캔의",
    "trigger_mode ∈ {hw, gate}인데 trigger_pin = none이거나, 그 밖인데 trigger_pin ≠ none")
 _h("X-MET-61", "CROSS", "ERROR", "구현", "meta.trigger_period_s;meta.fps", "meta.trigger_period_s:abs(x ×",
    "abs(trigger_period_s × fps − 1) > 0.001")
-_h("X-MET-62", "CROSS", "ERROR", "구현", "meta.zero_ref_method;ref.kind", "meta.zero_ref_method:step_gauge면 짝",
-   "zero_ref_method = step_gauge인데 짝 step_gauge 기준이 없음")
+_h("X-MET-62", "CROSS", "ERROR", "구현", "meta.zero_ref_method;ref.kind", "meta.zero_ref_method:step_gauge면 그 층 첫 줄 스캔을 짝으로",
+   "zero_ref_method = step_gauge인데 그 층 첫 줄 스캔을 짝으로 하는 step_gauge 기준이 하나도 없음")
 _h("W-MET-63", "CROSS", "WARN", "구현", "meta.zero_ref_method", "meta.zero_ref_method:z_only는",
    "zero_ref_method = z_only (기록은 되나 판정 거부 X2, 판정 단계 몫)")
+# v1.0 (T1 3차, LM-T14-3 · 블라인드)
+_h("X-MET-64", "CROSS", "ERROR", "구현", "meta.bed_ref_id;ref.scan_pass_idx;meta.scan_pass_idx", "meta.bed_ref_id:`ref.scan_pass_idx` = 이 스캔의",
+   "bed_ref_id가 가리키는 bed_bare의 ref.scan_pass_idx ≠ 이 스캔의 meta.scan_pass_idx (0점을 같은 줄에서 재지 않음)")
+_h("X-MET-65", "CROSS", "ERROR", "구현", "meta.scan_pass_idx;meta.timing;meta.layer_count", "meta.scan_pass_idx:post 스캔의 줄 번호 집합",
+   "post 스캔의 줄 번호 집합 ≠ 마지막 층 (layer_count − 1) timing = layer 스캔의 줄 번호 집합")
+_h("X-MET-66", "CROSS", "ERROR", "구현", "meta.blind;meta.source", "meta.blind:source = real이면 false", "실측 (source = real)인데 blind = true")
+_h("X-MET-67", "CROSS", "ERROR", "구현", "meta.blind", "meta.blind:같은 캠페인 모든 스캔이 같은 값", "같은 캠페인 안 스캔들의 blind 값이 다름")
 
 # rep 교차 (§7)
 _h("X-REP-01", "CROSS", "ERROR", "구현", "rep.part_idx;rep.specimen_id", "rep.part_idx:같은 specimen_id면 같음", "같은 specimen_id인데 part_idx가 다름")
@@ -400,6 +453,18 @@ _h("X-REP-07", "CROSS", "ERROR", "구현", "rep.truth_id;rep.specimen_id", "rep.
 # truth (부록 A). data/raw 검사에서는 열지 않음: Validator.check_truth()로 참값 객체만 따로 봄 (T3 시뮬레이터가 씀)
 _h("X-TRU-01", "CROSS", "ERROR", "구현", "truth.judgement;truth.pass_pct", "",
    "truth.judgement = pass ⇔ truth.pass_pct ≥ 95 위반 (부록 A)")
+# v1.0 (T1 3차): 새 참값 필드. 캠페인 쪽 사실 (step_gauge 유무 · blind · 스캔 ID · 주입 요인)은 같은 검증기의 run() 결과
+# (Validator.truth_ctx)나 호출하는 쪽이 넘긴 ctx로 봄
+_h("X-TRU-02", "CROSS", "ERROR", "구현", "truth.gauge_block_heights_mm;truth.gauge_temp_params", "",
+   "계단 기준물 참값 위반: step_gauge 기준이 있는데 gauge_block_heights_mm · gauge_temp_params가 없거나 (없으면 null이어야 함), "
+   "키가 GB- 정규식이 아니거나 GB-00이거나 쓴 블록 ID가 빠짐, abs(값 − ID 숫자 합) > 0.02, cte_um_per_m_c 키 없음 (부록 A)")
+_h("X-TRU-03", "CROSS", "ERROR", "구현", "truth.scan_seeds;truth.scan_factors;meta.blind", "",
+   "블라인드 참값 위반: blind = true인데 scan_seeds · scan_factors가 없거나 (false면 null), 키 집합 ≠ 캠페인 스캔 ID, "
+   "시드가 0 ≤ x < 2^63 정수가 아님, 요인 원소가 ^MF-[A-Z]{3}-\\d{2}$가 아님 (부록 A)")
+_h("X-TRU-04", "CROSS", "ERROR", "구현", "truth.factor_params;meta.injected_factors;truth.scan_factors", "",
+   "truth.factor_params 키 집합 ≠ 주입 요인 합집합 (blind면 truth.scan_factors 값의 합집합) (부록 A)")
+_h("X-TRU-05", "CROSS", "ERROR", "구현", "truth.gauge_thickness_mm", "",
+   "truth.gauge_thickness_mm 키 ∉ {0.20, 0.30, 0.40, 0.50}이거나 abs(값 − 공칭) > 0.02 (부록 A)")
 
 # 다른 필드의 REQ 규칙이 맡는 문장 (규칙은 자동 생성, 여기서는 덮는 문장만 적음)
 EXTRA_COVERS = {
@@ -410,7 +475,6 @@ EXTRA_COVERS = {
     "CROSS-EMPTY.frame.file": "meta.raw_saved:false면 영상 없음",
     "RANGE.meta.tolerance_mm": "meta.tolerance_mm:다른 값이면 검증 실패",
     "REGEX.meta.injected_factors": "meta.injected_factors:원소마다 정규식",
-    "CROSS-EMPTY.ref.layer_idx": "ref.layer_idx:kind ∈ {bed_bare, feeler}면 빈 칸",
     "REQ.pos.source": "pos.source:모든 행에 있음",
     "REGEX.meta.firmware": "meta.firmware:정규식 `^([a-z0-9]+-)?",
 }
@@ -448,7 +512,13 @@ NOTES = [
     ("meta.z_offset_mm", "meta가 스캔마다 있으므로", "설계 설명 (T2 MF-SYN-13 · GCD-03, 검사는 X-MET-27)"),
     ("meta.thermal_state", "판정에는 in_process만", "판정 단계 (T15) 몫. 판정 거부 X5는 데이터 검증 규칙이 아님"),
     ("meta.cool_wait_s", "식었다고 보는 기준은 판정 규칙 R4 · R5", "판정 규칙 몫 (D-20, 보고에만 씀). 옛 H-MET-35"),
-    ("meta.layer_macro_version", "지금 판은 LM-T14-2", "현재 값 안내 (T14)"),
+    ("meta.layer_macro_version", "지금 판은 **LM-T14-3**", "현재 값 안내 (T14 3차). 형식은 REGEX가 맡음"),
+    # v1.0 (T1 3차)
+    ("meta.layer_macro_version", "LM-T14-2로 찍힌 데이터는 C1", "불확도 선택 안내 (처리·판정 단계 몫, 데이터 위반 아님)"),
+    ("meta.zero_ref_method", "LM-T14-3 기본은 step_gauge", "기본값 안내"),
+    ("ref.calibration_id", "그 밖 kind (background · dark · daily_ref · static_repeat)는 선택",
+     "선택 (T6 질문 1): 값이 있으면 REGEX 자동 규칙만, 빈 칸 강제 없음 (CROSS-EMPTY 안 둠)"),
+    ("ref.layer_idx", "그 밖 kind는 선택", "선택 kind 작성 안내 (값 범위는 RANGE -1 ≤ x)"),
     ("meta.layer_macro_version", "판정 거부 X7 (빠진 층)을 볼 때 함께 봄", "쓰임 설명 (X7 검사는 W-MET-56)"),
     ("meta.shaper_freq_x_hz", "장착 뒤 다시 재지 않았으면 null", "작성 안내 (선택 필드라 null 허용)"),
     ("meta.trigger_pin", "실제 핀 이름은 [미상]", "출처 표시 (T14)"),

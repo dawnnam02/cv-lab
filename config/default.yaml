@@ -16,7 +16,9 @@ paths:
   results: results               # J2 결과 폴더 (manifest.json)
 
 validate:
-  # 기본으로 꺼 둔 검증 규칙을 켤 때 ID를 적는다 (scripts/validate_dataset.py --enable-rule과 합침).
-  # W-REF-11 = 판정 거부 X4 (bed_bare 교정 ID = 스캔 교정 ID), W-MET-56 = X7 (빠진 층).
-  # 둘 다 사용자 결정 D-21 대기라 기본 끔. 켜도 WARN (종료 코드는 바뀌지 않음). 예: [W-REF-11, W-MET-56]
+  # 검증기 CLI는 이 파일의 T6 절만 읽고 모르는 키 · 목록 아님을 오류 (종료 코드 2)로 본다 (팀장검증 5차 S-4).
+  # enable_rules: 상태 '비활성' 규칙을 켤 ID (--enable-rule과 합침). 명세 v1.0에서 비활성 규칙은 0개.
   enable_rules: []
+  # disable_rules: 기본 켬 규칙을 끌 ID (--disable-rule과 합침). 끌 수 있는 것은 D-21 채택 (10-27) 두 개뿐:
+  # W-REF-11 = 판정 거부 X4 (bed_bare 교정 ID = 스캔 교정 ID), W-MET-56 = X7 (빠진 층). 둘 다 WARN. 예: [W-MET-56]
+  disable_rules: []

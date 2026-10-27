@@ -37,6 +37,24 @@ def selftest_report():
 
 
 @functools.lru_cache(maxsize=1)
+def fake_repo() -> Path:
+    """표본 meta.gcode_file · slicer_profile_file (selftest.REPO_FILES)이 있는 임시 저장소 뿌리 (CLI --repo-root용).
+
+    CLI 기본 뿌리는 cv-lab 저장소인데 거기에는 표본 G코드가 없어 FILE-17 · 18이 나오는 것이 맞다 (S-5).
+    """
+    import atexit
+    import shutil
+    import tempfile
+    from cvlab.io import selftest as st
+    td = Path(tempfile.mkdtemp(prefix="cvlab_repo_"))
+    atexit.register(shutil.rmtree, td, True)
+    for rel in st.REPO_FILES:
+        (td / rel).parent.mkdir(parents=True, exist_ok=True)
+        (td / rel).write_bytes(b"; gcode\n")
+    return td
+
+
+@functools.lru_cache(maxsize=1)
 def disk_campaign() -> Path:
     """정상 표본을 임시 폴더에 한 번 쓴다. 시험이 끝나면 지운다."""
     import atexit

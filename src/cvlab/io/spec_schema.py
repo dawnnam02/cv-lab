@@ -103,7 +103,8 @@ def parse_range(rule_text: str) -> tuple[str, str, str, str]:
         s = _strip_note(sent)
         if "면 " in s.split("x")[0] if "x" in s else False:
             continue
-        m = re.match(rf"^({NUM}) (<|≤) x (<|≤) ({NUM})$", s)
+        # v1.0 (T1 3차): "0 ≤ x ≤ 60, x = 0은 …"처럼 범위 뒤에 쉼표로 다른 조건이 붙으면 범위만 뽑음 (뒤 조건은 손 규칙)
+        m = re.match(rf"^({NUM}) (<|≤) x (<|≤) ({NUM})(?:, .*)?$", s)
         if m:
             return _num(m.group(1)), m.group(2), _num(m.group(4)), m.group(3)
         m = re.match(rf"^({NUM}) (<|≤) x(?: (<|≤) (.+))?$", s)

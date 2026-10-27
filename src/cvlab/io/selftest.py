@@ -98,10 +98,11 @@ def _frames(scan_id, layer_idx, t0, n_on, n_off, seed0, laser_off_first=True):
     return rows, imgs
 
 
-def _pos(scan_id, layer_idx, layer_end, S, z_top, post=False):
+def _pos(scan_id, layer_idx, layer_end, S, z_top, post=False, x=110.0):
+    """post=True면 식힌 재측정 첫 줄 (cool_start · cool_end 있음, v1.0: 다른 post 줄에는 없음)."""
     E = S + 83_333_333  # 0.2 mm ÷ 2.4 mm/s [계산]
     off = S - 1_000_000
-    base = {"scan_id": scan_id, "x_mm": 110.0, "e_mm": 152.331, "layer_idx": layer_idx, "pass_idx": 0, "mesh_dz_mm": 0.012,
+    base = {"scan_id": scan_id, "x_mm": x, "e_mm": 152.331, "layer_idx": layer_idx, "pass_idx": 0, "mesh_dz_mm": 0.012,
             "clock_offset_ns": None, "acc_x_mm_s2": None, "acc_y_mm_s2": None, "acc_z_mm_s2": None}
     rows = [dict(base, t_ns=layer_end, clock="host", source="cmd", y_mm=90.0, z_mm=z_top - 2.0, feed_mm_s=40.0, event="layer_change")]
     if post:  # 식힌 재측정: cool_start < cool_end ≤ scan_start (T14)
@@ -117,47 +118,56 @@ def _pos(scan_id, layer_idx, layer_end, S, z_top, post=False):
     return rows
 
 
-def _refpos(scan_id, layer_idx, t_start, z):
+def _refpos(scan_id, layer_idx, t_start, z, x=60.0):
     """움직이며 찍는 기준의 position_log.csv (명세 4절): 스캔 구간 두 행."""
-    base = {"scan_id": scan_id or "S00_r00", "clock": "host", "source": "cmd", "x_mm": 60.0, "z_mm": z, "e_mm": 152.331,
+    base = {"scan_id": scan_id or "S00_r00", "clock": "host", "source": "cmd", "x_mm": x, "z_mm": z, "e_mm": 152.331,
             "feed_mm_s": 2.4, "layer_idx": layer_idx if layer_idx is not None else -1, "pass_idx": 0, "mesh_dz_mm": 0.012,
             "clock_offset_ns": None, "acc_x_mm_s2": None, "acc_y_mm_s2": None, "acc_z_mm_s2": None}
     return [dict(base, t_ns=t_start - DT, y_mm=90.0, event="scan_start"),
             dict(base, t_ns=t_start + 2 * DT, y_mm=90.02, event="scan_end")]
 
 
-GB_ID, GB_H = "GB-01", 1.0008  # 계단 기준물 블록 (형식 시험용 값)
-FG_ID, FG_H = "FG-0.20", 0.203  # 필러게이지 (cal D5 실측과 같은 값)
+# 기준물 (형식 시험용 값, 부록 B.4 · B.5 · LM-T14-3 배정과 같은 꼴). GB-00 = 베드 면 (높이 0, cal 행 없음)
+GB_ID, GB_H = "GB-01.2", 1.2008   # 블록게이지 1.2 mm 하나
+FG_ID, FG_H = "FG-0.20", 0.203    # 필러게이지 0.20 (feeler)
+FG5_ID, FG5_H = "FG-0.50", 0.5021  # 필러게이지 0.50 (아래 단)
+BED_ID = "GB-00"
+# 층마다 두 단 (낮은 단 h2, 높은 단 h1). 층 Z 1.2 · 1.4 mm에서 0 < h1 − h2 ≤ 3.04, h1 ≤ Z, Z − h2 ≤ 8.0 [계산]
+STEPS = {"L000": ((BED_ID, 0.0), (FG5_ID, FG5_H)), "L001": ((FG5_ID, FG5_H), (GB_ID, GB_H)),
+         "post": ((FG5_ID, FG5_H), (GB_ID, GB_H))}
+PASS_X = {0: 110.0, 1: 130.0}  # 줄 번호별 스캔 X (bed_bare도 같은 X에서 잼)
 
 
-def _ref(ref_id, kind, scan_id, layer_idx, t_start, seed, marker=True, z=None):
+def _ref(ref_id, kind, scan_id, layer_idx, t_start, seed, marker=True, z=None, gauge=None, pass_idx=None, x=60.0):
     frows, imgs = _frames(scan_id or "S00_r00", layer_idx if layer_idx is not None else -1, t_start - DT, 2, 0, seed, False)
-    gauge = kind in ("step_gauge", "feeler")
-    row = {"ref_id": ref_id, "kind": kind, "scan_id": scan_id, "layer_idx": layer_idx, "n_frames": 2, "frames_dir": "frames/",
+    gid, gh = gauge if gauge else ((FG_ID, FG_H) if kind == "feeler" else (None, None))
+    row = {"ref_id": ref_id, "kind": kind, "scan_id": scan_id, "layer_idx": layer_idx, "scan_pass_idx": pass_idx,
+           "n_frames": 2, "frames_dir": "frames/",
            "marker_id": "MK01" if marker else None, "marker_x_mm": 60.0 if marker else None, "marker_y_mm": 90.0 if marker else None,
            "t_start_ns": t_start, "calibration_id": CAL,
-           "gauge_block_id": (GB_ID if kind == "step_gauge" else FG_ID) if gauge else None,
-           "gauge_height_mm": (GB_H if kind == "step_gauge" else FG_H) if gauge else None,
+           "gauge_block_id": gid, "gauge_height_mm": gh,
            "gauge_temp_c": 45.0 if kind == "step_gauge" else None,  # feeler면 선택 (비워 둠)
            "line_peak_pct": 72.0 if (marker or kind == "step_gauge") else None,
            "note": {"bed_marker": "층 끝 마커 MK01 재측정", "step_gauge": "같은 Z 계단 기준물", "feeler": "출력 전 필러게이지",
                     "bed_bare": "출력 전 베드 기준"}.get(kind, "-")}
     out = {"index": [row], "frames": frows, "images": imgs}
     if kind in ("bed_bare", "bed_marker", "ref_tower", "step_gauge", "feeler"):
-        out["pos"] = _refpos(scan_id, layer_idx, t_start, z if z is not None else 3.0)
+        out["pos"] = _refpos(scan_id, layer_idx, t_start, z if z is not None else 3.0, x)
     return out
 
 
-def _meta(lay, layer_idx, layer_z, layer_end, S, dt_text, post=False):
+def _meta(lay, layer_idx, layer_z, layer_end, S, dt_text, post=False, pass_idx=0):
+    p = f"_p{pass_idx:02d}" if pass_idx else ""
     m = {
-        "scan_id": f"{SR}" if post else f"{SR}_L{layer_idx:03d}", "scan_pass_idx": 0, "campaign_id": CAMPAIGN, "session_id": SESSION,
+        "scan_id": (f"{SR}" if post else f"{SR}_L{layer_idx:03d}") + p, "scan_pass_idx": pass_idx,
+        "campaign_id": CAMPAIGN, "session_id": SESSION,
         "source": "virtual", "spec_version": "1.0", "specimen_id": "S01", "specimen_role": "user_gcode", "repeat": 1,
         "datetime": dt_text, "operator": "sim", "notes": "-",
         "timing": "post" if post else "layer", "layer_idx": layer_idx, "layer_count": 2, "layer_z_mm": layer_z,
         "gcode_line_start": 1 + 100 * layer_idx, "gcode_line_end": 100 + 100 * layer_idx,
         "layer_end_t_ns": layer_end, "scan_start_t_ns": S, "wait_after_layer_s": (S - layer_end) / 1e9,
         "pause_added_s": 0.0 if post else 35.0, "layer_time_s": None if post else 45.0,
-        "scan_z_hop_mm": 2.0, "scan_axis": "+Y", "scan_x_mm": 110.0, "scan_y0_mm": 90.0,
+        "scan_z_hop_mm": 2.0, "scan_axis": "+Y", "scan_x_mm": PASS_X[pass_idx], "scan_y0_mm": 90.0,
         "process": "FDM", "printer_model": "sovol-sv08", "printer_kinematics": "corexy", "bed_motion": "fixed",
         "z_drive": "belt", "z_motor_count": 4, "z_level_method": "qgl", "probe_type": "inductive_pressure",
         "firmware": "sovol-klipper-unknown", "firmware_fork": "vendor", "mesh_enabled": True,
@@ -169,11 +179,12 @@ def _meta(lay, layer_idx, layer_z, layer_end, S, dt_text, post=False):
         "nozzle_temp_c": 30.0 if post else 205.0, "bed_temp_c": 25.0 if post else 60.0, "room_temp_c": 22.4,
         "room_humidity_pct": 45.0, "camera_temp_c": 38.0, "laser_temp_c": 40.0,
         "specimen_temp_c": 23.1 if post else 55.0, "part_fan_pct": 100.0, "ambient_light": "enclosure_dark",
-        "bed_ref_id": "REF-BED-001", "z_offset_mm": -0.15, "zero_ref_method": "step_gauge",
+        # v1.0: 줄마다 bed_bare (줄 0 → REF-BED-001, 줄 1 → REF-BED-002)
+        "bed_ref_id": f"REF-BED-{pass_idx + 1:03d}", "z_offset_mm": -0.15, "zero_ref_method": "step_gauge",
         "bed_mesh_file": "printer/bed_mesh.json", "thermal_state": "cooled" if post else "in_process",
-        "paired_scan_id": f"{SR}_L001" if post else None, "cool_wait_s": (S - layer_end) / 1e9 if post else None,
-        "tolerance_mm": 0.20, "slicer_name": "SLICER-A 0.0", "gcode_flavor": "marlin", "firmware_name": "klipper",
-        "firmware_version": "unknown", "host_software": "moonraker unknown", "layer_macro_version": "LM-T14-2",
+        "paired_scan_id": f"{SR}_L001{p}" if post else None, "cool_wait_s": (S - layer_end) / 1e9 if post else None,
+        "tolerance_mm": 0.20, "slicer_name": "SLICER-A 0.0", "gcode_flavor": "klipper", "firmware_name": "klipper",
+        "firmware_version": "unknown", "host_software": "moonraker unknown", "layer_macro_version": "LM-T14-3",
         "shaper_freq_x_hz": 48.6, "shaper_freq_y_hz": None, "trigger_pin": "cam_trig", "trigger_period_s": 0.008333,
         "sensor_model": "M54-nozzle-line-v1", "cam_model": "OV9281", "cam_shutter": "global", "cam_interface": "sim",
         "cam_pixel_um": 3.0, "cam_res_w_px": 1280, "cam_res_h_px": 800, "lens_f_mm": 8.0, "lens_f_number": 4.0,
@@ -184,34 +195,53 @@ def _meta(lay, layer_idx, layer_z, layer_end, S, dt_text, post=False):
         "n_frames": 12, "raw_saved": True, "proc_time_s": None, "acq_id": "ACQ-2026-11-20-A",
         "calibration_id": CAL, "fid_id": None, "frames_doc_version": "C4-1.0", "software_git": "ff4b01b",
         "files_sha256": AUTO, "sim_version": "sim-0.1.0", "sim_seed": 20261120, "injected_factors": ["MF-SYN-01"],
+        "blind": False,
     }
     return m
 
 
 def normal_model() -> dict:
-    """최소 정상 캠페인: 세션 1, 시편·반복 1, 층 2 + post."""
+    """최소 정상 캠페인 (명세 v1.0, LM-T14-3 꼴): 세션 1, 시편·반복 1, 층 2 + post.
+
+    마지막 층과 post는 두 줄 (`L001_p01` · `post_p01`, 스캔 X 130), 줄마다 bed_bare (REF-BED-001 · 002),
+    층마다 첫 줄 스캔에 베드 마커 1개와 두 단 계단 기준물 2개 (그 층 모든 줄 뒤 같은 Z). ref_id는 세션 안 순번 001부터.
+    """
     scans = {}
     seed = 1000
-    # 층 Z는 계단 기준물 (GB-01, 1.0008 mm)보다 높게 둠 (ref.gauge_height_mm < layer_z_mm, 명세 4절). 형식 시험용 값
-    plan = [("L000", 0, 1.2, 100_000_000_000, "2026-11-20T14:20:00+09:00", False),
-            ("L001", 1, 1.4, 300_000_000_000, "2026-11-20T14:24:00+09:00", False),
-            ("post", 1, 1.4, 300_000_000_000, "2026-11-20T14:57:00+09:00", True)]
-    for lay, li, z, le, dtt, post in plan:
-        S = le + (1_800_000_000_000 if post else 15_000_000_000)
-        meta = _meta(lay, li, z, le, S, dtt, post)
+    # (폴더, 층, 층 Z, 층 끝 ns, 대기 s, datetime, post, 줄). 층 Z는 형식 시험용 값 (두 단 높이보다 높게)
+    plan = [("L000", 0, 1.2, 100_000_000_000, 15, "2026-11-20T14:20:00+09:00", False, 0),
+            ("L001", 1, 1.4, 300_000_000_000, 15, "2026-11-20T14:24:00+09:00", False, 0),
+            ("L001_p01", 1, 1.4, 300_000_000_000, 20, "2026-11-20T14:24:05+09:00", False, 1),
+            ("post", 1, 1.4, 300_000_000_000, 1800, "2026-11-20T14:57:00+09:00", True, 0),
+            ("post_p01", 1, 1.4, 300_000_000_000, 1810, "2026-11-20T14:57:10+09:00", True, 1)]
+    n_mrk = n_stg = 0
+    for lay, li, z, le, wait_s, dtt, post, pidx in plan:
+        S = le + wait_s * 1_000_000_000
+        meta = _meta(lay, li, z, le, S, dtt, post, pidx)
         sid = meta["scan_id"]
         frows, imgs = _frames(sid, li, S, 10, 2, seed)
         seed += 100
-        k = len(scans)
-        mrk, stg = f"REF-MRK-{k:03d}", f"REF-STG-{k:03d}"
-        scans[lay] = {"meta": meta, "frames": frows, "images": imgs, "pos": _pos(sid, li, le, S, z + 2.0, post),
-                      "refs": {mrk: _ref(mrk, "bed_marker", sid, li, frows[0]["t_host_ns"] - 5_000_000_000, seed),
-                               # 같은 Z 연속 측정: 짝 스캔 직후, 스캔 구간 Z = z + 2.0 (D-16)
-                               stg: _ref(stg, "step_gauge", sid, li, frows[-1]["t_host_ns"] + 1_000_000_000, seed + 50,
-                                         marker=False, z=z + 2.0)}}
+        scans[lay] = {"meta": meta, "frames": frows, "images": imgs, "refs": {},
+                      "pos": _pos(sid, li, le, S, z + 2.0, post and pidx == 0, PASS_X[pidx])}
+        if pidx == 0:  # 층에 매인 기준은 그 층 첫 줄 스캔과 짝 (명세 4절)
+            n_mrk += 1
+            mrk = f"REF-MRK-{n_mrk:03d}"
+            scans[lay]["refs"][mrk] = _ref(mrk, "bed_marker", sid, li, frows[0]["t_host_ns"] - 5_000_000_000, seed)
         seed += 100
-    sref = {"REF-BED-001": _ref("REF-BED-001", "bed_bare", None, None, 50_000_000_000, 9000, marker=False),
-            "REF-FLR-001": _ref("REF-FLR-001", "feeler", None, None, 60_000_000_000, 9100, marker=False)}
+    # 두 단 (LM-T14-3: 그 층 모든 줄 → 낮은 단 → 높은 단, Z를 움직이지 않음). 스캔 구간 Z = 층 Z + 2.0 (D-16)
+    for lay, last in (("L000", "L000"), ("L001", "L001_p01"), ("post", "post_p01")):
+        sc, m = scans[lay], scans[lay]["meta"]
+        t0 = scans[last]["frames"][-1]["t_host_ns"]
+        for k, g in enumerate(STEPS[lay]):
+            n_stg += 1
+            stg = f"REF-STG-{n_stg:03d}"
+            sc["refs"][stg] = _ref(stg, "step_gauge", m["scan_id"], m["layer_idx"], t0 + (k + 1) * 1_000_000_000, seed,
+                                   marker=False, z=m["layer_z_mm"] + 2.0, gauge=g)
+            seed += 50
+    # 출력 전 기준: 줄마다 bed_bare (같은 X), 필러게이지. 층 번호 -1 (출력 전 부호)
+    sref = {"REF-BED-001": _ref("REF-BED-001", "bed_bare", None, -1, 50_000_000_000, 9000, marker=False, pass_idx=0, x=PASS_X[0]),
+            "REF-BED-002": _ref("REF-BED-002", "bed_bare", None, -1, 52_000_000_000, 9050, marker=False, pass_idx=1, x=PASS_X[1]),
+            "REF-FLR-001": _ref("REF-FLR-001", "feeler", None, -1, 60_000_000_000, 9100, marker=False)}
     calrow = {"cal_id": CAL, "kind": None, "created": None, "record_type": "image", "target_type": None, "target_rows": None,
               "target_cols": None,
               "target_square_mm": None, "target_marker_mm": None, "target_dict": None, "target_flatness_um": None,
@@ -219,7 +249,7 @@ def normal_model() -> dict:
               "feature_id": None, "feature_x_mm": None, "feature_y_mm": None, "nozzle_touch_z_mm": None,
               "gauge_nominal_mm": None, "gauge_measured_mm": None, "gauge_u_um": None,
               "gauge_block_id": None, "gauge_block_height_mm": None, "gauge_block_u_um": None,
-              "material_offset_um": None, "material_offset_u_um": None, "temp_c": 22.4,
+              "material_offset_um": None, "material_offset_u_um": None, "material": None, "color": None, "temp_c": 22.4,
               "result_file": None, "valid_from": "2026-11-20T12:00:00+09:00", "valid_until": "2026-12-20T12:00:00+09:00",
               "invalidated_by": "none"}
     rf = f"config/calibration/{CAL}/"
@@ -254,9 +284,14 @@ def normal_model() -> dict:
         dict(calrow, kind="D5", created="2026-11-20T11:42:00+09:00", record_type="micrometer", target_type="step_gauge", pose_idx=1,
              exposure_us=None, gauge_block_id=GB_ID, gauge_block_height_mm=GB_H, gauge_block_u_um=2.0,
              result_file=rf + "verification.yaml"),
-        # 재료 치우침 조각: 두께 실측 (영상 없는 행)
+        # 재료 치우침 조각: 두께 실측 (영상 없는 행). 재료·색 = 스캔 meta.material · meta.color (v1.0)
         dict(calrow, kind="D5", created="2026-11-20T11:50:00+09:00", record_type="micrometer", target_type="material_sample",
-             pose_idx=2, exposure_us=None, material_offset_um=-6.2, material_offset_u_um=2.0, result_file=rf + "verification.yaml"),
+             pose_idx=2, exposure_us=None, material_offset_um=-6.2, material_offset_u_um=2.0, material="PLA", color="gray",
+             result_file=rf + "verification.yaml"),
+        # 아래 단으로 쓰는 필러게이지 0.50 (v1.0, LM-T14-3)
+        dict(calrow, kind="D5", created="2026-11-20T11:35:00+09:00", target_type="filler_gauge", pose_idx=3,
+             image_file="d5/gauge_0p50/g_000.png", laser_on=True, gauge_nominal_mm=0.5, gauge_measured_mm=FG5_H, gauge_u_um=1.0,
+             gauge_block_id=FG5_ID, temp_c=22.5, result_file=rf + "verification.yaml"),
     ]
     res = []
     for k, f, extra in (("D1", "camera_intrinsics", {"reproj_rms_px": 0.12}), ("D2", "laser_plane", {"plane_rms_um": 3.0}),
@@ -713,7 +748,8 @@ def _more_hand_faults() -> list[tuple]:
     mod("행 칸 수 ≠ 머리글", "CSV-07", None, _file_edit("L000/frames_index.csv", _extra_cell))
     mod("UTF-8 아님", "CSV-08", None, _file_edit("L000/position_log.csv", lambda b: b + b"\xff\xfe\n"))
     mod("meta.json 최상위가 배열", "JSON-05", None, _file_edit("L000/meta.json", lambda b: b"[]\n"))
-    mod("bed_bare인데 layer_idx 있음", "CROSS-EMPTY.ref.layer_idx",
+    # v1.0: bed_bare · feeler는 -1 (빈 칸 아님) → X-REF-17 (옛 CROSS-EMPTY.ref.layer_idx)
+    mod("bed_bare인데 layer_idx 0", "X-REF-17",
         lambda m: m["sessions"][SESSION]["refs"]["REF-BED-001"]["index"][0].update(layer_idx=0))
     mod("in_process인데 paired_scan_id 있음", "CROSS-EMPTY.meta.paired_scan_id", lambda m: me(m).update(paired_scan_id="S01_r01_L001"))
     mod("D1 행에 cmd_z_mm", "CROSS-EMPTY.cal.cmd_z_mm", lambda m: man(m)[0].update(cmd_z_mm=1.0))
@@ -741,7 +777,8 @@ def _sv13_hand_faults() -> list[tuple]:
     fr = lambda m: S(m)["frames"]  # noqa: E731
     po = lambda m, lay="L000": S(m, lay)["pos"]  # noqa: E731
     me = lambda m, lay="L000": S(m, lay)["meta"]  # noqa: E731
-    stg = lambda m, lay="L000": next(r for r in S(m, lay)["refs"].values() if r["index"][0]["kind"] == "step_gauge")  # noqa: E731
+    # 높은 단 (h1, 교정 행이 있는 FG-0.50 · GB-01.2)
+    stg = lambda m, lay="L000": [r for r in S(m, lay)["refs"].values() if r["index"][0]["kind"] == "step_gauge"][-1]  # noqa: E731
     bed = lambda m: m["sessions"][SESSION]["refs"]["REF-BED-001"]  # noqa: E731
     flr = lambda m: m["sessions"][SESSION]["refs"]["REF-FLR-001"]  # noqa: E731
     man = lambda m: m["cal"][CAL]["cal_manifest.csv"]  # noqa: E731
@@ -757,13 +794,13 @@ def _sv13_hand_faults() -> list[tuple]:
 
     def add_pass(m):
         sc = m["sessions"][SESSION]["scans"][SR]
-        c = clone(sc["L001"])
-        c["meta"].update(scan_pass_idx=2, scan_id=f"{SR}_L001_p02")
-        setall(c["frames"], scan_id=f"{SR}_L001_p02")
-        setall(c["pos"], scan_id=f"{SR}_L001_p02")
+        c = clone(sc["L001"])  # 줄 0, 1이 이미 있음 → 줄 3을 더해 2가 빠지게
+        c["meta"].update(scan_pass_idx=3, scan_id=f"{SR}_L001_p03")
+        setall(c["frames"], scan_id=f"{SR}_L001_p03")
+        setall(c["pos"], scan_id=f"{SR}_L001_p03")
         c["refs"] = {}
         c["meta"]["zero_ref_method"] = "z_only"
-        sc["L001_p02"] = c
+        sc["L001_p03"] = c
 
     # 폴더·파일
     mod("gcode_file이 저장소에 없음", "FILE-17", lambda m: me(m).update(gcode_file="data/gcode/none.gcode"))
@@ -807,18 +844,113 @@ def _sv13_hand_faults() -> list[tuple]:
     mod("기준물 ID가 교정에 없음", "X-REF-12", lambda m: stg(m)["index"][0].update(gauge_block_id="GB-02"))
     mod("feeler인데 GB-", "X-REF-13", lambda m: flr(m)["index"][0].update(gauge_block_id=GB_ID))
     mod("기준물 높이 ≠ cal 교정값", "X-REF-14", lambda m: stg(m)["index"][0].update(gauge_height_mm=1.0))
-    mod("기준물 높이 ≥ 짝 층 Z", "X-REF-15", lambda m: me(m).update(layer_z_mm=1.0))
+    mod("기준물 높이 > 짝 층 Z", "X-REF-15", lambda m: me(m).update(layer_z_mm=0.5))  # h1 0.5021 > 0.5
     mod("기준물 Z ≠ 스캔 Z (> 0.001)", "X-REF-16", lambda m: setall(stg(m)["pos"], z_mm=stg(m)["pos"][0]["z_mm"] + 0.01))
     mod("bed_bare에 gauge_temp_c", "CROSS-EMPTY.ref.gauge_temp_c", lambda m: bed(m)["index"][0].update(gauge_temp_c=22.0))
     # meta
     mod("scan_pass_idx 0인데 scan_id에 _p", "X-MET-54", lambda m: me(m).update(scan_id=f"{SR}_L000_p01"))
-    mod("L001 줄 번호 0, 2 (1 빠짐)", "X-MET-55", add_pass)
+    mod("L001 줄 번호 0, 1, 3 (2 빠짐)", "X-MET-55", add_pass)
     mod("제조사 접두사인데 mainline", "X-MET-59", lambda m: me(m).update(firmware_fork="mainline"))
     mod("hw인데 trigger_pin none", "X-MET-60", lambda m: me(m).update(trigger_pin="none"))
     mod("trigger_period × fps ≠ 1", "X-MET-61", lambda m: me(m).update(trigger_period_s=0.01))
-    mod("step_gauge인데 짝 기준 없음", "X-MET-62", lambda m: S(m)["refs"].pop("REF-STG-000"))
+    mod("step_gauge인데 짝 기준 없음", "X-MET-62", lambda m: (S(m)["refs"].pop("REF-STG-001"), S(m)["refs"].pop("REF-STG-002")))
     mod("free 트리거인데 trigger_period_s 값", "CROSS-EMPTY.meta.trigger_period_s",
         lambda m: (setall(fr(m), trigger_mode="free", trig_pulse_idx=None), me(m).update(trigger_pin="none")))
+    H.extend(_v10_hand_faults())
+    return H
+
+
+def _v10_hand_faults() -> list[tuple]:
+    """명세 v1.0 (T1 3차, 2026-10-28 동결)에서 새로 만들거나 바꾼 규칙마다 고장 표본."""
+    H = []
+
+    def mod(name, rid, fm=None, fb=None):
+        H.append((name, rid, fm, fb))
+
+    S = lambda m, lay="L000": _scan(m, lay)  # noqa: E731
+    me = lambda m, lay="L000": S(m, lay)["meta"]  # noqa: E731
+    po = lambda m, lay="L000": S(m, lay)["pos"]  # noqa: E731
+    refs = lambda m: m["sessions"][SESSION]["refs"]  # noqa: E731
+    stgs = lambda m, lay="L000": [r for r in S(m, lay)["refs"].values() if r["index"][0]["kind"] == "step_gauge"]  # noqa: E731
+    mrk = lambda m, lay="L000": next(r for r in S(m, lay)["refs"].values() if r["index"][0]["kind"] == "bed_marker")  # noqa: E731
+    man = lambda m: m["cal"][CAL]["cal_manifest.csv"]  # noqa: E731
+    layers = lambda m: m["sessions"][SESSION]["scans"][SR]  # noqa: E731
+
+    def setall(rows, **kw):
+        for r in rows:
+            r.update(kw)
+
+    def rename_ref(d, old, new):
+        d[new] = d.pop(old)
+        d[new]["index"][0]["ref_id"] = new
+
+    def blind_all(m, keep=()):
+        """캠페인 전체를 블라인드로 (정상 블라인드 꼴). keep에 든 것은 일부러 남김."""
+        for sc in layers(m).values():
+            sc["meta"].update(blind=True)
+            if "sim_seed" not in keep:
+                sc["meta"].update(sim_seed=None)
+            if "injected_factors" not in keep:
+                sc["meta"].update(injected_factors=[])
+        if "noise_seed" not in keep:
+            for rows in m["msa"]["MSA-01"].values():
+                setall(rows, noise_seed=None)
+
+    # 위치 로그 (post)
+    mod("post 스캔 위치 로그에 pass_idx 1", "X-POS-15", lambda m: po(m, "post_p01")[4].update(pass_idx=1))
+    mod("post 둘째 줄에 cool_start", "X-POS-14", lambda m: po(m, "post_p01")[0].update(event="cool_start"))
+    mod("벨트 Z인데 post 둘째 줄에 motor_off", "X-MET-58", lambda m: po(m, "post_p01")[0].update(event="motor_off"))
+    # 교정
+    mod("step_gauge 행이 FG-", "X-CAL-25", lambda m: _cal_row(m, "step_gauge", "micrometer").update(gauge_block_id="FG-0.50"))
+    mod("cal 행에 GB-00", "X-CAL-25",
+        lambda m: [r.update(gauge_block_id="GB-00", gauge_block_height_mm=0.0001) for r in man(m) if r["gauge_block_id"] == GB_ID])
+    mod("소수 블록 높이 − 공칭 합 > 0.02 (GB-01.4+01.1 = 2.5)", "X-CAL-22",
+        lambda m: _cal_row(m, "step_gauge", "micrometer").update(gauge_block_id="GB-01.4+01.1", gauge_block_height_mm=2.53))
+    mod("재료 조각 재료 ≠ 스캔 재료", "X-CAL-26", lambda m: _cal_row(m, "material_sample").update(material="PETG"))
+    mod("재료 조각 색 ≠ 스캔 색", "X-CAL-26", lambda m: _cal_row(m, "material_sample").update(color="black"))
+    mod("한 cal_id에 재료 조각 (재료, 색) 둘", "X-CAL-27",
+        lambda m: man(m).append(dict(_cal_row(m, "material_sample"), pose_idx=4, color="black")))
+    # 기준
+    mod("층 기준 (마커) layer_idx -1", "X-REF-17", lambda m: mrk(m)["index"][0].update(layer_idx=-1))
+    mod("feeler layer_idx 0", "X-REF-17", lambda m: refs(m)["REF-FLR-001"]["index"][0].update(layer_idx=0))
+    mod("ref_id 순번이 t_start 순서와 다름", "X-REF-18",
+        lambda m: mrk(m, "L001")["index"][0].update(t_start_ns=mrk(m)["index"][0]["t_start_ns"] - 1_000_000_000))
+    mod("ref_id 순번에 빈 번호 (MRK-003 → 004)", "X-REF-18", lambda m: rename_ref(S(m, "post")["refs"], "REF-MRK-003", "REF-MRK-004"))
+    mod("세션 안 같은 ref_id 둘", "X-REF-19", lambda m: rename_ref(S(m, "L001")["refs"], "REF-MRK-002", "REF-MRK-001"))
+    mod("두 단 중 하나 빠짐", "X-REF-20", lambda m: S(m, "L001")["refs"].pop("REF-STG-003"))
+    mod("두 단 ID가 같음", "X-REF-20", lambda m: stgs(m, "L001")[0]["index"][0].update(gauge_block_id=GB_ID, gauge_height_mm=GB_H))
+    mod("두 단 간격 > 3.04", "X-REF-20", lambda m: stgs(m, "L001")[1]["index"][0].update(gauge_height_mm=3.6))
+    mod("층 Z − 낮은 단 > 8.0", "X-REF-20", lambda m: me(m).update(layer_z_mm=8.1))
+    mod("두 단이 셋", "X-REF-20",
+        lambda m: S(m, "post")["refs"].update({"REF-STG-007": _ref("REF-STG-007", "step_gauge", f"{SR}", 1,
+                                                                    3_000_000_000_000, 7700, marker=False, z=3.4, gauge=(BED_ID, 0.0))}))
+    mod("bed_bare 줄 1 없음", "X-REF-21", lambda m: refs(m).pop("REF-BED-002"))
+    mod("bed_bare 줄 번호 0, 2", "X-REF-21", lambda m: refs(m)["REF-BED-002"]["index"][0].update(scan_pass_idx=2))
+    mod("bed_bare 위치 X ≠ 그 줄 scan_x", "X-REF-22", lambda m: setall(refs(m)["REF-BED-002"]["pos"], x_mm=120.0))
+    mod("GB-00인데 높이 ≠ 0", "X-REF-23", lambda m: stgs(m)[0]["index"][0].update(gauge_height_mm=0.001))
+    mod("GB-00 아닌데 높이 0", "X-REF-23", lambda m: refs(m)["REF-FLR-001"]["index"][0].update(gauge_height_mm=0.0))
+    mod("층 기준 짝 스캔이 둘째 줄", "X-REF-24", lambda m: mrk(m, "L001")["index"][0].update(scan_id=f"{SR}_L001_p01"))
+    mod("FG 단 높이 ≠ cal gauge_measured_mm", "X-REF-14", lambda m: stgs(m)[1]["index"][0].update(gauge_height_mm=0.6))
+    mod("step_gauge 단이 GB-·FG- 아님 (형식 통과 못 하는 값)", "X-REF-13",
+        lambda m: stgs(m)[1]["index"][0].update(gauge_block_id="XX-01"))
+    # 같은 Z (행마다)
+    mod("둘째 줄 스캔 Z가 첫 줄과 0.002 다름", "X-REF-16",
+        lambda m: [r.update(z_mm=r["z_mm"] + 0.002) for r in po(m, "L001_p01") if r["event"] != "layer_change"])
+    mod("기준 로그 한 행만 0.0015 다름 (평균은 0.001 안)", "X-REF-16",
+        lambda m: stgs(m)[0]["pos"][1].update(z_mm=stgs(m)[0]["pos"][1]["z_mm"] + 0.0015))
+    # meta
+    mod("bed_ref_id 줄 번호 ≠ 스캔 줄 번호", "X-MET-64", lambda m: me(m, "L001_p01").update(bed_ref_id="REF-BED-001"))
+    mod("같은 줄 번호인데 bed_ref_id 다름", "X-MET-26", lambda m: me(m, "post_p01").update(bed_ref_id="REF-BED-001"))
+    mod("post 줄 집합 ≠ 마지막 층 줄 집합", "X-MET-65", lambda m: layers(m).pop("post_p01"))
+    mod("post 둘째 줄 짝이 첫 줄 스캔", "X-MET-33", lambda m: me(m, "post_p01").update(paired_scan_id=f"{SR}_L001"))
+    mod("실측인데 blind true", "X-MET-66", lambda m: me(m).update(source="real", blind=True))
+    mod("캠페인 안 blind 값이 섞임", "X-MET-67", lambda m: me(m).update(blind=True, sim_seed=None, injected_factors=[]))
+    mod("blind인데 injected_factors 남김", "X-MET-51", lambda m: blind_all(m, keep=("injected_factors",)))
+    mod("blind인데 sim_seed 남김", "CROSS-EMPTY.meta.sim_seed", lambda m: blind_all(m, keep=("sim_seed",)))
+    mod("blind인데 rep.noise_seed 남김", "CROSS-EMPTY.rep.noise_seed", lambda m: blind_all(m, keep=("noise_seed",)))
+    mod("material_sample인데 color 빔", "REQ.cal.color", lambda m: _cal_row(m, "material_sample").update(color=None))
+    mod("filler_gauge 행에 material", "CROSS-EMPTY.cal.material", lambda m: _cal_row(m, "filler_gauge").update(material="PLA"))
+    mod("feeler에 scan_pass_idx", "CROSS-EMPTY.ref.scan_pass_idx", lambda m: refs(m)["REF-FLR-001"]["index"][0].update(scan_pass_idx=0))
     return H
 
 
@@ -878,7 +1010,7 @@ def warn_tests() -> list[tuple]:
 
 
 def switch_tests() -> list[tuple]:
-    """기본으로 꺼 둔 규칙 (D-21 대기). (이름, 규칙 ID, 모형 고침). 끈 채로는 안 나오고, 켜면 WARN으로 나와야 함."""
+    """끌 수 있는 기본 켬 규칙 (D-21 채택 X4 · X7). (이름, 규칙 ID, 모형 고침). 기본으로 WARN이 나오고, 끄면 안 나와야 함."""
     def drop_layer0(m):
         sc = m["sessions"][SESSION]["scans"][SR]
         sc.pop("L000")
@@ -889,14 +1021,53 @@ def switch_tests() -> list[tuple]:
     ]
 
 
+def truth_context(blind: bool = False) -> dict:
+    """정상 표본 캠페인의 참값 대조용 사실 (Validator.run 뒤 truth_ctx와 같아야 함, 시험이 맞춰 봄)."""
+    ids = ["S01_r01", "S01_r01_L000", "S01_r01_L001", "S01_r01_L001_p01", "S01_r01_p01"]
+    return {"has_step_gauge": True, "gauge_ids": [GB_ID], "blind": blind, "scan_ids": ids,
+            "factors": [] if blind else ["MF-SYN-01"]}
+
+
+def normal_truth(blind: bool = False) -> dict:
+    """정상 표본에 맞는 참값 객체의 v1.0 관련 키 (형식 시험용 값, 부록 A 예시 꼴)."""
+    t = {"judgement": "pass", "pass_pct": 97.0,
+         "gauge_thickness_mm": {"0.20": 0.2031, "0.50": 0.5021},
+         "gauge_block_heights_mm": {GB_ID: 1.2006}, "gauge_temp_params": {"cte_um_per_m_c": 11.5, "temp_c": {"L000": 45.0}},
+         "scan_seeds": None, "scan_factors": None, "factor_params": {"MF-SYN-01": {"dt_ns": 10_000_000}}}
+    if blind:
+        ids = truth_context(True)["scan_ids"]
+        t["scan_seeds"] = {s: {"sim_seed": 7310045 + i, "noise_seed": None} for i, s in enumerate(ids)}
+        t["scan_factors"] = {s: ["MF-SYN-01"] for s in ids}
+    return t
+
+
 def truth_tests() -> list[tuple]:
-    """참값 객체 검사 (Validator.check_truth). (이름, 참값, 기대 규칙 ID 또는 None)."""
+    """참값 객체 검사 (Validator.check_truth). (이름, 참값, 기대 규칙 ID 또는 None, 캠페인 사실 ctx)."""
+    N = normal_truth
+    ctx, bctx = truth_context(), truth_context(True)
+
+    def w(base, **kw):
+        t = clone(base)
+        t.update(kw)
+        return t
     return [
-        ("정상 pass 97", {"judgement": "pass", "pass_pct": 97.0}, None),
-        ("정상 fail 94.9", {"judgement": "fail", "pass_pct": 94.9}, None),
-        ("경계 pass 95", {"judgement": "pass", "pass_pct": 95.0}, None),
-        ("pass인데 90", {"judgement": "pass", "pass_pct": 90.0}, "X-TRU-01"),
-        ("fail인데 95", {"judgement": "fail", "pass_pct": 95.0}, "X-TRU-01"),
+        ("정상 pass 97", N(), None, ctx),
+        ("정상 fail 94.9", w(N(), judgement="fail", pass_pct=94.9), None, ctx),
+        ("경계 pass 95", w(N(), pass_pct=95.0), None, ctx),
+        ("정상 블라인드", N(True), None, bctx),
+        ("pass인데 90", w(N(), pass_pct=90.0), "X-TRU-01", ctx),
+        ("fail인데 95", w(N(), judgement="fail", pass_pct=95.0), "X-TRU-01", ctx),
+        # v1.0 (T1 3차)
+        ("step_gauge 있는데 블록 참 높이 null", w(N(), gauge_block_heights_mm=None), "X-TRU-02", ctx),
+        ("블록 참 높이 − ID 합 > 0.02", w(N(), gauge_block_heights_mm={GB_ID: 1.23}), "X-TRU-02", ctx),
+        ("블록 참 높이 키에 GB-00", w(N(), gauge_block_heights_mm={GB_ID: 1.2006, "GB-00": 0.0}), "X-TRU-02", ctx),
+        ("기준물 열 모델에 cte 키 없음", w(N(), gauge_temp_params={"temp_c": {}}), "X-TRU-02", ctx),
+        ("blind인데 scan_seeds null", w(N(True), scan_seeds=None), "X-TRU-03", bctx),
+        ("blind 아닌데 scan_factors 값", w(N(), scan_factors=N(True)["scan_factors"]), "X-TRU-03", ctx),
+        ("scan_seeds 키 집합 ≠ 스캔 ID", w(N(True), scan_seeds={"S01_r01": {"sim_seed": 1, "noise_seed": None}}), "X-TRU-03", bctx),
+        ("factor_params 키 ≠ 주입 요인", w(N(), factor_params={"MF-SYN-02": {}}), "X-TRU-04", ctx),
+        ("blind인데 factor_params 키 ≠ scan_factors 합집합", w(N(True), factor_params={}), "X-TRU-04", bctx),
+        ("필러 참 두께 키 0.60", w(N(), gauge_thickness_mm={"0.60": 0.6}), "X-TRU-05", ctx),
     ]
 
 
@@ -1014,21 +1185,21 @@ def run_selftest(fields: list[dict], rules_list: list[dict], file_cols: dict, di
         fnd = check(fs)
         ids = {x.rule_id for x in fnd if x.severity == "WARN"}
         warns.append({"name": name, "expected": rid, "detected": rid in ids})
-    # 기본 끔 규칙 (D-21): 끈 채로는 안 나오고 (기본), 켜면 나와야 함
+    # 기본 켬 규칙 (D-21 채택 X4 · X7): 기본으로 WARN이 나오고, disabled_rules로 끄면 안 나와야 함
     for name, rid, fm in switch_tests():
         m = clone(base)
         fm(m)
         fs = serialize(m, file_cols)
-        off_ids = {x.rule_id for x in check(fs)}
-        on = Validator(fields, rules_list, file_cols, enabled_rules={rid}, repo_exists=repo_exists)
-        on_ids = {x.rule_id for x in on.run(MemFS(fs), CAMPAIGN) if x.severity == "WARN"}
+        on_ids = {x.rule_id for x in check(fs) if x.severity == "WARN"}
+        off = Validator(fields, rules_list, file_cols, disabled_rules={rid}, repo_exists=repo_exists)
+        off_ids = {x.rule_id for x in off.run(MemFS(fs), CAMPAIGN)}
         warns.append({"name": f"[스위치] {name}", "expected": rid, "detected": rid in on_ids and rid not in off_ids})
-    # 참값 (부록 A): judgement ⇔ pass_pct
-    for name, obj, rid in truth_tests():
-        ids = {x.rule_id for x in V.check_truth(obj) if x.severity == "ERROR"}
+    # 참값 (부록 A): judgement ⇔ pass_pct, v1.0 새 참값 필드 (캠페인 사실 ctx와 대조)
+    for name, obj, rid, tctx in truth_tests():
+        ids = {x.rule_id for x in V.check_truth(obj, ctx=tctx) if x.severity == "ERROR"}
         if rid is None:
             if ids:
-                rep["normal_error"].extend(V.check_truth(obj))
+                rep["normal_error"].extend(V.check_truth(obj, ctx=tctx))
         else:
             results.append({"kind": "손", "name": f"[참값] {name}", "expected": rid, "detected": rid in ids, "got": sorted(ids)})
     timing["손고장·경고"] = time.perf_counter() - t0

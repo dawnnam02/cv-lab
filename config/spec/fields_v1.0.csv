@@ -1,11 +1,11 @@
 field,group,meaning,unit,dtype,req,example,rule_text,regex,enum,enum_pending,min,min_op,max,max_op,file,excluded,excluded_reason,order
 frame.scan_id,frame,이 프레임이 속한 스캔 ID,-,str,필수,S01_r01_L004,정규식 `^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$`. 파일 안 모든 행이 같고 `meta.scan_id`와 같음,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,,false,,,,,frames_index.csv,false,,0
-frame.layer_idx,frame,"이 프레임을 찍은 층 번호, 0부터 (출력 후 최종 스캔이면 마지막 층 번호). 기준 촬영 색인에서는 그 기준의 층 번호, 출력 시작 전 기준이면 -1",-,int,필수,4,"-1 ≤ x. 파일 안 모든 행이 같음. 스캔 폴더에서는 `meta.layer_idx`와 같고 -1이 아님. 기준 촬영 폴더에서는 `ref.layer_idx`와 같고, `ref.layer_idx`가 빈 칸이면 -1",,,false,-1,≤,,,frames_index.csv,false,,1
+frame.layer_idx,frame,"이 프레임을 찍은 층 번호, 0부터 (출력 후 최종 스캔이면 마지막 층 번호). 기준 촬영 색인에서는 그 기준의 층 번호, 출력 시작 전 기준이면 -1",-,int,필수,4,"-1 ≤ x. 파일 안 모든 행이 같음. 스캔 폴더에서는 `meta.layer_idx`와 같고 -1이 아님. 기준 촬영 폴더에서는 `ref.layer_idx`와 같고 (출력 전 기준은 둘 다 -1), `ref.layer_idx`가 빈 칸 (층에 매이지 않은 기준)이면 -1",,,false,-1,≤,,,frames_index.csv,false,,1
 frame.frame_idx,frame,"스캔 안 프레임 번호, 0부터",-,int,필수,0,"0 ≤ x. 첫 행 0, 행마다 1씩 증가, 중복 없음",,,false,0,≤,,,frames_index.csv,false,,2
 frame.file,frame,"영상 파일 위치, 스캔 폴더 기준 상대 경로",-,str,조건부,frames/000000.png,"`meta.raw_saved` = true면 필수, false면 빈 칸. 정규식 `^frames/\d{6}\.png$` 또는 `^frames\.npz#f\d{6}$`. 숫자 6자리 = `frame.frame_idx`. 파일이 실제로 있음",^frames/\d{6}\.png$||^frames\.npz#f\d{6}$,,false,,,,,frames_index.csv,false,,3
 frame.sha256,frame,"영상 파일 SHA-256 지문 (누락·손상 탐지, T2 MF-DAT-06)",-,str,조건부,a1b2…(64자),`frame.file`이 있으면 필수. 정규식 `^[0-9a-f]{64}$`. 다시 계산한 값과 같음,^[0-9a-f]{64}$,,false,,,,,frames_index.csv,false,,4
 frame.t_cam_ns,frame,"노출 시작 시각, 카메라 시계",ns,int64,조건부,1000000,"카메라가 시각을 주면 필수, 아니면 빈 칸. 있으면 행마다 증가",,,false,,,,,frames_index.csv,false,,5
-frame.t_host_ns,frame,"PC가 프레임을 다 받은 시각, 호스트 단조 시계",ns,int64,필수,4990008333,0 < x. 이전 행보다 큼,,,false,0,<,,,frames_index.csv,false,,6
+frame.t_host_ns,frame,"PC가 프레임을 다 받은 시각, 호스트 단조 시계",ns,int64,필수,4990008333333,0 < x. 이전 행보다 큼,,,false,0,<,,,frames_index.csv,false,,6
 frame.cam_seq,frame,카메라가 매긴 프레임 일련번호 (빠짐 탐지용),-,int,조건부,1201,카메라가 주면 필수. 이전 행보다 큼,,,false,,,,,frames_index.csv,false,,7
 frame.exposure_us,frame,이 프레임의 실제 노출 시간 (카메라에서 읽은 값),µs,float,필수,800.0,0 < x ≤ 1e6 ÷ `meta.fps`. 스캔 안에서 모두 같음 (자동 노출 끔),,,false,0,<,,,frames_index.csv,false,,8
 frame.gain_db,frame,아날로그 게인 (카메라에서 읽은 값),dB,float,필수,0.0,0 ≤ x. 스캔 안에서 모두 같음 (자동 게인 끔),,,false,0,≤,,,frames_index.csv,false,,9
@@ -24,21 +24,21 @@ frame.dropped_before,frame,이 프레임 바로 앞에서 빠진 프레임 수,-
 frame.saturated_px,frame,"값이 2^bit_depth − 1인 화소 수 (포화 탐지용, T2 MF-MAT-02·OPT-10·JDG-03)",-,int,선택,0,0 ≤ x ≤ roi_w × roi_h. 판정 영역의 결측 원인 (판정 거부 X6)을 설명할 때 씀. 값을 비우면 원시 영상에서 다시 셈,,,false,0,≤,,,frames_index.csv,false,,22
 frame.sensor_temp_c,frame,촬영 때 이미지 센서 온도,°C,float,선택,41.5,−40 ≤ x ≤ 125 (물리 점검용 넓은 한계),,,false,-40,≤,125,≤,frames_index.csv,false,,23
 pos.scan_id,pos,이 기록이 속한 스캔 ID,-,str,필수,S01_r01_L004,정규식 `^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$`. `meta.scan_id`와 같음,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,,false,,,,,position_log.csv,false,,24
-pos.t_ns,pos,"기록 시각, `pos.clock`이 가리키는 시계 기준",ns,int64,필수,4990000000,0 ≤ x. 같은 clock·source 안에서 증가,,,false,0,≤,,,position_log.csv,false,,25
+pos.t_ns,pos,"기록 시각, `pos.clock`이 가리키는 시계 기준",ns,int64,필수,4990000000000,0 ≤ x. 같은 clock·source 안에서 증가,,,false,0,≤,,,position_log.csv,false,,25
 pos.clock,pos,"이 행 시각의 기준 시계: host 호스트 단조 시계, mcu 프린터 MCU 시계. Klipper는 host (eventtime, 부록 D)",-,str,필수,host,"값 ∈ {host, mcu}",,"host,mcu",false,,,,,position_log.csv,false,,26
 pos.source,pos,"위치 값의 출처: cmd G코드 명령, plan 펌웨어 계획 위치 (트리거 펄스 번호로 보간한 위치 포함), report 펌웨어 보고 (이동 완료 뒤), steps 스텝 계수. 펌웨어별 대응은 부록 D",-,str,필수,report,"값 ∈ {cmd, plan, report, steps}. 모든 행에 있음 (T2 MF-SYN-02·SYN-13)",,"cmd,plan,report,steps",false,,,,,position_log.csv,false,,27
 pos.x_mm,pos,"노즐 끝 X. source = cmd·plan·report면 {G}, steps면 기계 좌표",mm,float,필수,110.0000,유한값. 스캔 구간에서 변화 ≤ 0.01 (Y 스캔이므로 X 고정),,,false,,,,,position_log.csv,false,,28
 pos.y_mm,pos,"노즐 끝 Y (스캔 진행 방향). source = cmd·plan·report면 {G}, steps면 기계 좌표",mm,float,필수,90.0000,유한값. scan_start~scan_end 사이 단조 증가 또는 단조 감소,,,false,,,,,position_log.csv,false,,29
-pos.z_mm,pos,"노즐 끝 Z. source = cmd·plan·report면 {G}, steps면 기계 좌표",mm,float,필수,3.0000,0 ≤ x. 스캔 구간 변화 ≤ 0.001 (명령 기준),,,false,0,≤,,,position_log.csv,false,,30
+pos.z_mm,pos,"노즐 끝 Z. source = cmd·plan·report면 {G}, steps면 기계 좌표",mm,float,필수,3.0000,0 ≤ x. 스캔 구간 (scan_start~scan_end)의 source = cmd 행끼리 변화 ≤ 0.001. 계단 기준물과의 같은 Z 규칙은 4절 (cmd 행마다),,,false,0,≤,,,position_log.csv,false,,30
 pos.e_mm,pos,"압출 축 위치, 기계 좌표 (E축)",mm,float,선택,152.3310,유한값. scan_start~scan_end 사이에서 값이 있는 행끼리 변화 0 (스캔 중 압출 없음). 그 구간에 값이 하나 이하면 검사하지 않음,,,false,,,,,position_log.csv,false,,31
 pos.feed_mm_s,pos,이 순간 이송 속도,mm/s,float,필수,2.40,0 ≤ x. 스캔 구간 평균이 `meta.scan_speed_mm_s`와 ±5 % 안,,,false,0,≤,,,position_log.csv,false,,32
 pos.layer_idx,pos,"현재 층 번호, 0부터. 출력 시작 전 기준 촬영의 위치 로그면 -1",-,int,필수,4,-1 ≤ x. 스캔 폴더에서는 `meta.layer_idx`와 같고 -1이 아님. 기준 촬영 폴더에서는 `frame.layer_idx`와 같음,,,false,-1,≤,,,position_log.csv,false,,33
-pos.pass_idx,pos,"한 스캔 (같은 X 줄) 안에서 같은 자리를 다시 지나간 반복 번호, 0부터. X를 바꾼 다른 줄은 `meta.scan_pass_idx`",-,int,필수,0,0 ≤ x. scan_start~scan_end 사이에서 값이 0부터 빈 번호 없이 늘어남,,,false,0,≤,,,position_log.csv,false,,34
+pos.pass_idx,pos,"한 스캔 (같은 X 줄) 안에서 같은 자리를 다시 지나간 반복 번호, 0부터. X를 바꾼 다른 줄은 `meta.scan_pass_idx`",-,int,필수,0,"0 ≤ x. scan_start~scan_end 사이에서 값이 0부터 빈 번호 없이 늘어남. timing = post 스캔은 모든 행이 0 (식힌 재측정 표시는 `meta.thermal_state` = cooled로 하고 PASS로 하지 않음, LM-T14-3)",,,false,0,≤,,,position_log.csv,false,,34
 pos.mesh_dz_mm,pos,베드 메시가 이 XY에서 더한 Z 보정 (기계 Z − {G} Z),mm,float,조건부,0.0120,`meta.mesh_enabled` = true면 필수. abs(x) ≤ 2.0,,,false,-2.0,≤,2.0,≤,position_log.csv,false,,35
-pos.event,pos,"이 행의 이벤트. resume = 스캔 뒤 저장한 자리로 돌아가 출력 재개, cool_start · cool_end = 식힌 재측정 대기의 시작·끝 (T14 `COOL_RESCAN`)",-,str,필수,scan_start,"값 ∈ {none, home, layer_change, scan_start, scan_end, pause_start, pause_end, resume, cool_start, cool_end, motor_off, m400_done, probe, error} (motor_off·m400_done은 T2 요청, resume·cool_start·cool_end는 T14 요청). 스캔마다 scan_start 1개, scan_end 1개, scan_start가 먼저. resume은 timing = layer 스캔에서 scan_end 뒤 0–1개. cool_start · cool_end는 timing = post 스캔에만 각 1개, cool_start < cool_end ≤ scan_start. probe는 프린터 레벨링 프로브 동작 (QGL · 메시, 측정 검증에 안 씀)",,"none,home,layer_change,scan_start,scan_end,pause_start,pause_end,resume,cool_start,cool_end,motor_off,m400_done,probe,error",false,,,,,position_log.csv,false,,36
+pos.event,pos,"이 행의 이벤트. resume = 스캔 뒤 저장한 자리로 돌아가 출력 재개, cool_start · cool_end = 식힌 재측정 대기의 시작·끝 (T14 `COOL_RESCAN`)",-,str,필수,scan_start,"값 ∈ {none, home, layer_change, scan_start, scan_end, pause_start, pause_end, resume, cool_start, cool_end, motor_off, m400_done, probe, error} (motor_off·m400_done은 T2 요청, resume·cool_start·cool_end는 T14 요청). 스캔마다 scan_start 1개, scan_end 1개, scan_start가 먼저. resume은 timing = layer 스캔에서 scan_end 뒤 0–1개이고, **timing = post 스캔에는 없음** (출력이 끝남). cool_start · cool_end는 timing = post이고 `meta.scan_pass_idx` = 0인 스캔에만 각 1개 (다른 post 줄과 layer 스캔에는 없음), cool_start < cool_end ≤ scan_start. motor_off: `meta.z_drive` = belt면 post 첫 줄 위치 로그의 cool_start ~ scan_end 사이와 다른 post 줄 위치 로그 전체에 없음 (식힌 재측정이 끝날 때까지 모터 유지, T2 MF-SYN-09). probe는 프린터 레벨링 프로브 동작 (QGL · 메시, 측정 검증에 안 씀)",,"none,home,layer_change,scan_start,scan_end,pause_start,pause_end,resume,cool_start,cool_end,motor_off,m400_done,probe,error",false,,,,,position_log.csv,false,,36
 pos.clock_offset_ns,pos,MCU 시계를 호스트 시계로 옮길 때 더한 값 (t_host = t_mcu + x),ns,int64,조건부,4989000000,"`pos.clock` = mcu면 필수, host면 빈 칸",,,false,,,,,position_log.csv,false,,37
 pos.acc_x_mm_s2,pos,헤드 가속도 X (가속도계 축을 {G} 축에 맞춘 값),mm/s²,float,선택,12.5,유한값. 있으면 acc_y·acc_z도 있음,,,false,,,,,position_log.csv,false,,38
-pos.acc_y_mm_s2,pos,"헤드 가속도 Y, {G} 축",mm/s²,float,선택,−3.1,유한값,,,false,,,,,position_log.csv,false,,39
+pos.acc_y_mm_s2,pos,"헤드 가속도 Y, {G} 축",mm/s²,float,선택,-3.1,유한값,,,false,,,,,position_log.csv,false,,39
 pos.acc_z_mm_s2,pos,"헤드 가속도 Z, {G} 축 (중력 뺀 값)",mm/s²,float,선택,0.8,유한값,,,false,,,,,position_log.csv,false,,40
 cal.cal_id,cal,교정 ID,-,str,필수,CAL-2026-11-20-A,정규식 `^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$`. 폴더 이름과 같음,^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,cal_manifest.csv;cal_results.csv,false,,41
 cal.kind,cal,이 행이 쓰이는 교정 단계,-,str,필수,D2,"값 ∈ {D1, D2, D3, D4, D5}",,"D1,D2,D3,D4,D5",false,,,,,cal_manifest.csv;cal_results.csv,false,,42
@@ -61,186 +61,194 @@ cal.feature_id,cal,D4 교정 판 원기둥 ID,-,str,조건부,P02_03,kind = D4�
 cal.feature_x_mm,cal,"원기둥 중심의 G코드 X, {G}",mm,float,조건부,104.0000,kind = D4면 필수. 유한값,,,false,,,,,cal_manifest.csv;cal_results.csv,false,,59
 cal.feature_y_mm,cal,"원기둥 중심의 G코드 Y, {G}",mm,float,조건부,96.0000,kind = D4면 필수. 유한값,,,false,,,,,cal_manifest.csv;cal_results.csv,false,,60
 cal.nozzle_touch_z_mm,cal,"노즐이 교정 판 윗면에 닿은 Z, {G}",mm,float,조건부,2.0300,"`cal.record_type` = nozzle_touch면 필수, 그 밖은 빈 칸. 0 ≤ x",,,false,0,≤,,,cal_manifest.csv;cal_results.csv,false,,61
-cal.gauge_nominal_mm,cal,"필러게이지 공칭 두께 (크기 값, 좌표계 무관)",mm,float,조건부,0.20,"target_type = filler_gauge면 필수. 값 ∈ {0.20, 0.30, 0.40}",,"0.20,0.30,0.40",false,,,,,cal_manifest.csv;cal_results.csv,false,,62
-cal.gauge_measured_mm,cal,"필러게이지 실측 두께 (마이크로미터 등) (크기 값, 좌표계 무관)",mm,float,조건부,0.2030,target_type = filler_gauge면 필수. abs(x − 공칭) ≤ 0.02,,,false,,,,,cal_manifest.csv;cal_results.csv,false,,63
+cal.gauge_nominal_mm,cal,"필러게이지 공칭 두께 (크기 값, 좌표계 무관)",mm,float,조건부,0.20,"target_type = filler_gauge면 필수. 값 ∈ {0.20, 0.30, 0.40, 0.50} (0.50은 LM-T14-3 아래 단)",,"0.20,0.30,0.40,0.50",false,,,,,cal_manifest.csv;cal_results.csv,false,,62
+cal.gauge_measured_mm,cal,"필러게이지 실측 두께 (마이크로미터 등) (크기 값, 좌표계 무관). 필러게이지를 계단 기준물의 아래 단으로 쓸 때 (LM-T14-3) 그 단의 교정 높이도 이 값",mm,float,조건부,0.2030,target_type = filler_gauge면 필수. abs(x − 공칭) ≤ 0.02,,,false,,,,,cal_manifest.csv;cal_results.csv,false,,63
 cal.gauge_u_um,cal,실측 두께의 표준불확도 (k = 1),µm,float,조건부,1.0,target_type = filler_gauge면 필수. 0 < x,,,false,0,<,,,cal_manifest.csv;cal_results.csv,false,,64
-cal.gauge_block_id,cal,"기준물 개체 ID. 블록게이지는 GB-<높이 mm 2자리> (쌓으면 +로 이음), 필러게이지는 FG-<공칭 두께>. `ref.gauge_block_id`가 이 값을 가리킴",-,str,조건부,GB-05,"target_type ∈ {step_gauge, filler_gauge}면 필수. 정규식 `^GB-\d{2}(\+\d{2})*$` 또는 `^FG-0\.[234]0$`. FG면 숫자 = `cal.gauge_nominal_mm`",^GB-\d{2}(\+\d{2})*$||^FG-0\.[234]0$,,false,,,,,cal_manifest.csv;cal_results.csv,false,,65
-cal.gauge_block_height_mm,cal,"계단 기준물 블록 (또는 쌓은 블록)의 교정 높이, 마이크로미터 실측, 베드 면 = 0에서 윗면까지 ({G} Z 방향 길이)",mm,float,조건부,5.0012,target_type = step_gauge면 필수. 0 < x ≤ 60. 블록 공칭 합과 차 ≤ 0.02 [추정: 등급 공차 원문 미확인]. 같은 cal_id 안 같은 `cal.gauge_block_id`면 같은 값,,,false,0,<,60,≤,cal_manifest.csv;cal_results.csv,false,,66
-cal.gauge_block_u_um,cal,블록 교정 높이의 표준불확도 (k = 1). 등급 공차와 쌓은 면 접촉 몫 포함,µm,float,조건부,2.0,target_type = step_gauge면 필수. 0 < x,,,false,0,<,,,cal_manifest.csv;cal_results.csv,false,,67
-cal.material_offset_um,cal,"재료 치우침: 같은 재료 조각을 레이저로 잰 높이 − 마이크로미터로 잰 두께 (재료 산란으로 보통 음수). 처리 코드는 측정 높이에서 이 값을 빼서 보정 (T2 5.4절 ⑤, MF-MAT-01)",µm,float,조건부,-6.2,target_type = material_sample면 필수. abs(x) ≤ 100. 조각은 같은 캠페인 스캔의 `meta.material`·`meta.color`와 같은 필라멘트로 출력함. 재료가 여럿이면 재료마다 cal_id를 따로 둠,,,false,-100,≤,100,≤,cal_manifest.csv;cal_results.csv,false,,68
+cal.gauge_block_id,cal,"기준물 개체 ID. 블록게이지는 GB-<블록 공칭 높이 mm> (정수 두 자리, 필요하면 소수 1–3자리, 쌓으면 +로 이음, 예 GB-01.2 · GB-01.4+01.1 · GB-02+01.8+01.5), 필러게이지는 FG-<공칭 두께>. 베드 면 단 GB-00은 교정값 0이라 cal 행을 두지 않음. `ref.gauge_block_id`가 이 값을 가리킴",-,str,조건부,GB-01.2,"target_type ∈ {step_gauge, filler_gauge}면 필수, 그 밖은 빈 칸. 정규식 `^GB-\d{2}(\.\d{1,3})?(\+\d{2}(\.\d{1,3})?)*$` 또는 `^FG-0\.[2345]0$`. **target_type = step_gauge면 GB-로, filler_gauge면 FG-로 시작.** GB-00은 쓰지 않음. FG면 숫자 = `cal.gauge_nominal_mm`. GB면 + 로 나눈 숫자의 합 = 공칭 높이","^GB-\d{2}(\.\d{1,3})?(\+\d{2}(\.\d{1,3})?)*$||^FG-0\.[2345]0$",,false,,,,,cal_manifest.csv;cal_results.csv,false,,65
+cal.gauge_block_height_mm,cal,"계단 기준물 블록 (또는 쌓은 블록)의 교정 높이, 마이크로미터 실측, 베드 면 = 0에서 윗면까지 ({G} Z 방향 길이)",mm,float,조건부,1.2008,target_type = step_gauge면 필수. 0 < x ≤ 60. 블록 공칭 합 (ID 숫자의 합)과 차 ≤ 0.02 [추정: 등급 공차 원문 미확인]. 같은 cal_id 안 같은 `cal.gauge_block_id`면 같은 값,,,false,0,<,60,≤,cal_manifest.csv;cal_results.csv,false,,66
+cal.gauge_block_u_um,cal,블록 교정 높이의 **표준불확도 (k = 1)**. 등급 공차와 쌓은 면 접촉 몫 포함. 성적서 · 등급표가 상한 a (등급 공차)만 주면 a ÷ √3으로 바꿔 적음 (T2 5.4절 B29),µm,float,조건부,2.0,target_type = step_gauge면 필수. 0 < x,,,false,0,<,,,cal_manifest.csv;cal_results.csv,false,,67
+cal.material_offset_um,cal,"재료 치우침: 같은 재료 조각을 레이저로 잰 높이 − 마이크로미터로 잰 두께 (재료 산란으로 보통 음수). 처리 코드는 측정 높이에서 이 값을 빼서 보정 (T2 5.4절 ⑤, MF-MAT-01)",µm,float,조건부,-6.2,target_type = material_sample면 필수. abs(x) ≤ 100. 조각은 같은 캠페인 스캔의 `meta.material`·`meta.color`와 같은 필라멘트로 출력함 (데이터로는 `cal.material` · `cal.color`로 확인). 재료가 여럿이면 재료마다 cal_id를 따로 둠,,,false,-100,≤,100,≤,cal_manifest.csv;cal_results.csv,false,,68
 cal.material_offset_u_um,cal,재료 치우침 값의 표준불확도 (k = 1),µm,float,조건부,2.0,target_type = material_sample면 필수. 0 < x,,,false,0,<,,,cal_manifest.csv;cal_results.csv,false,,69
-cal.temp_c,cal,원자료를 만들 때 실내 온도,°C,float,필수,22.4,−10 ≤ x ≤ 50,,,false,-10,≤,50,≤,cal_manifest.csv;cal_results.csv,false,,70
-cal.result_file,cal,이 교정 단계 결과 파일 경로,-,str,필수,config/calibration/CAL-2026-11-20-A/laser_plane.yaml,정규식 `^config/calibration/CAL-[0-9-]+[A-Z]/.+\.yaml$`. 교정이 끝나면 파일 있음,^config/calibration/CAL-[0-9-]+[A-Z]/.+\.yaml$,,false,,,,,cal_manifest.csv;cal_results.csv,false,,71
-cal.reproj_rms_px,cal,"D1 재투영 RMS, {I} (cal_results.csv)",px,float,조건부,0.12,cal_results.csv의 kind = D1 행이면 필수. 0 ≤ x. 판정 < 0.2 (청사진 C4),,,false,0,≤,,,cal_manifest.csv;cal_results.csv,false,,72
-cal.plane_rms_um,cal,"D2 레이저 평면 맞춤 잔차 RMS, {C} 평면 법선 방향 (cal_results.csv)",µm,float,조건부,3.0,cal_results.csv의 kind = D2 행이면 필수. 0 ≤ x. 옛 M1 기준 < 5 µm (BLUEPRINT),,,false,0,≤,,,cal_manifest.csv;cal_results.csv,false,,73
-cal.valid_from,cal,"교정 유효 시작, 벽시계 ISO 8601",-,str,필수,2026-11-20T12:00:00+09:00,ISO 8601. ≥ `cal.created`,,,false,,,,,cal_manifest.csv;cal_results.csv,false,,74
-cal.valid_until,cal,"교정 유효 끝, 벽시계 ISO 8601",-,str,선택,2026-12-20T12:00:00+09:00,있으면 > `cal.valid_from`,,,false,,,,,cal_manifest.csv;cal_results.csv,false,,75
-cal.invalidated_by,cal,무효화 사유,-,str,필수,none,"값 ∈ {none, remount, crash, nozzle_change, temp_shift, time_expired, verify_fail, manual}. none이 아니면 이 교정을 쓴 스캔은 검증 경고",,"none,remount,crash,nozzle_change,temp_shift,time_expired,verify_fail,manual",false,,,,,cal_manifest.csv;cal_results.csv,false,,76
-ref.ref_id,ref,기준 촬영 ID,-,str,필수,REF-MRK-004,"정규식 `^REF-[A-Z]{3}-\d{3}$`. 가운데 세 글자는 kind 약어 (BED, BKG, DRK, MRK, TWR, STG, FLR, DAY, STA). 기준 폴더 이름과 같음",^REF-[A-Z]{3}-\d{3}$,,false,,,,,ref_index.csv,false,,77
-ref.kind,ref,"기준 종류: bed_bare 출력 전 베드 기준 스캔 (높이 0점), background 레이저 끈 배경, dark 렌즈 가림 암흑, bed_marker 베드 마커, ref_tower 시편 옆에 같이 출력한 기준 탑 윗면 (센서 쪽 드리프트만 보고 프린터 Z 공유 오차는 못 봄), step_gauge 계단 기준물 블록 윗면 (D-16, 같은 Z에서 시편과 연달아), feeler 베드 위 필러게이지 윗면 (출력 시작 전), daily_ref 일일 기준 시편, static_repeat 정지 반복",-,str,필수,bed_marker,"값 ∈ {bed_bare, background, dark, bed_marker, ref_tower, step_gauge, feeler, daily_ref, static_repeat}. ref_id 약어와 맞음 (step_gauge = STG, feeler = FLR). bed_bare는 세션마다 ≥ 1행이고 `ref.t_start_ns` < 그 세션 첫 층의 `meta.layer_end_t_ns` (출력 전). feeler도 출력 전",,"bed_bare,background,dark,bed_marker,ref_tower,step_gauge,feeler,daily_ref,static_repeat",false,,,,,ref_index.csv,false,,78
-ref.scan_id,ref,이 기준과 짝인 시편 스캔 ID,-,str,조건부,S01_r01_L004,"kind ∈ {bed_marker, ref_tower, step_gauge}면 필수 (층마다 그 층 스캔과 짝). 정규식 `^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$`. kind = bed_marker면 그 스캔의 `meta.layer_z_mm` ≤ 8.0",^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,,false,,,,,ref_index.csv,false,,79
-ref.layer_idx,ref,"기준을 잰 때의 층 번호, 0부터 (출력 시작 전이면 빈 칸)",-,int,조건부,4,"kind ∈ {bed_marker, ref_tower, step_gauge}면 필수 (층마다 재측정). kind ∈ {bed_bare, feeler}면 빈 칸. ref.scan_id가 있으면 그 스캔의 `meta.layer_idx`와 같음",,,false,,,,,ref_index.csv,false,,80
-ref.n_frames,ref,이 기준 촬영의 프레임 수,-,int,필수,100,1 ≤ x. kind = static_repeat면 x ≥ 100. frames_index.csv 행 수와 같음,,,false,1,≤,,,ref_index.csv,false,,81
-ref.frames_dir,ref,"영상 폴더, 기준 폴더 기준",-,str,필수,frames/,값 = frames/. 폴더 있음,,frames/,false,,,,,ref_index.csv,false,,82
-ref.marker_id,ref,베드 마커 ID,-,str,조건부,MK01,kind = bed_marker면 필수. 정규식 `^MK\d{2}$`,^MK\d{2}$,,false,,,,,ref_index.csv,false,,83
-ref.marker_x_mm,ref,"마커 중심의 설계 X, {G}",mm,float,조건부,60.0000,kind = bed_marker면 필수. 유한값,,,false,,,,,ref_index.csv,false,,84
-ref.marker_y_mm,ref,"마커 중심의 설계 Y, {G}",mm,float,조건부,90.0000,kind = bed_marker면 필수. 유한값,,,false,,,,,ref_index.csv,false,,85
-ref.t_start_ns,ref,"기준 촬영 첫 프레임 시각, 호스트 단조 시계",ns,int64,필수,4985000000,0 < x. 짝 스캔이 있으면 그 스캔 첫 프레임과 차이 ≤ 600 s,,,false,0,<,,,ref_index.csv,false,,86
-ref.calibration_id,ref,기준 촬영 때 유효했던 교정 ID,-,str,조건부,CAL-2026-11-20-A,"kind ∈ {bed_bare, bed_marker, ref_tower, step_gauge, feeler}면 필수 (높이를 계산하는 기준). 정규식 `^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$`. kind = bed_bare면 그 기준을 `meta.bed_ref_id`로 가리키는 모든 스캔의 `meta.calibration_id`와 같음 (다르면 판정 거부 X4, D-21 대기)",^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,ref_index.csv,false,,87
-ref.gauge_block_id,ref,"이 기준에서 스캔한 기준물 개체 ID (T2 · T14 같은 이름, 한 필드)",-,str,조건부,GB-05,"kind ∈ {step_gauge, feeler}면 필수, 그 밖은 빈 칸. 같은 캠페인 `cal_manifest.csv`에 같은 `cal.gauge_block_id` 행이 있음. step_gauge면 GB-로, feeler면 FG-로 시작",,,false,,,,,ref_index.csv,false,,88
-ref.gauge_height_mm,ref,"스캔한 기준물 윗면의 교정 높이, 베드 면 = 0 ({G} Z 방향 길이). `ref.gauge_block_id`가 가리키는 교정값을 옮겨 적은 값 (처리 코드가 교정 파일을 다시 찾지 않게)",mm,float,조건부,5.0012,"kind ∈ {step_gauge, feeler}면 필수. 0 < x ≤ 60. step_gauge면 = 그 블록의 `cal.gauge_block_height_mm`, feeler면 = 그 게이지의 `cal.gauge_measured_mm`. kind = step_gauge면 x < 짝 스캔의 `meta.layer_z_mm` (노즐 충돌 없음, T2 5.4절 C2)",,,false,0,<,60,≤,ref_index.csv,false,,89
-ref.gauge_temp_c,ref,"기준물 온도 (열팽창 보정용, T2 5.4절 C3)",°C,float,조건부,45.0,"kind = step_gauge면 필수, feeler면 선택, 그 밖은 빈 칸. −10 ≤ x ≤ 130",,,false,-10,≤,130,≤,ref_index.csv,false,,90
-ref.line_peak_pct,ref,"기준 촬영에서 레이저 선 최대 밝기, 포화값 대비 (광학창 오염 추세, T2 MF-OPT-12)",%,float,조건부,72.0,"kind ∈ {daily_ref, static_repeat, bed_marker, ref_tower, step_gauge}면 필수. 0 ≤ x ≤ 100. 같은 kind 이전 값보다 20 % 넘게 낮으면 경고 [추정: 경고 폭은 T6에서 확정]",,,false,0,≤,100,≤,ref_index.csv,false,,91
-ref.note,ref,메모,-,str,필수,"층 4 끝, 마커 MK01 재측정","빈 문자열 허용 안 함. 쓸 말이 없으면 ""-""",,,false,,,,,ref_index.csv,false,,92
-meta.scan_id,meta,스캔 ID (시편·반복·층),-,str,필수,S01_r01_L004,"정규식 `^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$`. timing = layer면 `_L` 부분 필수이고 숫자 = `meta.layer_idx`. timing = post면 `_L` 없음. `meta.scan_pass_idx` = 0이면 `_p` 없음, 1 이상이면 `_p` 숫자 = scan_pass_idx",^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,,false,,,,,meta.json,false,,93
-meta.scan_pass_idx,meta,"스캔 줄 번호, 0부터. 출력이 시야보다 넓어 한 층을 X가 다른 여러 줄로 나눠 잴 때 몇 번째 줄인지 (T2 MF-GCD-08). 같은 줄의 반복은 `pos.pass_idx`",-,int,필수,0,0 ≤ x ≤ 99. 같은 시편·반복·층 (post면 post끼리) 스캔들이 0부터 빈 번호 없이 이어짐. 줄이 하나면 0,,,false,0,≤,99,≤,meta.json,false,,94
-meta.campaign_id,meta,캠페인 ID (같은 조건으로 만든 데이터 묶음),-,str,필수,VC-2026-11-20-A,정규식 `^[VR]C-\d{4}-\d{2}-\d{2}-[A-Z]$`. 첫 글자 V ⇔ source = virtual,^[VR]C-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,95
-meta.session_id,meta,출력 세션 ID (출력 작업 1회),-,str,필수,PS-2026-11-20-A,정규식 `^PS-\d{4}-\d{2}-\d{2}-[A-Z]$`. 폴더 이름과 같음,^PS-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,96
-meta.source,meta,"데이터 출처: virtual 가상, real 실측",-,str,필수,virtual,"값 ∈ {virtual, real}",,"virtual,real",false,,,,,meta.json,false,,97
-meta.spec_version,meta,따른 명세 버전,-,str,필수,1.0,정규식 `^\d+\.\d+$`,^\d+\.\d+$,,false,,,,,meta.json,false,,98
-meta.specimen_id,meta,시편 ID (사용자 G코드 출력물 하나 = 시편 하나),-,str,필수,S01,정규식 `^S\d{2}$`. scan_id 앞 세 글자와 같음,^S\d{2}$,,false,,,,,meta.json,false,,99
-meta.specimen_role,meta,"시편 역할: user_gcode 사용자 G코드 출력물 (판정 대상), public_gcode 공개 G코드 출력물 (판정 대상. 사용자 G코드를 받기 전 시작용이고 나중에 사용자 G코드로 바꿈, D-10 · D-19), aux_step 보조 단차 시편 (점검용, E3 축소)",-,str,필수,user_gcode,"값 ∈ {user_gcode, public_gcode, aux_step}. 기본 user_gcode. aux_step이면 단차 필드 (`meta.step_edge_angle_deg`, `truth.step_heights_mm`)가 필수",,"user_gcode,public_gcode,aux_step",false,,,,,meta.json,false,,100
-meta.repeat,meta,반복 번호 (같은 시편 다시 출력·측정),-,int,필수,1,1 ≤ x ≤ 99. scan_id의 rNN과 같음,,,false,1,≤,99,≤,meta.json,false,,101
-meta.datetime,meta,"스캔 시작 시각, 벽시계 ISO 8601",-,str,필수,2026-11-20T14:20:00+09:00,"ISO 8601, 시간대 포함",,,false,,,,,meta.json,false,,102
-meta.operator,meta,측정자 (가상이면 sim),-,str,필수,sim,빈 문자열 아님,,,false,,,,,meta.json,false,,103
-meta.notes,meta,메모,-,str,필수,무광 처리 없음,"쓸 말이 없으면 ""-""",,,false,,,,,meta.json,false,,104
-meta.timing,meta,"측정 시점: layer 층마다 (출력 중), post 출력이 끝난 뒤 마지막 층을 식혀 다시 잰 스캔 (D-06)",-,str,필수,layer,"값 ∈ {layer, post}. 기본은 layer (D-04). 시편·반복마다 post 스캔 (scan_pass_idx = 0)이 정확히 1개 (D-06 필수). layer ⇔ `meta.thermal_state` = in_process, post ⇔ cooled",,"layer,post",false,,,,,meta.json,false,,105
-meta.layer_idx,meta,"방금 출력을 마친 층 번호, 0부터. post면 마지막 층 번호",-,int,필수,4,"0 ≤ x < `meta.layer_count`. 모든 층 스캔 (D-18): 같은 시편·반복의 timing = layer 스캔에 0부터 `meta.layer_count` − 1까지 모든 값이 있음 (빠지면 판정 거부 X7, D-21 대기)",,,false,0,≤,,,meta.json,false,,106
-meta.layer_count,meta,이 시편 G코드의 전체 층 수,-,int,필수,20,1 ≤ x,,,false,1,≤,,,meta.json,false,,107
-meta.layer_z_mm,meta,"이 층 윗면의 G코드 Z, {G}",mm,float,필수,1.0000,0 < x. 같은 세션에서 layer_idx가 크면 더 큼. abs(x − G코드 해당 층 Z) ≤ 0.0001,,,false,0,<,,,meta.json,false,,108
-meta.gcode_line_start,meta,이 층 G코드 구간의 첫 줄 번호 (1부터),-,int,필수,4120,1 ≤ x ≤ `meta.gcode_line_end`,,,false,1,≤,,,meta.json,false,,109
-meta.gcode_line_end,meta,이 층 G코드 구간의 마지막 줄 번호 (스캔 삽입 줄 제외),-,int,필수,5388,x ≥ gcode_line_start. 다음 층 gcode_line_start보다 작음,,,false,,,,,meta.json,false,,110
-meta.layer_end_t_ns,meta,"이 층 마지막 압출이 끝난 시각, 호스트 단조 시계",ns,int64,필수,4975000000,0 < x < `meta.scan_start_t_ns`,,,false,0,<,,,meta.json,false,,111
-meta.scan_start_t_ns,meta,"스캔 시작 시각 (pos.event = scan_start 행), 호스트 단조 시계",ns,int64,필수,4990000000,position_log의 scan_start 행 시각(호스트 기준)과 같음,,,false,,,,,meta.json,false,,112
-meta.wait_after_layer_s,meta,층 출력 끝부터 스캔 시작까지 경과 시간,s,float,필수,15.0,0 ≤ x. abs(x − (scan_start_t_ns − layer_end_t_ns) ÷ 1e9) ≤ 0.001,,,false,0,≤,,,meta.json,false,,113
-meta.pause_added_s,meta,스캔 때문에 출력이 멈춘 시간 (노즐 정지·이동·스캔 합),s,float,필수,35.0,0 ≤ x. timing = layer면 x ≥ `meta.scan_length_mm` ÷ `meta.scan_speed_mm_s`. post면 0,,,false,0,≤,,,meta.json,false,,114
-meta.layer_time_s,meta,"이 층 출력 시간 (스캔·정지 제외, 층 시작 ~ `meta.layer_end_t_ns`)",s,float,조건부,45.0,timing = layer면 필수. 0 < x. pause_added_s ÷ x > 1이면 작은 층 경고 (T2 MF-PRC-11),,,false,0,<,,,meta.json,false,,115
-meta.scan_z_hop_mm,meta,"스캔 전에 노즐을 들어 올린 높이, 기계 Z 증가량 (= {G} Z 증가량)",mm,float,필수,2.0,"0 ≤ x ≤ 8 (심도 8 mm 안, M54). 1.0 미만이면 긁힘 경고 (T2 MF-PRC-04: Z hop ≥ 1 mm). C2 권장 2 mm",,,false,0,≤,8,≤,meta.json,false,,116
-meta.scan_axis,meta,스캔 진행 축과 방향 ({G}). 빼기는 ASCII 하이픈,-,str,필수,+Y,"값 ∈ {+X, -X, +Y, -Y}. M54 기본 +Y. 베드가 Y로 움직이는 프린터면 +X 권장 (T2 MF-MEC-10). SV08 · Voron은 +Y",,"+X,-X,+Y,-Y",false,,,,,meta.json,false,,117
-meta.scan_x_mm,meta,"스캔 중 노즐 끝 X (고정), {G}",mm,float,필수,110.0000,position_log 스캔 구간 x_mm 평균과 차이 ≤ 0.01,,,false,,,,,meta.json,false,,118
-meta.scan_y0_mm,meta,"스캔 시작 Y, {G}",mm,float,필수,90.0000,position_log scan_start 행 y_mm와 차이 ≤ 0.01,,,false,,,,,meta.json,false,,119
-meta.process,meta,가공 공정,-,str,필수,FDM,값 ∈ {FDM} (이 단계는 FDM만),,FDM,false,,,,,meta.json,false,,120
-meta.printer_model,meta,프린터 기종 (소문자 제조사-모델),-,str,필수,sovol-sv08,"빈 문자열 아님. 예: sovol-sv08 (T14 1순위), voron-trident-300, voron-2.4-350, creality-ender3-v3se. 가상은 흉내 낸 기종 이름 또는 자리표시 PRINTER-A",,,false,,,,,meta.json,false,,121
-meta.printer_kinematics,meta,기구 방식 (T14),-,str,필수,corexy,"값 ∈ {corexy, cartesian_bedslinger, corexz}. SV08 = corexy",,"corexy,cartesian_bedslinger,corexz",false,,,,,meta.json,false,,122
-meta.bed_motion,meta,"베드 움직임: fixed 고정, z_only Z로만, y Y로 움직임 (T14)",-,str,필수,fixed,"값 ∈ {fixed, z_only, y}. SV08 · Voron 2.4 = fixed, Trident = z_only. y면 `meta.scan_axis` ∈ {+X, -X} 권장 (T2 MF-MEC-10)",,"fixed,z_only,y",false,,,,,meta.json,false,,123
-meta.z_drive,meta,Z 구동 방식 (T14),-,str,필수,belt,"값 ∈ {leadscrew, belt}. SV08 = belt [T14 추정: Voron 2.4 파생], Trident = leadscrew. belt면 식힌 재측정 동안 모터 유지 필수 (T2 MF-SYN-09)",,"leadscrew,belt",false,,,,,meta.json,false,,124
-meta.z_motor_count,meta,Z 모터 수 (T14),-,int,필수,4,"1 ≤ x ≤ 4. SV08 · Voron 2.4 = 4, Trident = 3",,,false,1,≤,4,≤,meta.json,false,,125
-meta.z_level_method,meta,자동 Z 수평 방식 (T14),-,str,필수,qgl,"값 ∈ {z_tilt, qgl, none}. SV08 = qgl",,"z_tilt,qgl,none",false,,,,,meta.json,false,,126
-meta.probe_type,meta,프린터 레벨링 프로브 종류. **측정 검증에 쓰지 않음 (D-14)**. 베드 메시·Z 수평에만 쓰는 프린터 부품 기록,-,str,필수,inductive_pressure,"값 ∈ {tap, loadcell, strain_gauge, inductive, inductive_pressure, eddy, bltouch, none}. SV08 = inductive_pressure (T14)",,"tap,loadcell,strain_gauge,inductive,inductive_pressure,eddy,bltouch,none",false,,,,,meta.json,false,,127
-meta.firmware,meta,펌웨어 이름과 판을 한 줄로,-,str,필수,sovol-klipper-unknown,형식 `[<제조사>-]<firmware_name>-<판>[-<git 해시 7자리>]` (T14). 정규식 `^([a-z0-9]+-)?[a-z]+-[A-Za-z0-9._-]+$`이고 이름 부분 = `meta.firmware_name`. 제조사 접두사는 `meta.firmware_fork` = vendor일 때만. 판을 모르면 unknown. `meta.firmware_name`·`meta.firmware_version`과 맞음 (13절),^([a-z0-9]+-)?[a-z]+-[A-Za-z0-9._-]+$,,false,,,,,meta.json,false,,128
-meta.firmware_fork,meta,"펌웨어 출처: mainline 원본, vendor 제조사 포크 (T14)",-,str,필수,vendor,"값 ∈ {mainline, vendor}. SV08 기본 = vendor (Sovol 포크)",,"mainline,vendor",false,,,,,meta.json,false,,129
-meta.mesh_enabled,meta,"베드 메시 보정을 켰는지 (Klipper는 fade 기본 꺼짐이라 켜면 스캔 중에도 Z 보정이 들어감, T14)",-,bool,필수,true,true면 position_log에 `pos.mesh_dz_mm` 값 있음,,,false,,,,,meta.json,false,,130
-meta.control_group,meta,"대조군 종류: none 일반 (층별 스캔 있음), dwell_only 스캔 없이 정지만, no_pause 정지·스캔 없음 (T2 MF-PRC-10, C2 대조군)",-,str,필수,none,"값 ∈ {none, dwell_only, no_pause}. none이 아니면 timing = post",,"none,dwell_only,no_pause",false,,,,,meta.json,false,,131
-meta.enclosure,meta,프린터 외함(인클로저) 유무,-,bool,필수,true,true 또는 false. ambient_light = enclosure_dark면 true,,,false,,,,,meta.json,false,,132
-meta.slicer_profile_file,meta,"슬라이서 설정 파일 경로, 저장소 뿌리 기준",-,str,필수,data/gcode/S01_profile.ini,저장소 뿌리 기준으로 파일 있음 (0.1절),,,false,,,,,meta.json,false,,133
-meta.gcode_file,meta,"정답 G코드 (사용자 G코드) 파일 경로, 저장소 뿌리 기준",-,str,필수,data/gcode/S01_user_part.gcode,"저장소 뿌리 기준으로 파일 있음 (0.1절). 예시 이름은 자리표시 (사용자 G코드 경로를 받으면 그 이름, D-10)",,,false,,,,,meta.json,false,,134
-meta.gcode_sha256,meta,G코드 파일 SHA-256 지문,-,str,필수,3f5a…(64자),정규식 `^[0-9a-f]{64}$`. 실제 파일 지문과 같음,^[0-9a-f]{64}$,,false,,,,,meta.json,false,,135
-meta.material,meta,재료,-,str,필수,PLA,"값 ∈ {PLA, PETG, ABS, TPU, other}",,"PLA,PETG,ABS,TPU,other",false,,,,,meta.json,false,,136
-meta.color,meta,색,-,str,필수,gray,빈 문자열 아님,,,false,,,,,meta.json,false,,137
-meta.translucency,meta,반투명 정도,-,str,필수,opaque,"값 ∈ {opaque, translucent, transparent}",,"opaque,translucent,transparent",false,,,,,meta.json,false,,138
-meta.filament_lot,meta,필라멘트 로트 (가상이면 sim),-,str,필수,LOT-2026-09,빈 문자열 아님,,,false,,,,,meta.json,false,,139
-meta.nozzle_dia_mm,meta,"노즐 지름 (크기 값, 좌표계 무관)",mm,float,필수,0.40,0.1 ≤ x ≤ 1.2,,,false,0.1,≤,1.2,≤,meta.json,false,,140
-meta.layer_h_mm,meta,"층 높이 (슬라이서 설정) (크기 값, 좌표계 무관)",mm,float,필수,0.20,0.04 ≤ x ≤ `meta.nozzle_dia_mm`,,,false,0.04,≤,,,meta.json,false,,141
-meta.top_layers,meta,측정 면 아래 솔리드 윗면 층 수 (슬라이서 설정),-,int,필수,4,0 ≤ x ≤ 50,,,false,0,≤,50,≤,meta.json,false,,142
-meta.infill_angle_deg,meta,"측정 면 윗면 채움 방향, {G} X축 기준 (슬라이서 설정)",°,float,필수,45.0,−180 < x ≤ 180,,,false,-180,<,180,≤,meta.json,false,,143
-meta.step_edge_angle_deg,meta,"보조 단차 시편의 단차 경계선과 스캔 방향 사이 각, {G} (0 = 나란함)",°,float,조건부,0.0,"`meta.specimen_role` = aux_step이면 필수, user_gcode · public_gcode면 null. 0 ≤ x ≤ 90. 90에 가까우면 두 면이 다른 프레임에 담김 (T2 MF-MEC-13)",,,false,0,≤,90,≤,meta.json,false,,144
-meta.nozzle_temp_c,meta,스캔 시작 때 노즐 온도,°C,float,필수,205.0,0 ≤ x ≤ 320,,,false,0,≤,320,≤,meta.json,false,,145
-meta.bed_temp_c,meta,스캔 시작 때 베드 온도,°C,float,필수,60.0,0 ≤ x ≤ 130,,,false,0,≤,130,≤,meta.json,false,,146
-meta.room_temp_c,meta,스캔 시작 때 실내(외함) 온도,°C,float,필수,22.4,−10 ≤ x ≤ 50,,,false,-10,≤,50,≤,meta.json,false,,147
-meta.room_humidity_pct,meta,스캔 시작 때 실내 상대습도,%,float,선택,45.0,0 ≤ x ≤ 100,,,false,0,≤,100,≤,meta.json,false,,148
-meta.camera_temp_c,meta,스캔 시작 때 카메라 몸체 온도,°C,float,조건부,38.0,source = virtual이거나 카메라 온도 센서가 있으면 필수. −40 ≤ x ≤ 125,,,false,-40,≤,125,≤,meta.json,false,,149
-meta.laser_temp_c,meta,스캔 시작 때 레이저 모듈 온도,°C,float,선택,40.0,−40 ≤ x ≤ 125 (물리 점검용 넓은 한계). 레이저 모듈 허용 온도는 [미상],,,false,-40,≤,125,≤,meta.json,false,,150
-meta.specimen_temp_c,meta,"스캔 시작 때 시편 윗면 온도 (측정 당시 열 상태, D-06)",°C,float,필수,55.0,"−10 ≤ x ≤ 320. source = real이고 온도 센서가 없을 때만 null 허용, 그때 `meta.notes`에 ""specimen_temp_c 없음: 사유""를 적음",,,false,-10,≤,320,≤,meta.json,false,,151
-meta.part_fan_pct,meta,스캔 때 부품 냉각 팬 출력,%,float,필수,100.0,0 ≤ x ≤ 100,,,false,0,≤,100,≤,meta.json,false,,152
-meta.ambient_light,meta,주변광 조건,-,str,필수,enclosure_dark,"값 ∈ {enclosure_dark, room_light, sunlight, unknown}",,"enclosure_dark,room_light,sunlight,unknown",false,,,,,meta.json,false,,153
-meta.bed_ref_id,meta,이 스캔의 높이 0점으로 쓴 베드 기준 스캔 ID. 출력 전 같은 세션에서 잰 것,-,str,필수,REF-BED-001,정규식 `^REF-BED-\d{3}$`. 같은 세션 `reference/`에 있는 `ref.ref_id`이고 그 행의 `ref.kind` = bed_bare. 세션 안 모든 스캔이 같은 값. 없거나 bed_bare가 아니면 판정 거부 X1,^REF-BED-\d{3}$,,false,,,,,meta.json,false,,154
-meta.z_offset_mm,meta,"펌웨어에 설정된 Z 오프셋. {G} Z = 0이 노즐 끝과 베드 면이 닿는 자리가 되게 하는 보정값 ({G} Z 방향 길이, + = 0점이 위로)",mm,float,필수,-0.1500,abs(x) ≤ 5.0. 세션 안 모든 스캔이 같은 값 (바뀌면 0점이 바뀜 → 검증 실패). meta가 스캔마다 있으므로 층 단위 기록은 이것으로 됨 (T2 MF-SYN-13 · GCD-03). 펌웨어 값의 부호를 이 명세 부호로 바꿔 적음 (부록 D),,,false,-5.0,≤,5.0,≤,meta.json,false,,155
-meta.zero_ref_method,meta,"높이 0점을 층마다 이어 가는 방법: step_gauge 같은 Z에서 계단 기준물 연달아 측정 (D-16), bed_marker 베드 마커 재측정, ref_tower 시편 옆 기준 탑, z_only 프린터 Z 위치만",-,str,필수,bed_marker,"값 ∈ {step_gauge, bed_marker, ref_tower, z_only}. step_gauge면 짝 `ref.kind` = step_gauge 행 있음 (같은 Z, 4절). bed_marker면 `meta.layer_z_mm` ≤ 8.0 (심도, M54)이고 짝 `ref.kind` = bed_marker 행 있음. ref_tower면 짝 `ref.kind` = ref_tower 행 있음. z_only는 기록은 되나 판정 거부 X2",,"step_gauge,bed_marker,ref_tower,z_only",false,,,,,meta.json,false,,156
-meta.bed_mesh_file,meta,"이 세션에 쓴 베드 메시 표 원본 파일, 세션 폴더 기준 상대 경로",-,str,조건부,printer/bed_mesh.json,"`meta.mesh_enabled` = true면 필수, false면 null. 정규식 `^printer/bed_mesh[^/]*$`. 파일 있음. 펌웨어가 낸 원본 그대로 (형식은 부록 D). 세션 안 모든 스캔이 같은 값",^printer/bed_mesh[^/]*$,,false,,,,,meta.json,false,,157
-meta.thermal_state,meta,"측정 때 열 상태: in_process 층별 출력 중, cooled 출력이 끝나고 식힌 뒤 재측정 (D-06)",-,str,필수,in_process,"값 ∈ {in_process, cooled}. timing = layer ⇔ in_process, timing = post ⇔ cooled. cooled면 `meta.paired_scan_id`·`meta.cool_wait_s` 필수. 판정에는 in_process만 (cooled 스캔을 판정에 넣으면 판정 거부 X5)",,"in_process,cooled",false,,,,,meta.json,false,,158
-meta.paired_scan_id,meta,짝 스캔 ID. 식힌 재측정 스캔 (thermal_state = cooled)이 가리키는 마지막 층의 출력 중 스캔 (D-06),-,str,조건부,S01_r01_L019,"thermal_state = cooled면 필수, in_process면 null. 정규식 `^S\d{2}_r\d{2}_L\d{3}$`. 같은 세션·시편·반복의 스캔이고, 그 스캔의 layer_idx = `meta.layer_count` − 1, thermal_state = in_process",^S\d{2}_r\d{2}_L\d{3}$,,false,,,,,meta.json,false,,159
-meta.cool_wait_s,meta,마지막 층 출력이 끝난 뒤 식힌 재측정을 시작하기까지 기다린 시간,s,float,조건부,1800.0,"thermal_state = cooled면 필수, in_process면 null. 0 < x. abs(x − `meta.wait_after_layer_s`) ≤ 0.001. 식었다고 보는 기준은 판정 규칙 R4 · R5 (D-20 확정, 판정은 바꾸지 않고 경고만)이며 이 값은 보고에만 씀",,,false,0,<,,,meta.json,false,,160
-meta.tolerance_mm,meta,"이 출력물의 허용 오차 T. G코드 대비 높이 차이가 이 안이면 합격 쪽 (크기 값, 좌표계 무관)",mm,float,필수,0.20,"= 0.20 (D-05 고정, 2026-10-27). 다른 값이면 검증 실패",,,false,0.20,=,0.20,=,meta.json,false,,161
-meta.slicer_name,meta,정답 G코드를 만든 슬라이서 이름과 버전,-,str,필수,SLICER-A 0.0,"빈 문자열 아님. G코드 머리말에서 읽고, 없으면 ""unknown"". 예시는 자리표시 (D-10)",,,false,,,,,meta.json,false,,162
-meta.gcode_flavor,meta,G코드 방언. 파서 (T4 G1)가 읽는 방식을 정함,-,str,필수,marlin,"값 ∈ {marlin, klipper, reprap, other}. 예시는 자리표시 (사용자 G코드를 받으면 그 값)",,"marlin,klipper,reprap,other",false,,,,,meta.json,false,,163
-meta.firmware_name,meta,펌웨어 이름,-,str,필수,klipper,"값 ∈ {klipper, marlin, rrf, other}. `meta.firmware`와의 관계는 13절",,"klipper,marlin,rrf,other",false,,,,,meta.json,false,,164
-meta.firmware_version,meta,펌웨어 판 문자열 (펌웨어가 보고한 그대로),-,str,필수,unknown,"빈 문자열 아님. 모르면 ""unknown"". Sovol 포크 판은 [미상] (T14)",,,false,,,,,meta.json,false,,165
-meta.host_software,meta,프린터와 수집 PC 사이 호스트 프로그램 이름과 판 (없으면 none),-,str,필수,moonraker unknown,"빈 문자열 아님. 직접 연결이면 ""none"". Klipper는 Moonraker (T14)",,,false,,,,,meta.json,false,,166
-meta.layer_macro_version,meta,층 변경 때 스캔을 넣는 매크로의 판 (T14 9절),-,str,필수,LM-T14-2,정규식 `^LM-T14-\d+$` (형식 LM-T14-<판>). 지금 판은 LM-T14-2 (모든 층 스캔 + 마지막 층 + 식힌 재측정). 판정 거부 X7 (빠진 층)을 볼 때 함께 봄,^LM-T14-\d+$,,false,,,,,meta.json,false,,167
-meta.shaper_freq_x_hz,meta,"센서를 단 뒤 잰 입력 셰이퍼 X 주파수 (T14, T2 MF-MEC-09)",Hz,float,선택,48.6,0 < x ≤ 200. 장착 뒤 다시 재지 않았으면 null,,,false,0,<,200,≤,meta.json,false,,168
-meta.shaper_freq_y_hz,meta,센서를 단 뒤 잰 입력 셰이퍼 Y 주파수,Hz,float,선택,39.2,0 < x ≤ 200,,,false,0,<,200,≤,meta.json,false,,169
-meta.trigger_pin,meta,카메라 트리거 (경로 ⓐ) 또는 게이트 LED (경로 ⓑ) 출력 핀 이름 (T14),-,str,필수,cam_trig,"빈 문자열 아님. 이 스캔의 `frame.trigger_mode` ∈ {hw, gate}면 핀 이름, 그 밖은 ""none"". 실제 핀 이름은 [미상] (T14: SV08 핀 정의 PDF의 빈 핀, 이름은 자리표시)",,,false,,,,,meta.json,false,,170
-meta.trigger_period_s,meta,경로 ⓐ 트리거 펄스 주기 (Klipper output_pin cycle_time),s,float,조건부,0.008333,"이 스캔의 `frame.trigger_mode` = hw면 필수, 그 밖은 null. 0 < x ≤ 0.1. abs(x × `meta.fps` − 1) ≤ 0.001 (프레임마다 펄스 1개)",,,false,0,<,0.1,≤,meta.json,false,,171
-meta.sensor_model,meta,측정 장치 구성 이름,-,str,필수,M54-nozzle-line-v1,빈 문자열 아님,,,false,,,,,meta.json,false,,172
-meta.cam_model,meta,카메라 센서 모델,-,str,필수,OV9281,빈 문자열 아님 (M54 대표 구성),,,false,,,,,meta.json,false,,173
-meta.cam_shutter,meta,셔터 방식,-,str,필수,global,"값 ∈ {global, rolling} (M54: 글로벌셔터)",,"global,rolling",false,,,,,meta.json,false,,174
-meta.cam_interface,meta,카메라 연결 방식,-,str,필수,usb2,"값 ∈ {usb2, usb3, mipi, gige, sim}. usb2면 9절 대역폭 검사",,"usb2,usb3,mipi,gige,sim",false,,,,,meta.json,false,,175
-meta.cam_pixel_um,meta,화소 크기,µm,float,필수,3.0,0 < x ≤ 20 (M54: 3 µm),,,false,0,<,20,≤,meta.json,false,,176
-meta.cam_res_w_px,meta,센서 전체 폭,px,int,필수,1280,1 ≤ x (M54: 1280),,,false,1,≤,,,meta.json,false,,177
-meta.cam_res_h_px,meta,센서 전체 높이,px,int,필수,800,1 ≤ x (M54: 800),,,false,1,≤,,,meta.json,false,,178
-meta.lens_f_mm,meta,"렌즈 초점거리 (크기 값, 좌표계 무관)",mm,float,필수,8.0,0 < x (M54: M12 f 8 mm),,,false,0,<,,,meta.json,false,,179
-meta.lens_f_number,meta,렌즈 조리개 F수,-,float,필수,4.0,0.9 ≤ x ≤ 32 (M54: f/4),,,false,0.9,≤,32,≤,meta.json,false,,180
-meta.lens_focus_locked,meta,초점·조리개를 고정했는지,-,bool,필수,true,실측에서 false면 검증 경고 (D1: 측정 때와 같은 렌즈 상태),,,false,,,,,meta.json,false,,181
-meta.wd_mm,meta,"작동 거리 (크기 값, 좌표계 무관)",mm,float,필수,50.0,0 < x (M54: 50 mm),,,false,0,<,,,meta.json,false,,182
-meta.magnification,meta,광학 배율,-,float,필수,0.19,0 < x ≤ 1 (M54: 0.19),,,false,0,<,1,≤,meta.json,false,,183
-meta.laser_wavelength_nm,meta,레이저 파장,nm,float,필수,450.0,350 ≤ x ≤ 1100 (M54: 450 nm),,,false,350,≤,1100,≤,meta.json,false,,184
-meta.laser_power_mw,meta,레이저 광출력 (명판 또는 측정),mW,float,필수,1.0,0 < x ≤ 1.0 (M54: ≤ 1 mW). 넘으면 C8 안전 경고,,,false,0,<,1.0,≤,meta.json,false,,185
-meta.laser_power_pct,meta,레이저 출력 설정값 (드라이버 %),%,float,선택,60.0,0 ≤ x ≤ 100,,,false,0,≤,100,≤,meta.json,false,,186
-meta.laser_class,meta,레이저 안전 등급,-,str,필수,2,"값 ∈ {1, 2, 2M, 3R} (M54: Class 2)",,"1,2,2M,3R",false,,,,,meta.json,false,,187
-meta.triang_angle_deg,meta,레이저 평면과 카메라 광축 사이 각,°,float,필수,30.0,5 ≤ x ≤ 80 (M54: 레이저 수직 + 카메라 30°),,,false,5,≤,80,≤,meta.json,false,,188
-meta.filter_center_nm,meta,대역통과 필터 중심 파장,nm,float,필수,450.0,abs(x − laser_wavelength_nm) ≤ 20,,,false,,,,,meta.json,false,,189
-meta.filter_fwhm_nm,meta,필터 반치폭,nm,float,필수,10.0,"0 < x ≤ 100. 실제 값은 [미상] (M54에 사양 없음), 예시는 자리표시",,,false,0,<,100,≤,meta.json,false,,190
-meta.exposure_set_us,meta,노출 설정값,µs,float,필수,800.0,frame.exposure_us 값들과 차이 ≤ 1 %,,,false,,,,,meta.json,false,,191
-meta.gain_set_db,meta,게인 설정값,dB,float,필수,0.0,frame.gain_db 값들과 같음,,,false,,,,,meta.json,false,,192
-meta.frame_avg_n,meta,위치 하나에서 평균한 프레임 수 (F3 기존 항목),-,int,필수,1,1 ≤ x. 이동 스캔이면 1,,,false,1,≤,,,meta.json,false,,193
-meta.scan_speed_mm_s,meta,스캔 이동 속도 (명령),mm/s,float,필수,2.4,0 < x. abs(x − fps × scan_pitch_mm) ≤ 0.01 × x (M54: 120 × 0.02 = 2.4),,,false,0,<,,,meta.json,false,,194
-meta.scan_pitch_mm,meta,"프레임 사이 스캔 간격 (크기 값, 좌표계 무관)",mm,float,필수,0.02,0 < x ≤ 1 (M54: 20 µm),,,false,0,<,1,≤,meta.json,false,,195
-meta.scan_length_mm,meta,"스캔 길이 (크기 값, 좌표계 무관)",mm,float,필수,40.0,0 < x (M54: 40 mm),,,false,0,<,,,meta.json,false,,196
-meta.fps,meta,촬영 속도 설정,-,float,필수,120.0,"0 < x ≤ 120 (OV9281 최대 120 fps, M54 감사 확인). 단위 프레임/s",,,false,0,<,120,≤,meta.json,false,,197
-meta.n_frames,meta,이 스캔의 전체 프레임 수 (배경 포함),-,int,필수,2010,frames_index.csv 행 수와 같음. ≥ scan_length_mm ÷ scan_pitch_mm,,,false,,,,,meta.json,false,,198
-meta.raw_saved,meta,이 스캔의 원시 영상을 저장했는지 (T2 MF-DAT-03·04),-,bool,필수,true,"true면 frames/ 또는 frames.npz 있음. false면 영상 없음, `frame.file`·`frame.sha256` 빈 칸, 처리 결과(프로파일)를 따로 보관",,,false,,,,,meta.json,false,,199
-meta.proc_time_s,meta,수집 중 실시간 처리(라인 추출)에 걸린 시간 (T2 MF-DAT-08). 사후 처리 시간은 J2 manifest에,s,float,선택,12.5,0 ≤ x. 실시간 처리를 안 했으면 null,,,false,0,≤,,,meta.json,false,,200
-meta.acq_id,meta,획득 프로파일 ID (F2),-,str,필수,ACQ-2026-11-20-A,정규식 `^ACQ-\d{4}-\d{2}-\d{2}-[A-Z]$`,^ACQ-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,201
-meta.calibration_id,meta,이 스캔에 쓸 교정 ID,-,str,필수,CAL-2026-11-20-A,"정규식 `^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$`. 같은 캠페인 calibration/ 폴더에 있음. datetime이 cal.valid_from 이후, valid_until 이전. 그 스캔의 `meta.bed_ref_id`가 가리키는 bed_bare 기준의 `ref.calibration_id`와 같음 (다르면 판정 거부 X4, D-21 대기)",^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,202
-meta.fid_id,meta,베드·마커 조립 상태 ID (D4),-,str,선택,FID-2026-11-20-A,정규식 `^FID-\d{4}-\d{2}-\d{2}-[A-Z]$`,^FID-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,203
-meta.frames_doc_version,meta,좌표계 정의 버전 (C4 요구),-,str,필수,C4-1.0,빈 문자열 아님,,,false,,,,,meta.json,false,,204
-meta.software_git,meta,수집(또는 시뮬레이터) 코드 커밋,-,str,필수,ff4b01b,"정규식 `^[0-9a-f]{7,40}(-dirty)?$`","^[0-9a-f]{7,40}(-dirty)?$",,false,,,,,meta.json,false,,205
-meta.files_sha256,meta,스캔 폴더 안 파일별 SHA-256 (meta.json 제외),-,dict,필수,"{""frames_index.csv"": ""9b1c…""}","키 = 상대 경로, 값 = 64자 16진수. 불러올 때 다시 계산해 같아야 함",,,false,,,,,meta.json,false,,206
-meta.sim_version,meta,시뮬레이터 버전,-,str,조건부,sim-0.1.0,"source = virtual면 필수, real이면 null",,,false,,,,,meta.json,false,,207
-meta.sim_seed,meta,이 스캔을 만든 난수 시드,-,int,조건부,20261120,"source = virtual면 필수, real이면 null. 0 ≤ x < 2^63",,,false,0,≤,9223372036854775808,<,meta.json,false,,208
-meta.injected_factors,meta,켠 실패 요인의 T2 ID 목록,-,list,필수,"[""MF-SYN-01""]",원소마다 정규식 `^MF-[A-Z]{3}-\d{2}$`. source = real이면 빈 목록 [],^MF-[A-Z]{3}-\d{2}$,,false,,,,,meta.json,false,,209
-rep.study_id,rep,MSA 연구 ID,-,str,필수,MSA-01,정규식 `^MSA-\d{2}$`. 폴더 이름과 같음,^MSA-\d{2}$,,false,,,,,design.csv;design_executed.csv,false,,210
-rep.specimen_id,rep,시편 ID,-,str,필수,S01,정규식 `^S\d{2}$`,^S\d{2}$,,false,,,,,design.csv;design_executed.csv,false,,211
-rep.part_idx,rep,"Gage R&R 부품 번호, 0부터",-,int,필수,0,0 ≤ x. 같은 specimen_id면 같음,,,false,0,≤,,,design.csv;design_executed.csv,false,,212
-rep.repeat_idx,rep,"반복 번호, 1부터",-,int,필수,1,"1 ≤ x. (part_idx, session_id, operator, repeat_idx) 유일",,,false,1,≤,,,design.csv;design_executed.csv,false,,213
-rep.session_id,rep,측정 세션 ID (출력 세션 또는 측정 날짜 묶음),-,str,필수,PS-2026-11-20-A,정규식 `^PS-\d{4}-\d{2}-\d{2}-[A-Z]$`,^PS-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,design.csv;design_executed.csv,false,,214
-rep.operator,rep,측정자 (가상이면 sim_A 등),-,str,필수,sim_A,빈 문자열 아님,,,false,,,,,design.csv;design_executed.csv,false,,215
-rep.remount,rep,이 측정 전에 시편이나 센서를 다시 장착했는지,-,bool,필수,false,true 또는 false. 층별 측정에서 시편 재장착이면 true는 출력 후(post) 측정에서만,,,false,,,,,design.csv;design_executed.csv,false,,216
-rep.rehome,rep,이 측정 전에 프린터를 다시 홈잉(G28)했는지,-,bool,필수,true,true 또는 false,,,false,,,,,design.csv;design_executed.csv,false,,217
-rep.run_order,rep,"무작위 실행 순서, 1부터",-,int,필수,7,1 ≤ x ≤ 행 수. 중복 없음. 행 순서와 다름(무작위)을 권장,,,false,1,≤,,,design.csv;design_executed.csv,false,,218
-rep.interval_s,rep,이전 측정과 이번 측정 사이 간격 (계획값),s,float,필수,60.0,0 ≤ x,,,false,0,≤,,,design.csv;design_executed.csv,false,,219
-rep.scan_id,rep,실행된 스캔 ID,-,str,조건부,S01_r01_L004,실행 뒤 필수 (design_executed.csv). 정규식 `^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$`,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,,false,,,,,design.csv;design_executed.csv,false,,220
-rep.noise_seed,rep,이 반복에 쓴 잡음 시드,-,int,조건부,1001,가상이면 필수. 같은 study 안에서 행마다 다름,,,false,,,,,design.csv;design_executed.csv,false,,221
-rep.truth_id,rep,이 시편 참값 ID (`truth.truth_id`),-,str,조건부,T-S01,가상이면 필수. 정규식 `^T-S\d{2}$`. 같은 specimen_id면 같음,^T-S\d{2}$,,false,,,,,design.csv;design_executed.csv,false,,222
-truth.campaign_id,truth,캠페인 ID,-,str,필수,VC-2026-11-20-A,정규식 `^VC-\d{4}-\d{2}-\d{2}-[A-Z]$` (가상만). 폴더 이름과 같음,^VC-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,truth.json,false,,223
-truth.truth_id,truth,시편 참값 ID,-,str,필수,T-S01,정규식 `^T-S\d{2}$`. `rep.truth_id`가 가리킴,^T-S\d{2}$,,false,,,,,truth.json,false,,224
-truth.sim_version,truth,시뮬레이터 버전,-,str,필수,sim-0.1.0,이 캠페인 모든 `meta.sim_version`과 같음,,,false,,,,,truth.json,false,,225
-truth.seed,truth,캠페인 기본 시드,-,int,필수,20261120,0 ≤ x < 2^63,,,false,0,≤,9223372036854775808,<,truth.json,false,,226
-truth.heightmap_file,truth,"참 출력 형상 높이맵 파일 (층별, 측정 당시 열 상태. post는 식은 뒤). {G} Z, 베드 면 = 0",-,str,필수,heightmaps/T-S01_L004.npy,"8절 참 높이맵 정규식. 파일 있음. 배열 `H[iy, ix]` (C4)",,,false,,,,,truth.json,false,,227
-truth.heightmap_origin_mm,truth,"높이맵 첫 칸 중심 [x0, y0], {G}",mm,list,필수,"[100.0, 85.0]",길이 2. 칸 중심 규칙 (C4),,,false,,,,,truth.json,false,,228
-truth.heightmap_step_mm,truth,"높이맵 칸 간격 (크기 값, 좌표계 무관)",mm,float,필수,0.02,0 < x ≤ 0.1 (C4 기본 0.02),,,false,0,<,0.1,≤,truth.json,false,,229
-truth.cam_k,truth,"참 카메라 내부 행렬 3 × 3, {C}",px,list,필수,"[[2666.7,0,640],[0,2666.7,400],[0,0,1]]",3 × 3. fx·fy > 0,,,false,,,,,truth.json,false,,230
-truth.cam_dist,truth,"참 왜곡 계수 (OpenCV 순서 k1, k2, p1, p2, k3 …)",-,list,필수,"[-0.05, 0.01, 0, 0, 0]","길이 ∈ {4, 5, 8, 12, 14}",,,false,,,,,truth.json,false,,231
-truth.laser_plane,truth,"참 레이저 평면 [nx, ny, nz, d], {C}, d는 mm",-,list,필수,"[0, -0.8660254, 0.5, -25.0]",길이 4. abs(법선 크기 − 1) ≤ 1e-6,,,false,,,,,truth.json,false,,232
-truth.scan_axis,truth,"참 스캔 방향 단위 벡터, {C}",-,list,필수,"[0, 0.5, 0.8660254]",길이 3. abs(크기 − 1) ≤ 1e-6,,,false,,,,,truth.json,false,,233
-truth.t_g_m,truth,"참 변환 T_G_M 4 × 4 ({M} → {G}, C4 이름 규칙)",-,list,필수,"[[1,0,0,100],[0,1,0,90],[0,0,1,0],[0,0,0,1]]",4 × 4. 회전부 det = +1,,,false,,,,,truth.json,false,,234
-truth.nozzle_sensor_offset_mm,truth,"노즐 끝에서 {S} 원점까지 참 오프셋 [dx, dy, dz], {G}",mm,list,필수,"[0.0, 25.0, -1.5]",길이 3. 유한값,,,false,,,,,truth.json,false,,235
-truth.gauge_thickness_mm,truth,"필러게이지 참 두께 {공칭: 참값} (크기 값, 좌표계 무관)",mm,dict,필수,"{""0.20"": 0.2031, ""0.30"": 0.2994, ""0.40"": 0.4012}","키 ∈ {0.20, 0.30, 0.40}. abs(값 − 공칭) ≤ 0.02",,,false,,,,,truth.json,false,,236
-truth.step_heights_mm,truth,"보조 단차 시편의 면 쌍별 참 높이 차 {면쌍: 값} (크기 값, 좌표계 무관)",mm,dict,조건부,"{""S02_F1-F0"": 0.2000}","캠페인에 `meta.specimen_role` = aux_step 시편이 있으면 필수, 없으면 null. 키는 그 시편 ID로 시작. 값 > 0",,,false,,,,,truth.json,false,,237
-truth.gcode_sha256,truth,참 형상을 만들 때 쓴 정답 G코드의 SHA-256 지문 (개정),-,str,필수,3f5a…(64자),정규식 `^[0-9a-f]{64}$`. 같은 시편 모든 스캔의 `meta.gcode_sha256`과 같음,^[0-9a-f]{64}$,,false,,,,,truth.json,false,,238
-truth.print_error_params,truth,참 형상에 넣은 출력 오차 {종류: {이름: 값}}. 판정 시험 시나리오 (T5) 이름 포함 (개정),-,dict,필수,"{""scenario"": ""pass_nominal"", ""over_extrusion"": {""gain"": 1.03}}","키 ""scenario"" 필수 (T5 시나리오 이름). 출력 오차를 안 넣었으면 {""scenario"": ""none""}",,,false,,,,,truth.json,false,,239
-truth.thermal_params,truth,"열 상태 모델 참 파라미터: 층별 시편 온도, 수축 계수 등 (개정)",-,dict,필수,"{""cte_um_per_m_c"": 68.0, ""layer_temp_c"": [55.0, 54.2]}",층별 목록 길이 = `meta.layer_count`. 열 모델을 끈 캠페인이면 {},,,false,,,,,truth.json,false,,240
-truth.z_axis_error_params,truth,"Z축 오차 참 파라미터: 리드스크루 피치 오차, 워블, 홈 반복성, {G} Z (개정)",-,dict,필수,"{""pitch_err_um"": 0.0, ""wobble_amp_um"": 0.0}",Z축 오차를 안 넣었으면 값이 모두 0,,,false,,,,,truth.json,false,,241
-truth.judgement,truth,"참 판정: pass 또는 fail (참 출력 형상과 정답 높이로 계산). 참값에는 U가 없어 보류가 없음 (2차 정정). 경계 시나리오 표시는 `truth.print_error_params`의 ""scenario"" 키로",-,str,필수,pass,"값 ∈ {pass, fail}. judgement = pass ⇔ `truth.pass_pct` ≥ 95. 측정 판정 결과 (합격·불합격·보류·측정 불충분) 코드는 T15가 정함",,"pass,fail",false,,,,,truth.json,false,,242
-truth.pass_pct,truth,"참 출력 형상 기준 abs(Δ) ≤ T인 측정점 비율, 전체 층 합산 (D-08), 측정 당시 높이 (D-06)",%,float,필수,98.6,0 ≤ x ≤ 100. pass ⇔ x ≥ 95 (`truth.judgement`와 맞음),,,false,0,≤,100,≤,truth.json,false,,243
-truth.factor_params,truth,주입한 실패 요인별 참 파라미터 {T2 ID: {이름: 값}},-,dict,필수,"{""MF-SYN-01"": {""dt_ns"": 10000000}}",키 정규식 `^MF-[A-Z]{3}-\d{2}$`. 키 집합 = 해당 스캔 `meta.injected_factors` 합집합,^MF-[A-Z]{3}-\d{2}$,,false,,,,,truth.json,false,,244
+cal.material,cal,"재료 조각을 출력한 필라멘트 재료 (3차, T6 질문 2)",-,str,조건부,PLA,"target_type = material_sample면 필수, 그 밖은 빈 칸. 값 ∈ {PLA, PETG, ABS, TPU, other} (`meta.material`과 같은 목록). 이 cal_id를 쓰는 스캔 (`meta.calibration_id` = `cal.cal_id`)의 `meta.material`과 같음",,"PLA,PETG,ABS,TPU,other",false,,,,,cal_manifest.csv;cal_results.csv,false,,70
+cal.color,cal,"재료 조각을 출력한 필라멘트 색 (3차, T6 질문 2)",-,str,조건부,gray,"target_type = material_sample면 필수, 그 밖은 빈 칸. 빈 문자열 아님. 이 cal_id를 쓰는 스캔의 `meta.color`와 같음. 한 cal_id 안 material_sample 행은 (material, color)가 하나뿐 (재료가 여럿이면 cal_id를 따로)",,,false,,,,,cal_manifest.csv;cal_results.csv,false,,71
+cal.temp_c,cal,원자료를 만들 때 실내 온도,°C,float,필수,22.4,−10 ≤ x ≤ 50,,,false,-10,≤,50,≤,cal_manifest.csv;cal_results.csv,false,,72
+cal.result_file,cal,이 교정 단계 결과 파일 경로,-,str,필수,config/calibration/CAL-2026-11-20-A/laser_plane.yaml,정규식 `^config/calibration/CAL-[0-9-]+[A-Z]/.+\.yaml$`. 교정이 끝나면 파일 있음,^config/calibration/CAL-[0-9-]+[A-Z]/.+\.yaml$,,false,,,,,cal_manifest.csv;cal_results.csv,false,,73
+cal.reproj_rms_px,cal,"D1 재투영 RMS, {I} (cal_results.csv)",px,float,조건부,0.12,cal_results.csv의 kind = D1 행이면 필수. 0 ≤ x. 판정 < 0.2 (청사진 C4),,,false,0,≤,,,cal_manifest.csv;cal_results.csv,false,,74
+cal.plane_rms_um,cal,"D2 레이저 평면 맞춤 잔차 RMS, {C} 평면 법선 방향 (cal_results.csv)",µm,float,조건부,3.0,cal_results.csv의 kind = D2 행이면 필수. 0 ≤ x. 옛 M1 기준 < 5 µm (BLUEPRINT),,,false,0,≤,,,cal_manifest.csv;cal_results.csv,false,,75
+cal.valid_from,cal,"교정 유효 시작, 벽시계 ISO 8601",-,str,필수,2026-11-20T12:00:00+09:00,ISO 8601. ≥ `cal.created`,,,false,,,,,cal_manifest.csv;cal_results.csv,false,,76
+cal.valid_until,cal,"교정 유효 끝, 벽시계 ISO 8601",-,str,선택,2026-12-20T12:00:00+09:00,있으면 > `cal.valid_from`,,,false,,,,,cal_manifest.csv;cal_results.csv,false,,77
+cal.invalidated_by,cal,무효화 사유,-,str,필수,none,"값 ∈ {none, remount, crash, nozzle_change, temp_shift, time_expired, verify_fail, manual}. none이 아니면 이 교정을 쓴 스캔은 검증 경고",,"none,remount,crash,nozzle_change,temp_shift,time_expired,verify_fail,manual",false,,,,,cal_manifest.csv;cal_results.csv,false,,78
+ref.ref_id,ref,기준 촬영 ID. 숫자는 세션 안 순번 (층 번호 아님),-,str,필수,REF-STG-009,"정규식 `^REF-[A-Z]{3}-\d{3,4}$`. 가운데 세 글자는 kind 약어 (BED, BKG, DRK, MRK, TWR, STG, FLR, DAY, STA). 기준 폴더 이름과 같음. 숫자는 같은 세션 · 같은 약어 안에서 001부터 빈 번호 없이, `ref.t_start_ns` 순서와 같은 순서. 세션 안에서 유일","^REF-[A-Z]{3}-\d{3,4}$",,false,,,,,ref_index.csv,false,,79
+ref.kind,ref,"기준 종류: bed_bare 출력 전 베드 기준 스캔 (높이 0점), background 레이저 끈 배경, dark 렌즈 가림 암흑, bed_marker 베드 마커, ref_tower 시편 옆에 같이 출력한 기준 탑 윗면 (센서 쪽 드리프트만 보고 프린터 Z 공유 오차는 못 봄), step_gauge 계단 기준물 블록 윗면 (D-16, 같은 Z에서 시편과 연달아), feeler 베드 위 필러게이지 윗면 (출력 시작 전), daily_ref 일일 기준 시편, static_repeat 정지 반복",-,str,필수,bed_marker,"값 ∈ {bed_bare, background, dark, bed_marker, ref_tower, step_gauge, feeler, daily_ref, static_repeat}. ref_id 약어와 맞음 (step_gauge = STG, feeler = FLR). bed_bare는 세션마다 줄 번호 (`meta.scan_pass_idx`)마다 1행 이상이고 `ref.t_start_ns` < 그 세션 첫 층의 `meta.layer_end_t_ns` (출력 전). feeler도 출력 전. step_gauge는 4절 ""두 단 규칙"" (같은 층 정확히 2행)",,"bed_bare,background,dark,bed_marker,ref_tower,step_gauge,feeler,daily_ref,static_repeat",false,,,,,ref_index.csv,false,,80
+ref.scan_id,ref,이 기준과 짝인 시편 스캔 ID. 층에 매인 기준은 그 층 **첫 줄** 스캔 (`meta.scan_pass_idx` = 0),-,str,조건부,S01_r01_L004,"kind ∈ {bed_marker, ref_tower, step_gauge}면 필수 (층마다 그 층 스캔과 짝), 그 스캔의 `meta.scan_pass_idx` = 0. kind ∈ {bed_bare, feeler}면 빈 칸. 정규식 `^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$`. kind = bed_marker면 그 스캔의 `meta.layer_z_mm` ≤ 8.0",^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,,false,,,,,ref_index.csv,false,,81
+ref.layer_idx,ref,"기준을 잰 때의 층 번호, 0부터. 출력 시작 전 기준은 -1 (""출력 전"" 부호, 결측 아님). post에서 다시 잰 단은 마지막 층 번호",-,int,조건부,4,"kind ∈ {bed_marker, ref_tower, step_gauge}면 필수이고 0 ≤ x, ref.scan_id가 가리키는 스캔의 `meta.layer_idx`와 같음. kind ∈ {bed_bare, feeler}면 -1. 그 밖 kind는 선택 (출력 전에 찍었으면 -1, 층에 매이지 않으면 빈 칸). -1 ≤ x",,,false,-1,≤,,,ref_index.csv,false,,82
+ref.scan_pass_idx,ref,이 기준을 잰 스캔 줄 번호 (3차 새 필드). 출력 전 베드 기준을 시편 줄마다 같은 X에서 잴 때 몇 번째 줄인지 (LM-T14-3 `SPASS`),-,int,조건부,0,"kind = bed_bare면 필수, 그 밖은 빈 칸. 0 ≤ x ≤ 99. 한 세션의 bed_bare 행은 0부터 빈 번호 없이 이어지고, 개수는 그 세션 스캔의 `meta.scan_pass_idx` 최댓값 + 1 이상. 기준 위치 로그 스캔 구간 `pos.x_mm` 평균이 이 기준을 `meta.bed_ref_id`로 가리키는 스캔들의 `meta.scan_x_mm`와 차 ≤ 0.01 (0점을 같은 줄에서 잼)",,,false,0,≤,99,≤,ref_index.csv,false,,83
+ref.n_frames,ref,이 기준 촬영의 프레임 수,-,int,필수,100,1 ≤ x. kind = static_repeat면 x ≥ 100. frames_index.csv 행 수와 같음,,,false,1,≤,,,ref_index.csv,false,,84
+ref.frames_dir,ref,"영상 폴더, 기준 폴더 기준",-,str,필수,frames/,값 = frames/. 폴더 있음,,frames/,false,,,,,ref_index.csv,false,,85
+ref.marker_id,ref,베드 마커 ID,-,str,조건부,MK01,kind = bed_marker면 필수. 정규식 `^MK\d{2}$`,^MK\d{2}$,,false,,,,,ref_index.csv,false,,86
+ref.marker_x_mm,ref,"마커 중심의 설계 X, {G}",mm,float,조건부,60.0000,kind = bed_marker면 필수. 유한값,,,false,,,,,ref_index.csv,false,,87
+ref.marker_y_mm,ref,"마커 중심의 설계 Y, {G}",mm,float,조건부,90.0000,kind = bed_marker면 필수. 유한값,,,false,,,,,ref_index.csv,false,,88
+ref.t_start_ns,ref,"기준 촬영 첫 프레임 시각, 호스트 단조 시계",ns,int64,필수,5030000000000,0 < x. 짝 스캔이 있으면 그 스캔 첫 프레임과 차이 ≤ 600 s,,,false,0,<,,,ref_index.csv,false,,89
+ref.calibration_id,ref,기준 촬영 때 유효했던 교정 ID,-,str,조건부,CAL-2026-11-20-A,"kind ∈ {bed_bare, bed_marker, ref_tower, step_gauge, feeler}면 필수 (높이를 계산하는 기준). 그 밖 kind (background · dark · daily_ref · static_repeat)는 선택: 값이 있으면 정규식만 봄 (교정 상태 추세용, 빈 칸 강제 없음, T6 질문 1). 정규식 `^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$`. kind = bed_bare면 그 기준을 `meta.bed_ref_id`로 가리키는 모든 스캔의 `meta.calibration_id`와 같음 (다르면 판정 거부 X4, D-21 채택 · 기본 켬)",^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,ref_index.csv,false,,90
+ref.gauge_block_id,ref,"이 기준에서 스캔한 기준물 개체 ID (T2 · T14 같은 이름, 한 필드). 형식은 `cal.gauge_block_id`와 같고, 베드 면 단은 GB-00",-,str,조건부,FG-0.50,"kind ∈ {step_gauge, feeler}면 필수, 그 밖은 빈 칸. 정규식 `^GB-\d{2}(\.\d{1,3})?(\+\d{2}(\.\d{1,3})?)*$` 또는 `^FG-0\.[2345]0$`. GB-00이 아니면 같은 캠페인 `cal_manifest.csv`에 같은 `cal.gauge_block_id` 행이 있음 (GB-00은 cal 행 없음). step_gauge면 GB- (블록 · 베드 면) 또는 FG- (아래 단으로 쓰는 필러게이지), feeler면 FG-로 시작","^GB-\d{2}(\.\d{1,3})?(\+\d{2}(\.\d{1,3})?)*$||^FG-0\.[2345]0$",,false,,,,,ref_index.csv,false,,91
+ref.gauge_height_mm,ref,"스캔한 기준물 윗면의 교정 높이, 베드 면 = 0 ({G} Z 방향 길이). `ref.gauge_block_id`가 가리키는 교정값을 옮겨 적은 값 (처리 코드가 교정 파일을 다시 찾지 않게)",mm,float,조건부,0.5021,"kind ∈ {step_gauge, feeler}면 필수. 0 ≤ x ≤ 60, x = 0은 GB-00 (베드 면)일 때만이고 GB-00이면 x = 0. GB- 블록이면 = 그 블록의 `cal.gauge_block_height_mm`, FG-면 = 그 게이지의 `cal.gauge_measured_mm`. kind = step_gauge면 **x ≤ 짝 스캔의 `meta.layer_z_mm`** (같은 높이 허용, 4절 C2)",,,false,0,≤,60,≤,ref_index.csv,false,,92
+ref.gauge_temp_c,ref,"기준물 온도 (열팽창 보정용, T2 5.4절 C3). 실측 출처: 계단 블록 GB-07+01 옆면에 붙인 100K NTC 서미스터 (Klipper `[temperature_sensor gauge_block]`)를 그 기준 스캔이 시작될 때 읽어 `M118 … gauge_temp_c=`로 남긴 값 (LM-T14-3, T14 9절). 가상은 열 모델 출력",°C,float,조건부,24.6,"kind = step_gauge면 필수, feeler면 선택, 그 밖은 빈 칸. −10 ≤ x ≤ 130",,,false,-10,≤,130,≤,ref_index.csv,false,,93
+ref.line_peak_pct,ref,"기준 촬영에서 레이저 선 최대 밝기, 포화값 대비 (광학창 오염 추세, T2 MF-OPT-12)",%,float,조건부,72.0,"kind ∈ {daily_ref, static_repeat, bed_marker, ref_tower, step_gauge}면 필수. 0 ≤ x ≤ 100. 같은 kind 이전 값보다 20 % 넘게 낮으면 경고 [추정: 경고 폭은 T6에서 확정]",,,false,0,≤,100,≤,ref_index.csv,false,,94
+ref.note,ref,메모,-,str,필수,"층 4 끝, 마커 MK01 재측정","빈 문자열 허용 안 함. 쓸 말이 없으면 ""-""",,,false,,,,,ref_index.csv,false,,95
+meta.scan_id,meta,스캔 ID (시편·반복·층),-,str,필수,S01_r01_L004,"정규식 `^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$`. timing = layer면 `_L` 부분 필수이고 숫자 = `meta.layer_idx`. timing = post면 `_L` 없음. `meta.scan_pass_idx` = 0이면 `_p` 없음, 1 이상이면 `_p` 숫자 = scan_pass_idx",^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,,false,,,,,meta.json,false,,96
+meta.scan_pass_idx,meta,"스캔 줄 번호, 0부터. 출력이 시야보다 넓어 한 층을 X가 다른 여러 줄로 나눠 잴 때 몇 번째 줄인지 (T2 MF-GCD-08). 같은 줄의 반복은 `pos.pass_idx`",-,int,필수,0,0 ≤ x ≤ 99. 같은 시편·반복·층 (post면 post끼리) 스캔들이 0부터 빈 번호 없이 이어짐. 줄이 하나면 0. post 스캔의 줄 번호 집합 = 마지막 층 (layer_idx = `meta.layer_count` − 1) timing = layer 스캔의 줄 번호 집합 (LM-T14-3은 모든 줄을 다시 잼),,,false,0,≤,99,≤,meta.json,false,,97
+meta.campaign_id,meta,캠페인 ID (같은 조건으로 만든 데이터 묶음),-,str,필수,VC-2026-11-20-A,정규식 `^[VR]C-\d{4}-\d{2}-\d{2}-[A-Z]$`. 첫 글자 V ⇔ source = virtual,^[VR]C-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,98
+meta.session_id,meta,출력 세션 ID (출력 작업 1회),-,str,필수,PS-2026-11-20-A,정규식 `^PS-\d{4}-\d{2}-\d{2}-[A-Z]$`. 폴더 이름과 같음,^PS-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,99
+meta.source,meta,"데이터 출처: virtual 가상, real 실측",-,str,필수,virtual,"값 ∈ {virtual, real}",,"virtual,real",false,,,,,meta.json,false,,100
+meta.spec_version,meta,따른 명세 버전,-,str,필수,1.0,정규식 `^\d+\.\d+$`,^\d+\.\d+$,,false,,,,,meta.json,false,,101
+meta.specimen_id,meta,시편 ID (사용자 G코드 출력물 하나 = 시편 하나),-,str,필수,S01,정규식 `^S\d{2}$`. scan_id 앞 세 글자와 같음,^S\d{2}$,,false,,,,,meta.json,false,,102
+meta.specimen_role,meta,"시편 역할: user_gcode 사용자 G코드 출력물 (판정 대상), public_gcode 공개 G코드 출력물 (판정 대상. 사용자 G코드를 받기 전 시작용이고 나중에 사용자 G코드로 바꿈, D-10 · D-19), aux_step 보조 단차 시편 (점검용, E3 축소)",-,str,필수,user_gcode,"값 ∈ {user_gcode, public_gcode, aux_step}. 기본 user_gcode. aux_step이면 단차 필드 (`meta.step_edge_angle_deg`, `truth.step_heights_mm`)가 필수",,"user_gcode,public_gcode,aux_step",false,,,,,meta.json,false,,103
+meta.repeat,meta,반복 번호 (같은 시편 다시 출력·측정),-,int,필수,1,1 ≤ x ≤ 99. scan_id의 rNN과 같음,,,false,1,≤,99,≤,meta.json,false,,104
+meta.datetime,meta,"스캔 시작 시각, 벽시계 ISO 8601",-,str,필수,2026-11-20T14:20:00+09:00,"ISO 8601, 시간대 포함",,,false,,,,,meta.json,false,,105
+meta.operator,meta,측정자 (가상이면 sim),-,str,필수,sim,빈 문자열 아님,,,false,,,,,meta.json,false,,106
+meta.notes,meta,메모,-,str,필수,무광 처리 없음,"쓸 말이 없으면 ""-""",,,false,,,,,meta.json,false,,107
+meta.timing,meta,"측정 시점: layer 층마다 (출력 중), post 출력이 끝난 뒤 마지막 층을 식혀 다시 잰 스캔 (D-06)",-,str,필수,layer,"값 ∈ {layer, post}. 기본은 layer (D-04). 시편·반복마다 post 스캔 (scan_pass_idx = 0)이 정확히 1개 (D-06 필수). layer ⇔ `meta.thermal_state` = in_process, post ⇔ cooled",,"layer,post",false,,,,,meta.json,false,,108
+meta.layer_idx,meta,"방금 출력을 마친 층 번호, 0부터. post면 마지막 층 번호",-,int,필수,4,"0 ≤ x < `meta.layer_count`. 모든 층 스캔 (D-18): 같은 시편·반복의 timing = layer 스캔에 0부터 `meta.layer_count` − 1까지 모든 값이 있음 (빠지면 판정 거부 X7, D-21 채택 · 기본 켬)",,,false,0,≤,,,meta.json,false,,109
+meta.layer_count,meta,이 시편 G코드의 전체 층 수,-,int,필수,20,1 ≤ x,,,false,1,≤,,,meta.json,false,,110
+meta.layer_z_mm,meta,"이 층 윗면의 G코드 Z, {G}",mm,float,필수,1.0000,0 < x. 같은 세션에서 layer_idx가 크면 더 큼. abs(x − G코드 해당 층 Z) ≤ 0.0001,,,false,0,<,,,meta.json,false,,111
+meta.gcode_line_start,meta,이 층 G코드 구간의 첫 줄 번호 (1부터),-,int,필수,4120,1 ≤ x ≤ `meta.gcode_line_end`,,,false,1,≤,,,meta.json,false,,112
+meta.gcode_line_end,meta,이 층 G코드 구간의 마지막 줄 번호 (스캔 삽입 줄 제외),-,int,필수,5388,x ≥ gcode_line_start. 다음 층 gcode_line_start보다 작음,,,false,,,,,meta.json,false,,113
+meta.layer_end_t_ns,meta,"이 층 마지막 압출이 끝난 시각, 호스트 단조 시계",ns,int64,필수,4975000000000,0 < x < `meta.scan_start_t_ns`,,,false,0,<,,,meta.json,false,,114
+meta.scan_start_t_ns,meta,"스캔 시작 시각 (pos.event = scan_start 행), 호스트 단조 시계",ns,int64,필수,4990000000000,position_log의 scan_start 행 시각(호스트 기준)과 같음,,,false,,,,,meta.json,false,,115
+meta.wait_after_layer_s,meta,층 출력 끝부터 스캔 시작까지 경과 시간,s,float,필수,15.0,0 ≤ x. abs(x − (scan_start_t_ns − layer_end_t_ns) ÷ 1e9) ≤ 0.001,,,false,0,≤,,,meta.json,false,,116
+meta.pause_added_s,meta,스캔 때문에 출력이 멈춘 시간 (노즐 정지·이동·스캔 합),s,float,필수,35.0,0 ≤ x. timing = layer면 x ≥ `meta.scan_length_mm` ÷ `meta.scan_speed_mm_s`. post면 0,,,false,0,≤,,,meta.json,false,,117
+meta.layer_time_s,meta,"이 층 출력 시간 (스캔·정지 제외, 층 시작 ~ `meta.layer_end_t_ns`)",s,float,조건부,45.0,timing = layer면 필수. 0 < x. pause_added_s ÷ x > 1이면 작은 층 경고 (T2 MF-PRC-11),,,false,0,<,,,meta.json,false,,118
+meta.scan_z_hop_mm,meta,"스캔 전에 노즐을 들어 올린 높이, 기계 Z 증가량 (= {G} Z 증가량)",mm,float,필수,2.0,"0 ≤ x ≤ 8 (심도 8 mm 안, M54). 1.0 미만이면 긁힘 경고 (T2 MF-PRC-04: Z hop ≥ 1 mm). C2 권장 2 mm",,,false,0,≤,8,≤,meta.json,false,,119
+meta.scan_axis,meta,스캔 진행 축과 방향 ({G}). 빼기는 ASCII 하이픈,-,str,필수,+Y,"값 ∈ {+X, -X, +Y, -Y}. M54 기본 +Y. 베드가 Y로 움직이는 프린터면 +X 권장 (T2 MF-MEC-10). SV08 · Voron은 +Y",,"+X,-X,+Y,-Y",false,,,,,meta.json,false,,120
+meta.scan_x_mm,meta,"스캔 중 노즐 끝 X (고정), {G}",mm,float,필수,110.0000,position_log 스캔 구간 x_mm 평균과 차이 ≤ 0.01,,,false,,,,,meta.json,false,,121
+meta.scan_y0_mm,meta,"스캔 시작 Y, {G}",mm,float,필수,90.0000,position_log scan_start 행 y_mm와 차이 ≤ 0.01,,,false,,,,,meta.json,false,,122
+meta.process,meta,가공 공정,-,str,필수,FDM,값 ∈ {FDM} (이 단계는 FDM만),,FDM,false,,,,,meta.json,false,,123
+meta.printer_model,meta,프린터 기종 (소문자 제조사-모델),-,str,필수,sovol-sv08,"빈 문자열 아님. 예: sovol-sv08 (D-13 확정), voron-trident-300, voron-2.4-350, creality-ender3-v3se. 가상은 흉내 낸 기종 이름 또는 자리표시 PRINTER-A",,,false,,,,,meta.json,false,,124
+meta.printer_kinematics,meta,기구 방식 (T14),-,str,필수,corexy,"값 ∈ {corexy, cartesian_bedslinger, corexz}. SV08 = corexy",,"corexy,cartesian_bedslinger,corexz",false,,,,,meta.json,false,,125
+meta.bed_motion,meta,"베드 움직임: fixed 고정, z_only Z로만, y Y로 움직임 (T14)",-,str,필수,fixed,"값 ∈ {fixed, z_only, y}. SV08 · Voron 2.4 = fixed, Trident = z_only. y면 `meta.scan_axis` ∈ {+X, -X} 권장 (T2 MF-MEC-10)",,"fixed,z_only,y",false,,,,,meta.json,false,,126
+meta.z_drive,meta,Z 구동 방식 (T14),-,str,필수,belt,"값 ∈ {leadscrew, belt}. SV08 = belt [T14 추정: Voron 2.4 파생], Trident = leadscrew. belt면 식힌 재측정 동안 모터 유지 필수 (T2 MF-SYN-09). 판정은 post 위치 로그의 motor_off 이벤트로 함 (2절 `pos.event`)",,"leadscrew,belt",false,,,,,meta.json,false,,127
+meta.z_motor_count,meta,Z 모터 수 (T14),-,int,필수,4,"1 ≤ x ≤ 4. SV08 · Voron 2.4 = 4, Trident = 3",,,false,1,≤,4,≤,meta.json,false,,128
+meta.z_level_method,meta,자동 Z 수평 방식 (T14),-,str,필수,qgl,"값 ∈ {z_tilt, qgl, none}. SV08 = qgl",,"z_tilt,qgl,none",false,,,,,meta.json,false,,129
+meta.probe_type,meta,프린터 레벨링 프로브 종류. **측정 검증에 쓰지 않음 (D-14)**. 베드 메시·Z 수평에만 쓰는 프린터 부품 기록,-,str,필수,inductive_pressure,"값 ∈ {tap, loadcell, strain_gauge, inductive, inductive_pressure, eddy, bltouch, none}. SV08 = inductive_pressure (T14)",,"tap,loadcell,strain_gauge,inductive,inductive_pressure,eddy,bltouch,none",false,,,,,meta.json,false,,130
+meta.firmware,meta,펌웨어 이름과 판을 한 줄로,-,str,필수,sovol-klipper-unknown,형식 `[<제조사>-]<firmware_name>-<판>[-<git 해시 7자리>]` (T14). 정규식 `^([a-z0-9]+-)?[a-z]+-[A-Za-z0-9._-]+$`이고 이름 부분 = `meta.firmware_name`. 제조사 접두사는 `meta.firmware_fork` = vendor일 때만. 판을 모르면 unknown. `meta.firmware_name`·`meta.firmware_version`과 맞음 (13절),^([a-z0-9]+-)?[a-z]+-[A-Za-z0-9._-]+$,,false,,,,,meta.json,false,,131
+meta.firmware_fork,meta,"펌웨어 출처: mainline 원본, vendor 제조사 포크 (T14)",-,str,필수,vendor,"값 ∈ {mainline, vendor}. SV08 기본 = vendor (Sovol 포크)",,"mainline,vendor",false,,,,,meta.json,false,,132
+meta.mesh_enabled,meta,"베드 메시 보정을 켰는지 (Klipper는 fade 기본 꺼짐이라 켜면 스캔 중에도 Z 보정이 들어감, T14)",-,bool,필수,true,true면 position_log에 `pos.mesh_dz_mm` 값 있음,,,false,,,,,meta.json,false,,133
+meta.control_group,meta,"대조군 종류: none 일반 (층별 스캔 있음), dwell_only 스캔 없이 정지만, no_pause 정지·스캔 없음 (T2 MF-PRC-10, C2 대조군)",-,str,필수,none,"값 ∈ {none, dwell_only, no_pause}. none이 아니면 timing = post",,"none,dwell_only,no_pause",false,,,,,meta.json,false,,134
+meta.enclosure,meta,프린터 외함(인클로저) 유무,-,bool,필수,true,true 또는 false. ambient_light = enclosure_dark면 true,,,false,,,,,meta.json,false,,135
+meta.slicer_profile_file,meta,"슬라이서 설정 파일 경로, 저장소 뿌리 기준",-,str,필수,data/gcode/S01_profile.ini,저장소 뿌리 기준으로 파일 있음 (0.1절),,,false,,,,,meta.json,false,,136
+meta.gcode_file,meta,"정답 G코드 (사용자 G코드) 파일 경로, 저장소 뿌리 기준",-,str,필수,data/gcode/S01_user_part.gcode,"저장소 뿌리 기준으로 파일 있음 (0.1절). 예시 이름은 자리표시 (사용자 G코드 경로를 받으면 그 이름, D-10)",,,false,,,,,meta.json,false,,137
+meta.gcode_sha256,meta,G코드 파일 SHA-256 지문,-,str,필수,3f5a…(64자),정규식 `^[0-9a-f]{64}$`. 실제 파일 지문과 같음,^[0-9a-f]{64}$,,false,,,,,meta.json,false,,138
+meta.material,meta,재료,-,str,필수,PLA,"값 ∈ {PLA, PETG, ABS, TPU, other}",,"PLA,PETG,ABS,TPU,other",false,,,,,meta.json,false,,139
+meta.color,meta,색,-,str,필수,gray,빈 문자열 아님,,,false,,,,,meta.json,false,,140
+meta.translucency,meta,반투명 정도,-,str,필수,opaque,"값 ∈ {opaque, translucent, transparent}",,"opaque,translucent,transparent",false,,,,,meta.json,false,,141
+meta.filament_lot,meta,필라멘트 로트 (가상이면 sim),-,str,필수,LOT-2026-09,빈 문자열 아님,,,false,,,,,meta.json,false,,142
+meta.nozzle_dia_mm,meta,"노즐 지름 (크기 값, 좌표계 무관)",mm,float,필수,0.40,0.1 ≤ x ≤ 1.2,,,false,0.1,≤,1.2,≤,meta.json,false,,143
+meta.layer_h_mm,meta,"층 높이 (슬라이서 설정) (크기 값, 좌표계 무관)",mm,float,필수,0.20,0.04 ≤ x ≤ `meta.nozzle_dia_mm`,,,false,0.04,≤,,,meta.json,false,,144
+meta.top_layers,meta,측정 면 아래 솔리드 윗면 층 수 (슬라이서 설정),-,int,필수,4,0 ≤ x ≤ 50,,,false,0,≤,50,≤,meta.json,false,,145
+meta.infill_angle_deg,meta,"측정 면 윗면 채움 방향, {G} X축 기준 (슬라이서 설정)",°,float,필수,45.0,−180 < x ≤ 180,,,false,-180,<,180,≤,meta.json,false,,146
+meta.step_edge_angle_deg,meta,"보조 단차 시편의 단차 경계선과 스캔 방향 사이 각, {G} (0 = 나란함)",°,float,조건부,0.0,"`meta.specimen_role` = aux_step이면 필수, user_gcode · public_gcode면 null. 0 ≤ x ≤ 90. 90에 가까우면 두 면이 다른 프레임에 담김 (T2 MF-MEC-13)",,,false,0,≤,90,≤,meta.json,false,,147
+meta.nozzle_temp_c,meta,스캔 시작 때 노즐 온도,°C,float,필수,205.0,0 ≤ x ≤ 320,,,false,0,≤,320,≤,meta.json,false,,148
+meta.bed_temp_c,meta,스캔 시작 때 베드 온도,°C,float,필수,60.0,0 ≤ x ≤ 130,,,false,0,≤,130,≤,meta.json,false,,149
+meta.room_temp_c,meta,스캔 시작 때 실내(외함) 온도,°C,float,필수,22.4,−10 ≤ x ≤ 50,,,false,-10,≤,50,≤,meta.json,false,,150
+meta.room_humidity_pct,meta,스캔 시작 때 실내 상대습도,%,float,선택,45.0,0 ≤ x ≤ 100,,,false,0,≤,100,≤,meta.json,false,,151
+meta.camera_temp_c,meta,스캔 시작 때 카메라 몸체 온도,°C,float,조건부,38.0,source = virtual이거나 카메라 온도 센서가 있으면 필수. −40 ≤ x ≤ 125,,,false,-40,≤,125,≤,meta.json,false,,152
+meta.laser_temp_c,meta,스캔 시작 때 레이저 모듈 온도,°C,float,선택,40.0,−40 ≤ x ≤ 125 (물리 점검용 넓은 한계). 레이저 모듈 허용 온도는 [미상],,,false,-40,≤,125,≤,meta.json,false,,153
+meta.specimen_temp_c,meta,"스캔 시작 때 시편 윗면 온도 (측정 당시 열 상태, D-06)",°C,float,필수,55.0,"−10 ≤ x ≤ 320. source = real이고 온도 센서가 없을 때만 null 허용, 그때 `meta.notes`에 ""specimen_temp_c 없음: 사유""를 적음",,,false,-10,≤,320,≤,meta.json,false,,154
+meta.part_fan_pct,meta,스캔 때 부품 냉각 팬 출력,%,float,필수,100.0,0 ≤ x ≤ 100,,,false,0,≤,100,≤,meta.json,false,,155
+meta.ambient_light,meta,주변광 조건,-,str,필수,enclosure_dark,"값 ∈ {enclosure_dark, room_light, sunlight, unknown}",,"enclosure_dark,room_light,sunlight,unknown",false,,,,,meta.json,false,,156
+meta.bed_ref_id,meta,이 스캔의 높이 0점으로 쓴 베드 기준 스캔 ID. 출력 전 같은 세션에서 같은 줄 (같은 X)로 잰 것,-,str,필수,REF-BED-001,"정규식 `^REF-BED-\d{3,4}$`. 같은 세션 `reference/`에 있는 `ref.ref_id`이고 그 행의 `ref.kind` = bed_bare, `ref.scan_pass_idx` = 이 스캔의 `meta.scan_pass_idx`. 세션 안에서 **같은 `meta.scan_pass_idx`끼리 같은 값** (줄마다 bed_bare, LM-T14-3). 없거나 bed_bare가 아니면 판정 거부 X1","^REF-BED-\d{3,4}$",,false,,,,,meta.json,false,,157
+meta.z_offset_mm,meta,"펌웨어에 설정된 Z 오프셋. {G} Z = 0이 노즐 끝과 베드 면이 닿는 자리가 되게 하는 보정값 ({G} Z 방향 길이, + = 0점이 위로)",mm,float,필수,-0.1500,abs(x) ≤ 5.0. 세션 안 모든 스캔이 같은 값 (바뀌면 0점이 바뀜 → 검증 실패). meta가 스캔마다 있으므로 층 단위 기록은 이것으로 됨 (T2 MF-SYN-13 · GCD-03). 펌웨어 값의 부호를 이 명세 부호로 바꿔 적음 (부록 D),,,false,-5.0,≤,5.0,≤,meta.json,false,,158
+meta.zero_ref_method,meta,"높이 0점을 층마다 이어 가는 방법: step_gauge 같은 Z에서 계단 기준물 연달아 측정 (D-16), bed_marker 베드 마커 재측정, ref_tower 시편 옆 기준 탑, z_only 프린터 Z 위치만",-,str,필수,step_gauge,"값 ∈ {step_gauge, bed_marker, ref_tower, z_only}. LM-T14-3 기본은 step_gauge. step_gauge면 그 층 첫 줄 스캔을 짝으로 하는 `ref.kind` = step_gauge 행이 정확히 2개 (같은 Z · 두 단 규칙, 4절). bed_marker면 `meta.layer_z_mm` ≤ 8.0 (심도, M54)이고 짝 `ref.kind` = bed_marker 행 있음. ref_tower면 짝 `ref.kind` = ref_tower 행 있음. z_only는 기록은 되나 판정 거부 X2",,"step_gauge,bed_marker,ref_tower,z_only",false,,,,,meta.json,false,,159
+meta.bed_mesh_file,meta,"이 세션에 쓴 베드 메시 표 원본 파일, 세션 폴더 기준 상대 경로",-,str,조건부,printer/bed_mesh.json,"`meta.mesh_enabled` = true면 필수, false면 null. 정규식 `^printer/bed_mesh[^/]*$`. 파일 있음. 펌웨어가 낸 원본 그대로 (형식은 부록 D). 세션 안 모든 스캔이 같은 값",^printer/bed_mesh[^/]*$,,false,,,,,meta.json,false,,160
+meta.thermal_state,meta,"측정 때 열 상태: in_process 층별 출력 중, cooled 출력이 끝나고 식힌 뒤 재측정 (D-06)",-,str,필수,in_process,"값 ∈ {in_process, cooled}. timing = layer ⇔ in_process, timing = post ⇔ cooled. cooled면 `meta.paired_scan_id`·`meta.cool_wait_s` 필수. 판정에는 in_process만 (cooled 스캔을 판정에 넣으면 판정 거부 X5)",,"in_process,cooled",false,,,,,meta.json,false,,161
+meta.paired_scan_id,meta,짝 스캔 ID. 식힌 재측정 스캔 (thermal_state = cooled)이 가리키는 마지막 층의 출력 중 스캔 (D-06). 줄이 여럿이면 같은 줄 번호끼리 짝,-,str,조건부,S01_r01_L019,"thermal_state = cooled면 필수, in_process면 null. 정규식 `^S\d{2}_r\d{2}_L\d{3}(_p\d{2})?$`. 같은 세션·시편·반복의 스캔이고, 그 스캔의 layer_idx = `meta.layer_count` − 1, thermal_state = in_process, `meta.scan_pass_idx` = 이 스캔의 `meta.scan_pass_idx` (예: `post_p01` ↔ `L019_p01`)",^S\d{2}_r\d{2}_L\d{3}(_p\d{2})?$,,false,,,,,meta.json,false,,162
+meta.cool_wait_s,meta,마지막 층 출력이 끝난 뒤 식힌 재측정을 시작하기까지 기다린 시간,s,float,조건부,1800.0,"thermal_state = cooled면 필수, in_process면 null. 0 < x. abs(x − `meta.wait_after_layer_s`) ≤ 0.001. 식었다고 보는 기준은 판정 규칙 R4 · R5 (D-20 확정, 판정은 바꾸지 않고 경고만)이며 이 값은 보고에만 씀",,,false,0,<,,,meta.json,false,,163
+meta.tolerance_mm,meta,"이 출력물의 허용 오차 T. G코드 대비 높이 차이가 이 안이면 합격 쪽 (크기 값, 좌표계 무관)",mm,float,필수,0.20,"= 0.20 (D-05 고정, 2026-10-27). 다른 값이면 검증 실패",,,false,0.20,=,0.20,=,meta.json,false,,164
+meta.slicer_name,meta,정답 G코드를 만든 슬라이서 이름과 버전,-,str,필수,SLICER-A 0.0,"빈 문자열 아님. G코드 머리말에서 읽고, 없으면 ""unknown"". 예시는 자리표시 (D-10)",,,false,,,,,meta.json,false,,165
+meta.gcode_flavor,meta,G코드 방언. 파서 (T4 G1)가 읽는 방식을 정함,-,str,필수,marlin,"값 ∈ {marlin, klipper, reprap, other}. 예시는 자리표시 (사용자 G코드를 받으면 그 값)",,"marlin,klipper,reprap,other",false,,,,,meta.json,false,,166
+meta.firmware_name,meta,펌웨어 이름,-,str,필수,klipper,"값 ∈ {klipper, marlin, rrf, other}. `meta.firmware`와의 관계는 13절",,"klipper,marlin,rrf,other",false,,,,,meta.json,false,,167
+meta.firmware_version,meta,펌웨어 판 문자열 (펌웨어가 보고한 그대로),-,str,필수,unknown,"빈 문자열 아님. 모르면 ""unknown"". Sovol 포크 판은 [미상] (T14)",,,false,,,,,meta.json,false,,168
+meta.host_software,meta,프린터와 수집 PC 사이 호스트 프로그램 이름과 판 (없으면 none),-,str,필수,moonraker unknown,"빈 문자열 아님. 직접 연결이면 ""none"". Klipper는 Moonraker (T14)",,,false,,,,,meta.json,false,,169
+meta.layer_macro_version,meta,층 변경 때 스캔을 넣는 매크로의 판 (T14 9절),-,str,필수,LM-T14-3,정규식 `^LM-T14-\d+$` (형식 LM-T14-<판>). 지금 판은 **LM-T14-3** (T14 3차: 층마다 모든 줄 + 같은 Z 두 단 + 줄마다 bed_bare + post `PASS=0 THERMAL=cooled` + 기준물 온도 기록). LM-T14-2로 찍힌 데이터는 C1 (그 자리 배율 교정)을 못 지키므로 계단 기준물 U 15.0 µm를 쓰지 않음 (T14 10절). 판정 거부 X7 (빠진 층)을 볼 때 함께 봄,^LM-T14-\d+$,,false,,,,,meta.json,false,,170
+meta.shaper_freq_x_hz,meta,"센서를 단 뒤 잰 입력 셰이퍼 X 주파수 (T14, T2 MF-MEC-09)",Hz,float,선택,48.6,0 < x ≤ 200. 장착 뒤 다시 재지 않았으면 null,,,false,0,<,200,≤,meta.json,false,,171
+meta.shaper_freq_y_hz,meta,센서를 단 뒤 잰 입력 셰이퍼 Y 주파수,Hz,float,선택,39.2,0 < x ≤ 200,,,false,0,<,200,≤,meta.json,false,,172
+meta.trigger_pin,meta,카메라 트리거 (경로 ⓐ) 또는 게이트 LED (경로 ⓑ) 출력 핀 이름 (T14),-,str,필수,cam_trig,"빈 문자열 아님. 이 스캔의 `frame.trigger_mode` ∈ {hw, gate}면 핀 이름, 그 밖은 ""none"". 실제 핀 이름은 [미상] (T14: SV08 핀 정의 PDF의 빈 핀, 이름은 자리표시)",,,false,,,,,meta.json,false,,173
+meta.trigger_period_s,meta,경로 ⓐ 트리거 펄스 주기 (Klipper output_pin cycle_time),s,float,조건부,0.008333,"이 스캔의 `frame.trigger_mode` = hw면 필수, 그 밖은 null. 0 < x ≤ 0.1. abs(x × `meta.fps` − 1) ≤ 0.001 (프레임마다 펄스 1개)",,,false,0,<,0.1,≤,meta.json,false,,174
+meta.sensor_model,meta,측정 장치 구성 이름,-,str,필수,M54-nozzle-line-v1,빈 문자열 아님,,,false,,,,,meta.json,false,,175
+meta.cam_model,meta,카메라 센서 모델,-,str,필수,OV9281,빈 문자열 아님 (M54 대표 구성),,,false,,,,,meta.json,false,,176
+meta.cam_shutter,meta,셔터 방식,-,str,필수,global,"값 ∈ {global, rolling} (M54: 글로벌셔터)",,"global,rolling",false,,,,,meta.json,false,,177
+meta.cam_interface,meta,카메라 연결 방식,-,str,필수,usb2,"값 ∈ {usb2, usb3, mipi, gige, sim}. usb2면 9절 대역폭 검사",,"usb2,usb3,mipi,gige,sim",false,,,,,meta.json,false,,178
+meta.cam_pixel_um,meta,화소 크기,µm,float,필수,3.0,0 < x ≤ 20 (M54: 3 µm),,,false,0,<,20,≤,meta.json,false,,179
+meta.cam_res_w_px,meta,센서 전체 폭,px,int,필수,1280,1 ≤ x (M54: 1280),,,false,1,≤,,,meta.json,false,,180
+meta.cam_res_h_px,meta,센서 전체 높이,px,int,필수,800,1 ≤ x (M54: 800),,,false,1,≤,,,meta.json,false,,181
+meta.lens_f_mm,meta,"렌즈 초점거리 (크기 값, 좌표계 무관)",mm,float,필수,8.0,0 < x (M54: M12 f 8 mm),,,false,0,<,,,meta.json,false,,182
+meta.lens_f_number,meta,렌즈 조리개 F수,-,float,필수,4.0,0.9 ≤ x ≤ 32 (M54: f/4),,,false,0.9,≤,32,≤,meta.json,false,,183
+meta.lens_focus_locked,meta,초점·조리개를 고정했는지,-,bool,필수,true,실측에서 false면 검증 경고 (D1: 측정 때와 같은 렌즈 상태),,,false,,,,,meta.json,false,,184
+meta.wd_mm,meta,"작동 거리 (크기 값, 좌표계 무관)",mm,float,필수,50.0,0 < x (M54: 50 mm),,,false,0,<,,,meta.json,false,,185
+meta.magnification,meta,광학 배율,-,float,필수,0.19,0 < x ≤ 1 (M54: 0.19),,,false,0,<,1,≤,meta.json,false,,186
+meta.laser_wavelength_nm,meta,레이저 파장,nm,float,필수,450.0,350 ≤ x ≤ 1100 (M54: 450 nm),,,false,350,≤,1100,≤,meta.json,false,,187
+meta.laser_power_mw,meta,레이저 광출력 (명판 또는 측정),mW,float,필수,1.0,0 < x ≤ 1.0 (M54: ≤ 1 mW). 넘으면 C8 안전 경고,,,false,0,<,1.0,≤,meta.json,false,,188
+meta.laser_power_pct,meta,레이저 출력 설정값 (드라이버 %),%,float,선택,60.0,0 ≤ x ≤ 100,,,false,0,≤,100,≤,meta.json,false,,189
+meta.laser_class,meta,레이저 안전 등급,-,str,필수,2,"값 ∈ {1, 2, 2M, 3R} (M54: Class 2)",,"1,2,2M,3R",false,,,,,meta.json,false,,190
+meta.triang_angle_deg,meta,레이저 평면과 카메라 광축 사이 각,°,float,필수,30.0,5 ≤ x ≤ 80 (M54: 레이저 수직 + 카메라 30°),,,false,5,≤,80,≤,meta.json,false,,191
+meta.filter_center_nm,meta,대역통과 필터 중심 파장,nm,float,필수,450.0,abs(x − laser_wavelength_nm) ≤ 20,,,false,,,,,meta.json,false,,192
+meta.filter_fwhm_nm,meta,필터 반치폭,nm,float,필수,10.0,"0 < x ≤ 100. 실제 값은 [미상] (M54에 사양 없음), 예시는 자리표시",,,false,0,<,100,≤,meta.json,false,,193
+meta.exposure_set_us,meta,노출 설정값,µs,float,필수,800.0,frame.exposure_us 값들과 차이 ≤ 1 %,,,false,,,,,meta.json,false,,194
+meta.gain_set_db,meta,게인 설정값,dB,float,필수,0.0,frame.gain_db 값들과 같음,,,false,,,,,meta.json,false,,195
+meta.frame_avg_n,meta,위치 하나에서 평균한 프레임 수 (F3 기존 항목),-,int,필수,1,1 ≤ x. 이동 스캔이면 1,,,false,1,≤,,,meta.json,false,,196
+meta.scan_speed_mm_s,meta,스캔 이동 속도 (명령),mm/s,float,필수,2.4,0 < x. abs(x − fps × scan_pitch_mm) ≤ 0.01 × x (M54: 120 × 0.02 = 2.4),,,false,0,<,,,meta.json,false,,197
+meta.scan_pitch_mm,meta,"프레임 사이 스캔 간격 (크기 값, 좌표계 무관)",mm,float,필수,0.02,0 < x ≤ 1 (M54: 20 µm),,,false,0,<,1,≤,meta.json,false,,198
+meta.scan_length_mm,meta,"스캔 길이 (크기 값, 좌표계 무관)",mm,float,필수,40.0,0 < x (M54: 40 mm),,,false,0,<,,,meta.json,false,,199
+meta.fps,meta,촬영 속도 설정,-,float,필수,120.0,"0 < x ≤ 120 (OV9281 최대 120 fps, M54 감사 확인). 단위 프레임/s",,,false,0,<,120,≤,meta.json,false,,200
+meta.n_frames,meta,이 스캔의 전체 프레임 수 (배경 포함),-,int,필수,2010,frames_index.csv 행 수와 같음. ≥ scan_length_mm ÷ scan_pitch_mm,,,false,,,,,meta.json,false,,201
+meta.raw_saved,meta,이 스캔의 원시 영상을 저장했는지 (T2 MF-DAT-03·04),-,bool,필수,true,"true면 frames/ 또는 frames.npz 있음. false면 영상 없음, `frame.file`·`frame.sha256` 빈 칸, 처리 결과(프로파일)를 따로 보관",,,false,,,,,meta.json,false,,202
+meta.proc_time_s,meta,수집 중 실시간 처리(라인 추출)에 걸린 시간 (T2 MF-DAT-08). 사후 처리 시간은 J2 manifest에,s,float,선택,12.5,0 ≤ x. 실시간 처리를 안 했으면 null,,,false,0,≤,,,meta.json,false,,203
+meta.acq_id,meta,획득 프로파일 ID (F2),-,str,필수,ACQ-2026-11-20-A,정규식 `^ACQ-\d{4}-\d{2}-\d{2}-[A-Z]$`,^ACQ-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,204
+meta.calibration_id,meta,이 스캔에 쓸 교정 ID,-,str,필수,CAL-2026-11-20-A,"정규식 `^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$`. 같은 캠페인 calibration/ 폴더에 있음. datetime이 cal.valid_from 이후, valid_until 이전. 그 스캔의 `meta.bed_ref_id`가 가리키는 bed_bare 기준의 `ref.calibration_id`와 같음 (다르면 판정 거부 X4, D-21 채택 · 기본 켬)",^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,205
+meta.fid_id,meta,베드·마커 조립 상태 ID (D4),-,str,선택,FID-2026-11-20-A,정규식 `^FID-\d{4}-\d{2}-\d{2}-[A-Z]$`,^FID-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,meta.json,false,,206
+meta.frames_doc_version,meta,좌표계 정의 버전 (C4 요구),-,str,필수,C4-1.0,빈 문자열 아님,,,false,,,,,meta.json,false,,207
+meta.software_git,meta,수집(또는 시뮬레이터) 코드 커밋,-,str,필수,ff4b01b,"정규식 `^[0-9a-f]{7,40}(-dirty)?$`","^[0-9a-f]{7,40}(-dirty)?$",,false,,,,,meta.json,false,,208
+meta.files_sha256,meta,스캔 폴더 안 파일별 SHA-256 (meta.json 제외),-,dict,필수,"{""frames_index.csv"": ""9b1c…""}","키 = 상대 경로, 값 = 64자 16진수. 불러올 때 다시 계산해 같아야 함",,,false,,,,,meta.json,false,,209
+meta.sim_version,meta,시뮬레이터 버전,-,str,조건부,sim-0.1.0,"source = virtual면 필수, real이면 null",,,false,,,,,meta.json,false,,210
+meta.sim_seed,meta,이 스캔을 만든 난수 시드,-,int,조건부,20261120,source = virtual이고 `meta.blind` = false면 필수. `meta.blind` = true이거나 real이면 null. 0 ≤ x < 2^63,,,false,0,≤,9223372036854775808,<,meta.json,false,,211
+meta.injected_factors,meta,켠 실패 요인의 T2 ID 목록,-,list,필수,"[""MF-SYN-01""]",원소마다 정규식 `^MF-[A-Z]{3}-\d{2}$`. source = real이거나 `meta.blind` = true면 빈 목록 [],^MF-[A-Z]{3}-\d{2}$,,false,,,,,meta.json,false,,212
+meta.blind,meta,"평가용 (블라인드) 데이터인지 (3차 새 필드, 청사진 §5.2 · T3 SM13). true면 처리 쪽에 주입 요인 · 시드를 보이지 않음",-,bool,필수,false,"true 또는 false. source = real이면 false. 같은 캠페인 모든 스캔이 같은 값. true면 `meta.sim_seed` = null, `meta.injected_factors` = [], 같은 캠페인 `rep.noise_seed` 빈 칸이고, 실제 값은 참값 쪽 `truth.scan_seeds` · `truth.scan_factors`에만 둠",,,false,,,,,meta.json,false,,213
+rep.study_id,rep,MSA 연구 ID,-,str,필수,MSA-01,정규식 `^MSA-\d{2}$`. 폴더 이름과 같음,^MSA-\d{2}$,,false,,,,,design.csv;design_executed.csv,false,,214
+rep.specimen_id,rep,시편 ID,-,str,필수,S01,정규식 `^S\d{2}$`,^S\d{2}$,,false,,,,,design.csv;design_executed.csv,false,,215
+rep.part_idx,rep,"Gage R&R 부품 번호, 0부터",-,int,필수,0,0 ≤ x. 같은 specimen_id면 같음,,,false,0,≤,,,design.csv;design_executed.csv,false,,216
+rep.repeat_idx,rep,"반복 번호, 1부터",-,int,필수,1,"1 ≤ x. (part_idx, session_id, operator, repeat_idx) 유일",,,false,1,≤,,,design.csv;design_executed.csv,false,,217
+rep.session_id,rep,측정 세션 ID (출력 세션 또는 측정 날짜 묶음),-,str,필수,PS-2026-11-20-A,정규식 `^PS-\d{4}-\d{2}-\d{2}-[A-Z]$`,^PS-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,design.csv;design_executed.csv,false,,218
+rep.operator,rep,측정자 (가상이면 sim_A 등),-,str,필수,sim_A,빈 문자열 아님,,,false,,,,,design.csv;design_executed.csv,false,,219
+rep.remount,rep,이 측정 전에 시편이나 센서를 다시 장착했는지,-,bool,필수,false,true 또는 false. 층별 측정에서 시편 재장착이면 true는 출력 후(post) 측정에서만,,,false,,,,,design.csv;design_executed.csv,false,,220
+rep.rehome,rep,이 측정 전에 프린터를 다시 홈잉(G28)했는지,-,bool,필수,true,true 또는 false,,,false,,,,,design.csv;design_executed.csv,false,,221
+rep.run_order,rep,"무작위 실행 순서, 1부터",-,int,필수,7,1 ≤ x ≤ 행 수. 중복 없음. 행 순서와 다름(무작위)을 권장,,,false,1,≤,,,design.csv;design_executed.csv,false,,222
+rep.interval_s,rep,이전 측정과 이번 측정 사이 간격 (계획값),s,float,필수,60.0,0 ≤ x,,,false,0,≤,,,design.csv;design_executed.csv,false,,223
+rep.scan_id,rep,실행된 스캔 ID,-,str,조건부,S01_r01_L004,실행 뒤 필수 (design_executed.csv). 정규식 `^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$`,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,,false,,,,,design.csv;design_executed.csv,false,,224
+rep.noise_seed,rep,이 반복에 쓴 잡음 시드,-,int,조건부,1001,가상이고 같은 캠페인 `meta.blind` = false면 필수. `meta.blind` = true면 빈 칸 (값은 `truth.scan_seeds`). 같은 study 안에서 행마다 다름,,,false,,,,,design.csv;design_executed.csv,false,,225
+rep.truth_id,rep,이 시편 참값 ID (`truth.truth_id`),-,str,조건부,T-S01,가상이면 필수. 정규식 `^T-S\d{2}$`. 같은 specimen_id면 같음,^T-S\d{2}$,,false,,,,,design.csv;design_executed.csv,false,,226
+truth.campaign_id,truth,캠페인 ID,-,str,필수,VC-2026-11-20-A,정규식 `^VC-\d{4}-\d{2}-\d{2}-[A-Z]$` (가상만). 폴더 이름과 같음,^VC-\d{4}-\d{2}-\d{2}-[A-Z]$,,false,,,,,truth.json,false,,227
+truth.truth_id,truth,시편 참값 ID,-,str,필수,T-S01,정규식 `^T-S\d{2}$`. `rep.truth_id`가 가리킴,^T-S\d{2}$,,false,,,,,truth.json,false,,228
+truth.sim_version,truth,시뮬레이터 버전,-,str,필수,sim-0.1.0,이 캠페인 모든 `meta.sim_version`과 같음,,,false,,,,,truth.json,false,,229
+truth.seed,truth,캠페인 기본 시드,-,int,필수,20261120,0 ≤ x < 2^63,,,false,0,≤,9223372036854775808,<,truth.json,false,,230
+truth.heightmap_file,truth,"참 출력 형상 높이맵 파일 (층별, 측정 당시 열 상태. post는 식은 뒤). {G} Z, 베드 면 = 0",-,str,필수,heightmaps/T-S01_L004.npy,"8절 참 높이맵 정규식. 파일 있음. 배열 `H[iy, ix]` (C4)",,,false,,,,,truth.json,false,,231
+truth.heightmap_origin_mm,truth,"높이맵 첫 칸 중심 [x0, y0], {G}",mm,list,필수,"[100.0, 85.0]",길이 2. 칸 중심 규칙 (C4),,,false,,,,,truth.json,false,,232
+truth.heightmap_step_mm,truth,"높이맵 칸 간격 (크기 값, 좌표계 무관)",mm,float,필수,0.02,0 < x ≤ 0.1 (C4 기본 0.02),,,false,0,<,0.1,≤,truth.json,false,,233
+truth.cam_k,truth,"참 카메라 내부 행렬 3 × 3, {C}",px,list,필수,"[[2666.7,0,640],[0,2666.7,400],[0,0,1]]",3 × 3. fx·fy > 0,,,false,,,,,truth.json,false,,234
+truth.cam_dist,truth,"참 왜곡 계수 (OpenCV 순서 k1, k2, p1, p2, k3 …)",-,list,필수,"[-0.05, 0.01, 0, 0, 0]","길이 ∈ {4, 5, 8, 12, 14}",,,false,,,,,truth.json,false,,235
+truth.laser_plane,truth,"참 레이저 평면 [nx, ny, nz, d], {C}, d는 mm",-,list,필수,"[0, -0.8660254, 0.5, -25.0]",길이 4. abs(법선 크기 − 1) ≤ 1e-6,,,false,,,,,truth.json,false,,236
+truth.scan_axis,truth,"참 스캔 방향 단위 벡터, {C}",-,list,필수,"[0, 0.5, 0.8660254]",길이 3. abs(크기 − 1) ≤ 1e-6,,,false,,,,,truth.json,false,,237
+truth.t_g_m,truth,"참 변환 T_G_M 4 × 4 ({M} → {G}, C4 이름 규칙)",-,list,필수,"[[1,0,0,100],[0,1,0,90],[0,0,1,0],[0,0,0,1]]",4 × 4. 회전부 det = +1,,,false,,,,,truth.json,false,,238
+truth.nozzle_sensor_offset_mm,truth,"노즐 끝에서 {S} 원점까지 참 오프셋 [dx, dy, dz], {G}",mm,list,필수,"[0.0, 25.0, -1.5]",길이 3. 유한값,,,false,,,,,truth.json,false,,239
+truth.gauge_thickness_mm,truth,"필러게이지 참 두께 {공칭: 참값} (크기 값, 좌표계 무관)",mm,dict,필수,"{""0.20"": 0.2031, ""0.30"": 0.2994, ""0.40"": 0.4012, ""0.50"": 0.5021}","키 ∈ {0.20, 0.30, 0.40, 0.50}. abs(값 − 공칭) ≤ 0.02",,,false,,,,,truth.json,false,,240
+truth.gauge_block_heights_mm,truth,"계단 기준물 블록 (쌓은 블록)의 참 높이 {`cal.gauge_block_id`: 값}, 베드 면 = 0에서 윗면까지 ({G} Z 방향 길이). 시뮬레이터가 마이크로미터 행 (`cal.gauge_block_height_mm`)을 만들 때 쓴 참값 (3차)",mm,dict,조건부,"{""GB-01.2"": 1.2006, ""GB-01.4+01.1"": 2.5011}","캠페인에 `ref.kind` = step_gauge 행이 있으면 필수, 없으면 null. 키는 GB- 정규식 (3절)이고 GB-00은 넣지 않음 (늘 0). 그 캠페인 step_gauge 기준이 쓴 GB- ID를 모두 포함. abs(값 − ID 숫자 합) ≤ 0.02",,,false,,,,,truth.json,false,,241
+truth.gauge_temp_params,truth,"계단 기준물 열 모델 참 파라미터: 열팽창 계수, 층별 · post 기준물 참 온도 (3차)",-,dict,조건부,"{""cte_um_per_m_c"": 11.5, ""temp_c"": {""L004"": 24.6, ""post"": 23.0}}","캠페인에 `ref.kind` = step_gauge 행이 있으면 필수, 없으면 null. 키 ""cte_um_per_m_c"" 필수. 열 모델을 끈 캠페인이면 {""cte_um_per_m_c"": 0.0}",,,false,,,,,truth.json,false,,242
+truth.scan_seeds,truth,"블라인드 캠페인에서 raw에서 지운 시드 {`meta.scan_id`: {""sim_seed"": 정수, ""noise_seed"": 정수 또는 null}} (3차, 4차 §7.3 ⑩). noise_seed는 그 스캔을 `rep.scan_id`로 가리키는 rep 행의 값",-,dict,조건부,"{""S01_r01_L004"": {""sim_seed"": 7310045, ""noise_seed"": 1001}}","같은 캠페인 `meta.blind` = true면 필수, false면 null. 키 집합 = 그 캠페인 모든 스캔 ID. 값의 시드는 0 ≤ x < 2^63",,,false,,,,,truth.json,false,,243
+truth.scan_factors,truth,블라인드 캠페인에서 raw에서 지운 주입 요인 {`meta.scan_id`: [T2 ID …]} (3차),-,dict,조건부,"{""S01_r01_L004"": [""MF-SYN-01""]}","같은 캠페인 `meta.blind` = true면 필수, false면 null. 키 집합 = 그 캠페인 모든 스캔 ID. 원소 정규식 `^MF-[A-Z]{3}-\d{2}$`",^MF-[A-Z]{3}-\d{2}$,,false,,,,,truth.json,false,,244
+truth.step_heights_mm,truth,"보조 단차 시편의 면 쌍별 참 높이 차 {면쌍: 값} (크기 값, 좌표계 무관)",mm,dict,조건부,"{""S02_F1-F0"": 0.2000}","캠페인에 `meta.specimen_role` = aux_step 시편이 있으면 필수, 없으면 null. 키는 그 시편 ID로 시작. 값 > 0",,,false,,,,,truth.json,false,,245
+truth.gcode_sha256,truth,참 형상을 만들 때 쓴 정답 G코드의 SHA-256 지문 (개정),-,str,필수,3f5a…(64자),정규식 `^[0-9a-f]{64}$`. 같은 시편 모든 스캔의 `meta.gcode_sha256`과 같음,^[0-9a-f]{64}$,,false,,,,,truth.json,false,,246
+truth.print_error_params,truth,참 형상에 넣은 출력 오차 {종류: {이름: 값}}. 판정 시험 시나리오 (T5) 이름 포함 (개정),-,dict,필수,"{""scenario"": ""pass_nominal"", ""over_extrusion"": {""gain"": 1.03}}","키 ""scenario"" 필수 (T5 시나리오 이름). 출력 오차를 안 넣었으면 {""scenario"": ""none""}",,,false,,,,,truth.json,false,,247
+truth.thermal_params,truth,"열 상태 모델 참 파라미터: 층별 시편 온도, 수축 계수 등 (개정)",-,dict,필수,"{""cte_um_per_m_c"": 68.0, ""layer_temp_c"": [55.0, 54.2]}",층별 목록 길이 = `meta.layer_count`. 열 모델을 끈 캠페인이면 {},,,false,,,,,truth.json,false,,248
+truth.z_axis_error_params,truth,"Z축 오차 참 파라미터: 리드스크루 피치 오차, 워블, 홈 반복성, {G} Z (개정)",-,dict,필수,"{""pitch_err_um"": 0.0, ""wobble_amp_um"": 0.0}",Z축 오차를 안 넣었으면 값이 모두 0,,,false,,,,,truth.json,false,,249
+truth.judgement,truth,"참 판정: pass 또는 fail (참 출력 형상과 정답 높이로 계산). 참값에는 U가 없어 보류가 없음 (2차 정정). 경계 시나리오 표시는 `truth.print_error_params`의 ""scenario"" 키로",-,str,필수,pass,"값 ∈ {pass, fail}. judgement = pass ⇔ `truth.pass_pct` ≥ 95. 측정 판정 결과 (합격·불합격·보류·측정 불충분) 코드는 T15가 정함",,"pass,fail",false,,,,,truth.json,false,,250
+truth.pass_pct,truth,"참 출력 형상 기준 abs(Δ) ≤ T인 측정점 비율, 전체 층 합산 (D-08), 측정 당시 높이 (D-06)",%,float,필수,98.6,0 ≤ x ≤ 100. pass ⇔ x ≥ 95 (`truth.judgement`와 맞음),,,false,0,≤,100,≤,truth.json,false,,251
+truth.factor_params,truth,주입한 실패 요인별 참 파라미터 {T2 ID: {이름: 값}},-,dict,필수,"{""MF-SYN-01"": {""dt_ns"": 10000000}}",키 정규식 `^MF-[A-Z]{3}-\d{2}$`. 키 집합 = 해당 스캔 `meta.injected_factors` 합집합 (`meta.blind` = true면 `truth.scan_factors` 값의 합집합),^MF-[A-Z]{3}-\d{2}$,,false,,,,,truth.json,false,,252
