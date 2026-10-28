@@ -288,10 +288,11 @@ _h("W-REF-09", "CROSS", "WARN", "구현", "ref.line_peak_pct", "ref.line_peak_pc
 _h("X-REF-10", "CROSS", "ERROR", "구현", "ref.kind;ref.t_start_ns;meta.layer_end_t_ns", "ref.kind:feeler도 출력 전",
    "feeler 기준 시각이 그 세션 첫 층 layer_end_t_ns보다 늦음 (출력 전이어야 함)")
 _h("W-REF-11", "CROSS", "WARN", "구현", "ref.calibration_id;meta.calibration_id;meta.bed_ref_id",
-   "ref.calibration_id:kind = bed_bare면 그 기준을;;meta.calibration_id:그 스캔의 `meta.bed_ref_id`가 가리키는",
+   "ref.calibration_id:kind = bed_bare면 그 기준을;;meta.calibration_id:그 스캔의 `meta.bed_ref_id`가 가리키는"
+   ";;ref.calibration_id:검증기는 경고, 거부는 판정 함수;;meta.calibration_id:검증기는 경고, 거부는 판정 함수",
    "bed_bare 기준의 ref.calibration_id ≠ 그 기준을 가리키는 스캔의 meta.calibration_id (판정 거부 X4)",
-   "D-21 채택 (10-27) · 기본 켬. 판정 거부는 판정 함수 (T15) 몫이라 WARN. 끄기: validate_dataset.py --disable-rule W-REF-11 "
-   "또는 config/default.yaml validate.disable_rules")
+   "D-21 채택 (10-27) · 기본 켬. 명세 v1.1 11절: 검증기는 경고 (WARN, 종료 코드 그대로), 거부는 판정 함수 (T15). "
+   "끄기: validate_dataset.py --disable-rule W-REF-11 또는 config/default.yaml validate.disable_rules")
 _h("X-REF-12", "CROSS", "ERROR", "구현", "ref.gauge_block_id;cal.gauge_block_id", "ref.gauge_block_id:GB-00이 아니면 같은 캠페인",
    "ref.gauge_block_id (GB-00 말고)가 같은 캠페인 cal_manifest.csv의 cal.gauge_block_id에 없음")
 _h("X-REF-13", "CROSS", "ERROR", "구현", "ref.gauge_block_id;ref.kind", "ref.gauge_block_id:step_gauge면 GB- (블록 · 베드 면) 또는 FG-",
@@ -305,11 +306,14 @@ _h("X-REF-16", "CROSS", "ERROR", "구현", "ref.kind;pos.z_mm;meta.scan_pass_idx
    "같은 Z 연속 측정 (D-16, 명세 4절): 그 층 다른 줄 스캔 · 두 단 기준 위치 로그의 스캔 구간 cmd 행 하나가 기준 Z "
    "(첫 줄 스캔 구간 cmd 평균)와 0.001 mm 넘게 다름")
 # v1.0 (T1 3차, LM-T14-3)
-_h("X-REF-17", "CROSS", "ERROR", "구현", "ref.layer_idx;ref.kind", "ref.layer_idx:kind ∈ {bed_bare, feeler}면 -1;;ref.layer_idx:필수이고 0 ≤ x",
+# v1.1: bed_bare · feeler 문구 "필수이고 x = -1 (빈 칸은 위반)" (빈 칸은 REQ, 값은 이 규칙)
+_h("X-REF-17", "CROSS", "ERROR", "구현", "ref.layer_idx;ref.kind",
+   "ref.layer_idx:kind ∈ {bed_bare, feeler}면 필수이고 x = -1;;ref.layer_idx:필수이고 0 ≤ x",
    "bed_bare · feeler인데 ref.layer_idx ≠ -1이거나, 층에 매인 기준 (bed_marker · ref_tower · step_gauge)인데 ref.layer_idx < 0")
+# v1.1: 같은 t_start_ns 두 기준은 어느 쪽이 작은 번호여도 됨 (명세 문장이 생김, 검증기는 v1.0부터 그렇게 봄)
 _h("X-REF-18", "CROSS", "ERROR", "구현", "ref.ref_id;ref.t_start_ns",
-   "ref.ref_id:001부터 빈 번호 없이",
-   "같은 세션 · 같은 약어 안 ref_id 숫자가 001부터 빈 번호 없이 t_start_ns 순서로 매겨지지 않음")
+   "ref.ref_id:001부터 빈 번호 없이;;ref.ref_id:`ref.t_start_ns`가 같은 두 기준은 어느 쪽이 작은 번호여도 됨",
+   "같은 세션 · 같은 약어 안 ref_id 숫자가 001부터 빈 번호 없이 t_start_ns 순서로 매겨지지 않음 (같은 시각끼리는 순서 자유)")
 _h("X-REF-19", "CROSS", "ERROR", "구현", "ref.ref_id", "ref.ref_id:세션 안에서 유일", "같은 세션 안에 같은 ref_id가 둘 이상")
 _h("X-REF-20", "CROSS", "ERROR", "구현", "ref.kind;ref.scan_id;ref.gauge_block_id;ref.gauge_height_mm;meta.layer_z_mm;meta.zero_ref_method",
    "ref.kind:step_gauge는 4절 \"두 단 규칙\";;meta.zero_ref_method:step_gauge면 그 층 첫 줄 스캔을 짝으로",
@@ -325,6 +329,15 @@ _h("X-REF-23", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;ref.gauge_block_
    "gauge_height_mm = 0인데 GB-00이 아니거나, GB-00인데 gauge_height_mm ≠ 0")
 _h("X-REF-24", "CROSS", "ERROR", "구현", "ref.scan_id;meta.scan_pass_idx", "ref.scan_id:그 스캔의 `meta.scan_pass_idx` = 0",
    "층에 매인 기준의 ref.scan_id가 가리키는 스캔이 첫 줄 (scan_pass_idx = 0)이 아님")
+# v1.1 (V-1): 두 단 비 경고 (명세 4절 본문 bullet "두 단 비 경고 (C1, v1.1)"). 필드표 문장이 아니라 4절 본문이라
+# 두 단 규칙과 같은 ref.kind 문장 ("4절 \"두 단 규칙\"")에 함께 잇는다
+_h("W-REF-25", "CROSS", "WARN", "구현", "ref.gauge_height_mm;ref.gauge_block_id;meta.layer_z_mm;cal.gauge_block_u_um;cal.gauge_u_um",
+   "ref.kind:step_gauge는 4절 \"두 단 규칙\"",
+   "두 단 비 경고 (C1, 명세 4절 v1.1): (층 Z − h1) ÷ (h1 − h2) > 4 µm ÷ √(2 × 1.5² + 2u²) "
+   "(u = 두 단 교정 표준불확도 중 큰 값, GB-00은 다른 단 값)",
+   "명세 v1.1 4절: σ 1.5 µm가 추정값이고 데이터 형식은 맞아 WARN (종료 코드 그대로). 두 단 규칙 (X-REF-20)을 통과한 층만 봄 "
+   "(post 포함, 첫 줄 스캔 없는 층 · 두 단 규칙 실패 층은 건너뜀). 끌 수 있는 목록 (SWITCHABLE_OFF)에 넣지 않음: "
+   "사용자 결정 대기 규칙이 아니고 T3 정상 캠페인은 이 경고도 0이어야 함 (명세 4절)")
 
 # meta 교차 (§5)
 _h("X-MET-01", "CROSS", "ERROR", "구현", "meta.scan_id;meta.timing;meta.layer_idx",
@@ -411,10 +424,11 @@ _h("X-MET-54", "CROSS", "ERROR", "구현", "meta.scan_id;meta.scan_pass_idx", "m
 _h("X-MET-55", "CROSS", "ERROR", "구현", "meta.scan_pass_idx",
    "meta.scan_pass_idx:같은 시편·반복·층;;meta.scan_pass_idx:줄이 하나면 0",
    "같은 시편·반복·층 (post끼리)의 scan_pass_idx가 0부터 빈 번호 없이 이어지지 않음")
-_h("W-MET-56", "CROSS", "WARN", "구현", "meta.layer_idx;meta.layer_count;meta.thermal_state", "meta.layer_idx:모든 층 스캔 (D-18)",
+_h("W-MET-56", "CROSS", "WARN", "구현", "meta.layer_idx;meta.layer_count;meta.thermal_state",
+   "meta.layer_idx:모든 층 스캔 (D-18);;meta.layer_idx:검증기는 경고, 거부는 판정 함수",
    "같은 시편·반복의 in_process 스캔에 0 ~ layer_count − 1 층이 다 있지 않음 (판정 거부 X7)",
-   "D-21 채택 (10-27) · 기본 켬. 판정 거부는 판정 함수 (T15) 몫이라 WARN. 끄기: validate_dataset.py --disable-rule W-MET-56 "
-   "또는 config/default.yaml validate.disable_rules")
+   "D-21 채택 (10-27) · 기본 켬. 명세 v1.1 11절: 검증기는 경고 (WARN, 종료 코드 그대로), 거부는 판정 함수 (T15). "
+   "끄기: validate_dataset.py --disable-rule W-MET-56 또는 config/default.yaml validate.disable_rules")
 _h("W-MET-57", "CROSS", "WARN", "구현", "meta.bed_motion;meta.scan_axis",
    "meta.bed_motion:y면 `meta.scan_axis`;;meta.scan_axis:베드가 Y로 움직이는 프린터면",
    "bed_motion = y인데 scan_axis가 ±X가 아님 (권장 위반, T2 MF-MEC-10)")
@@ -457,7 +471,9 @@ _h("X-TRU-01", "CROSS", "ERROR", "구현", "truth.judgement;truth.pass_pct", "",
 # (Validator.truth_ctx)나 호출하는 쪽이 넘긴 ctx로 봄
 _h("X-TRU-02", "CROSS", "ERROR", "구현", "truth.gauge_block_heights_mm;truth.gauge_temp_params", "",
    "계단 기준물 참값 위반: step_gauge 기준이 있는데 gauge_block_heights_mm · gauge_temp_params가 없거나 (없으면 null이어야 함), "
-   "키가 GB- 정규식이 아니거나 GB-00이거나 쓴 블록 ID가 빠짐, abs(값 − ID 숫자 합) > 0.02, cte_um_per_m_c 키 없음 (부록 A)")
+   "키가 GB- 정규식이 아니거나 GB-00이거나 쓴 블록 ID가 빠짐, abs(값 − ID 숫자 합) > 0.02, cte_um_per_m_c 키 없음, "
+   "v1.1: cte ≠ 0인데 temp_c (dict)가 없거나, temp_c 키가 ^L\\d{3}$ · post가 아님 (_pNN 금지), "
+   "키 집합 ≠ step_gauge 기준 층 (L###) + post 두 단이면 post, 값이 −10 ≤ x ≤ 130 수가 아님 (부록 A)")
 _h("X-TRU-03", "CROSS", "ERROR", "구현", "truth.scan_seeds;truth.scan_factors;meta.blind", "",
    "블라인드 참값 위반: blind = true인데 scan_seeds · scan_factors가 없거나 (false면 null), 키 집합 ≠ 캠페인 스캔 ID, "
    "시드가 0 ≤ x < 2^63 정수가 아님, 요인 원소가 ^MF-[A-Z]{3}-\\d{2}$가 아님 (부록 A)")
@@ -477,6 +493,10 @@ EXTRA_COVERS = {
     "REGEX.meta.injected_factors": "meta.injected_factors:원소마다 정규식",
     "REQ.pos.source": "pos.source:모든 행에 있음",
     "REGEX.meta.firmware": "meta.firmware:정규식 `^([a-z0-9]+-)?",
+    # v1.1: 스캔 없는 MSA 캠페인은 blind = false로 봄 → 가상이면 noise_seed 필수 (COND_FUNCS: blind 모르면 가상 여부만)
+    "REQ.rep.noise_seed": "meta.blind:스캔 없이 `msa/`만 있는 캠페인은 blind = false로 봄",
+    # v1.1: 허용 값 {1.0, 1.1}. 1.0 데이터도 같은 규칙 (값만 다름)
+    "ENUM.meta.spec_version": "meta.spec_version:v1.1은 필드를 바꾸지 않아 1.0 데이터도 같은 규칙으로 봄",
 }
 
 # 설명문 (검사할 내용 없음). (필드, 문장 일부, 사유)
@@ -525,6 +545,10 @@ NOTES = [
     ("meta.filter_fwhm_nm", "실제 값은 [미상]", "출처 표시"),
     ("meta.fps", "단위 프레임/s", "단위 설명"),
     ("meta.proc_time_s", "실시간 처리를 안 했으면 null", "작성 안내 (선택 필드라 null 허용)"),
+    # v1.1 (V-1)
+    ("meta.spec_version", "이 판을 따라 새로 쓰는 데이터는 1.1", "작성 안내 (허용 값 {1.0, 1.1}은 ENUM, 어느 쪽이든 위반 아님)"),
+    ("meta.blind", "평가용 (블라인드) 데이터는 스캔이 있는 캠페인으로만 만듦",
+     "작성 안내: 스캔 없는 캠페인은 blind를 적을 meta.json이 없어 데이터로 볼 것이 없음 (blind = false로 보는 것은 REQ.rep.noise_seed)"),
 ]
 
 

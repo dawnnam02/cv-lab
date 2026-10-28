@@ -45,8 +45,14 @@ MOVING_REF = {"bed_bare", "bed_marker", "ref_tower", "step_gauge", "feeler"}
 # 판정 거부 X4 · X7 (D-21 채택 10-27, 기본 켬). 끌 수 있는 규칙은 이 둘뿐:
 # --disable-rule 또는 config/default.yaml validate.disable_rules
 D21_RULES = ("W-REF-11", "W-MET-56")
+# 두 단 비 경고 W-REF-25 (명세 v1.1 4절)는 끌 수 있는 목록에 넣지 않음 (사용자 결정 대기 규칙이 아니고, T3 정상 캠페인 경고 0)
 SWITCHABLE_OFF = set(D21_RULES)
+# 두 단 비 경고 (명세 v1.1 4절): C1 ε × d ≤ 4 µm (T2 5.4절 a = 4 µm 행), σ = 기준물 스캔 잡음 1.5 µm (T2 [추정], 고정값)
+TWO_STEP_LIMIT_UM = 4.0
+TWO_STEP_SIGMA_UM = 1.5
 TRUTH_MAP_RE = re.compile(r"^T-S\d{2}_(L\d{3}|post)\.npy$")
+# 참값 temp_c 층 키 (명세 v1.1 부록 A): L + 층 3자리 또는 post, _pNN 없음
+TEMP_KEY_RE = re.compile(r"^L\d{3}$|^post$")
 GB_RE = re.compile(r"^GB-\d{2}(\.\d{1,3})?(\+\d{2}(\.\d{1,3})?)*$")
 MF_RE = re.compile(r"^MF-[A-Z]{3}-\d{2}$")
 LAYER_REFS = ("bed_marker", "ref_tower", "step_gauge")  # 층에 매인 기준 (명세 4절)
@@ -350,7 +356,18 @@ class Validator:
         self._campaign_cross()
         # MSA는 캠페인 blind를 안 뒤에 읽음 (rep.noise_seed 조건, v1.0)
         self._msa()
+        # v1.1: temp_c 키 집합 = step_gauge 기준이 있는 층 (L + ref.layer_idx 3자리), post 스캔과 짝인 두 단은 post
+        timing = {x["meta"].get("scan_id"): x["meta"].get("timing") for x in self.all_scans if x["meta"].get("scan_id")}
+        glayers = set()
+        for r in self.all_ref_rows:
+            if r["kind"] != "step_gauge":
+                continue
+            if r["scan_id"] is not None and timing.get(r["scan_id"]) == "post":
+                glayers.add("post")
+            elif isinstance(r["layer_idx"], int) and r["layer_idx"] >= 0:
+                glayers.add(f"L{r['layer_idx']:03d}")
         self.truth_ctx = {
+            "gauge_layers": sorted(glayers),
             "has_step_gauge": any(r["kind"] == "step_gauge" for r in self.all_ref_rows),
             "gauge_ids": sorted({r["gauge_block_id"] for r in self.all_ref_rows if r["kind"] == "step_gauge"
                                  and isinstance(r["gauge_block_id"], str) and r["gauge_block_id"].startswith("GB-")
@@ -421,6 +438,26 @@ class Validator:
                     self.emit("X-TRU-02", path, row, "truth.gauge_block_heights_mm", miss, "기준이 쓴 블록 ID가 빠짐")
         if isinstance(tp, dict) and "cte_um_per_m_c" not in tp:
             self.emit("X-TRU-02", path, row, "truth.gauge_temp_params", list(tp), "키 cte_um_per_m_c가 없음")
+        # v1.1: 열 모델을 켜면 (cte ≠ 0) temp_c 필수. 키 = L### · post (_pNN 없음), 키 집합 = step_gauge 층 + post, 값 −10–130
+        if isinstance(tp, dict):
+            cte, tc = tp.get("cte_um_per_m_c"), tp.get("temp_c")
+            on = num(cte) and cte != 0
+            if on and not isinstance(tc, dict):
+                self.emit("X-TRU-02", path, row, "truth.gauge_temp_params", list(tp), "열 모델을 켰는데 (cte ≠ 0) temp_c dict가 없음")
+            if "temp_c" in tp and not isinstance(tc, dict):
+                if not on:
+                    self.emit("X-TRU-02", path, row, "truth.gauge_temp_params", tc, "temp_c가 dict가 아님")
+            elif isinstance(tc, dict):
+                badk = [k for k in tc if not TEMP_KEY_RE.match(k)]
+                if badk:
+                    self.emit("X-TRU-02", path, row, "truth.gauge_temp_params", badk[:5], "temp_c 키가 L### · post가 아님 (_pNN 금지)")
+                badv = [k for k, v in tc.items() if not (num(v) and -10 <= v <= 130)]
+                if badv:
+                    self.emit("X-TRU-02", path, row, "truth.gauge_temp_params", {k: tc[k] for k in badv[:5]},
+                              "temp_c 값이 −10 ≤ x ≤ 130 수가 아님")
+                if on and ctx is not None and "gauge_layers" in ctx and set(tc) != set(ctx["gauge_layers"]):
+                    self.emit("X-TRU-02", path, row, "truth.gauge_temp_params", sorted(set(tc) ^ set(ctx["gauge_layers"]))[:5],
+                              "temp_c 키 집합 ≠ step_gauge 기준이 있는 층 (+ post)")
         # X-TRU-03 블라인드
         ss, sf = t.get("scan_seeds"), t.get("scan_factors")
         if ctx is not None and ctx.get("blind") is not None:
@@ -1689,6 +1726,8 @@ class Validator:
                         bad = f"h1 {h1}, h2 {h2}, 층 Z {z} (h1 ≤ Z, Z − h2 ≤ 8.0)"
                 if bad:
                     self.emit("X-REF-20", f"{b['base']}/meta.json", None, "ref.kind", bad)
+                elif len(stg) == 2 and None not in hs and z is not None:
+                    self._two_step_ratio(b, [r for _, r in stg], z)
             if stg or bm.get("zero_ref_method") == "step_gauge":
                 bz = scan_segment_z(b["pos"])
                 if not bz:
@@ -1701,6 +1740,42 @@ class Validator:
                         if abs(zz - z0) > 0.001 + 1e-9:
                             self.emit("X-REF-16", P, None, "pos.z_mm", f"{zz} vs 기준 {z0:.4f}")
                             break
+
+    def _gauge_u_um(self, r) -> float | None:
+        """두 단 한 단의 교정 표준불확도 (µm). GB- 블록 = cal.gauge_block_u_um, FG- 잎 = cal.gauge_u_um, GB-00 · 모르면 None.
+
+        같은 ID cal 행이 여럿이면 그 기준의 교정 ID (`ref.calibration_id`) 행을 먼저 쓰고, 값이 여럿이면 큰 값 (엄한 쪽).
+        """
+        gid = r["gauge_block_id"]
+        if not isinstance(gid, str) or gid == "GB-00" or not gid.startswith(("GB-", "FG-")):
+            return None
+        key = "gauge_block_u_um" if gid.startswith("GB-") else "gauge_u_um"
+        own = self.cal_rows.get(r["calibration_id"], []) if r["calibration_id"] is not None else []
+        for rows in (own, [c for rows_ in self.cal_rows.values() for c in rows_]):
+            vals = [c[key] for c in rows if c.get("gauge_block_id") == gid and isinstance(c.get(key), (int, float))
+                    and not isinstance(c.get(key), bool) and math.isfinite(c[key])]
+            if vals:
+                return max(vals)
+        return None
+
+    def _two_step_ratio(self, b, pair: list[dict], z: float):
+        """두 단 비 경고 (W-REF-25, 명세 v1.1 4절): d ÷ (h1 − h2) ≤ 4 µm ÷ √(2σ² + 2u²).
+
+        두 단 규칙 (X-REF-20)을 통과한 층 (post 포함)만 부른다. d = 층 Z − h1, σ = 1.5 µm (고정),
+        u = 두 단 교정 표준불확도 중 큰 값 (GB-00은 cal 행이 없어 다른 단 값). u를 하나도 모르면 보지 않음 (X-REF-12가 잡음).
+        """
+        hi, lo = (pair[0], pair[1]) if pair[0]["gauge_height_mm"] >= pair[1]["gauge_height_mm"] else (pair[1], pair[0])
+        h1, h2 = hi["gauge_height_mm"], lo["gauge_height_mm"]
+        us = [u for u in (self._gauge_u_um(hi), self._gauge_u_um(lo)) if u is not None]
+        if not us or h1 - h2 <= 0:
+            return
+        u = max(us)
+        limit = TWO_STEP_LIMIT_UM / math.sqrt(2 * TWO_STEP_SIGMA_UM ** 2 + 2 * u ** 2)
+        ratio = (z - h1) / (h1 - h2)
+        if ratio > limit + 1e-9:
+            self.emit("W-REF-25", f"{b['base']}/meta.json", None, "ref.gauge_height_mm",
+                      f"층 Z {z}, h1 {h1} ({hi['gauge_block_id']}), h2 {h2} ({lo['gauge_block_id']}), u {u} µm: "
+                      f"비 {ratio:.4f} > 문턱 {limit:.4f}")
 
 
 def _host_t(r):

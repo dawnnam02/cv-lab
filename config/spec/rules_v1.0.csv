@@ -337,6 +337,7 @@ ENUM.meta.source,ENUM,meta.source,ERROR,구현,,"virtual,real",허용 값 밖,,
 REQ.meta.spec_version,REQ,meta.spec_version,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.spec_version,DTYPE,meta.spec_version,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.meta.spec_version,REGEX,meta.spec_version,ERROR,구현,,^\d+\.\d+$,정규식과 맞지 않음,,
+ENUM.meta.spec_version,ENUM,meta.spec_version,ERROR,구현,,"1.0,1.1",허용 값 밖,,meta.spec_version:v1.1은 필드를 바꾸지 않아 1.0 데이터도 같은 규칙으로 봄
 REQ.meta.specimen_id,REQ,meta.specimen_id,ERROR,구현,,,필수 칸이 빔,,
 DTYPE.meta.specimen_id,DTYPE,meta.specimen_id,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.meta.specimen_id,REGEX,meta.specimen_id,ERROR,구현,,^S\d{2}$,정규식과 맞지 않음,,
@@ -700,7 +701,7 @@ REQ.rep.scan_id,REQ,rep.scan_id,ERROR,구현,design_executed.csv (실행 뒤),,�
 CROSS-EMPTY.rep.scan_id,CROSS,rep.scan_id,ERROR,구현,design_executed.csv (실행 뒤),,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.rep.scan_id,DTYPE,rep.scan_id,ERROR,구현,,str,자료형이 str가 아님,,
 REGEX.rep.scan_id,REGEX,rep.scan_id,ERROR,구현,,^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$,정규식과 맞지 않음,,
-REQ.rep.noise_seed,REQ,rep.noise_seed,ERROR,구현,가상 캠페인 (캠페인 ID 첫 글자 V)이고 같은 캠페인 meta.blind = false,,조건이 참인데 칸이 빔,,
+REQ.rep.noise_seed,REQ,rep.noise_seed,ERROR,구현,가상 캠페인 (캠페인 ID 첫 글자 V)이고 같은 캠페인 meta.blind = false,,조건이 참인데 칸이 빔,,meta.blind:스캔 없이 `msa/`만 있는 캠페인은 blind = false로 봄
 CROSS-EMPTY.rep.noise_seed,CROSS,rep.noise_seed;meta.blind,ERROR,구현,가상 캠페인 (캠페인 ID 첫 글자 V)이고 같은 캠페인 meta.blind = false,,조건이 거짓인데 값이 있음 (명세 §0.1: 아니면 빈 칸),,
 DTYPE.rep.noise_seed,DTYPE,rep.noise_seed,ERROR,구현,,int,자료형이 int가 아님,,
 REQ.rep.truth_id,REQ,rep.truth_id,ERROR,구현,가상 캠페인 (캠페인 ID 첫 글자 V),,조건이 참인데 칸이 빔,,
@@ -815,20 +816,21 @@ X-REF-07,CROSS,ref.t_start_ns,ERROR,구현,,,짝 스캔 첫 프레임과 기준 
 X-REF-08,CROSS,ref.scan_id,ERROR,구현,,,층별 기준 (스캔 폴더 안)의 ref.scan_id가 그 스캔 meta.scan_id와 다름,,ref.scan_id:층마다 그 층 스캔과 짝
 W-REF-09,CROSS,ref.line_peak_pct,WARN,구현,,,같은 kind 이전 값보다 line_peak_pct가 20 % 넘게 낮음 (광학창 오염 추세),,ref.line_peak_pct:20 % 넘게 낮으면 경고
 X-REF-10,CROSS,ref.kind;ref.t_start_ns;meta.layer_end_t_ns,ERROR,구현,,,feeler 기준 시각이 그 세션 첫 층 layer_end_t_ns보다 늦음 (출력 전이어야 함),,ref.kind:feeler도 출력 전
-W-REF-11,CROSS,ref.calibration_id;meta.calibration_id;meta.bed_ref_id,WARN,구현,,,bed_bare 기준의 ref.calibration_id ≠ 그 기준을 가리키는 스캔의 meta.calibration_id (판정 거부 X4),D-21 채택 (10-27) · 기본 켬. 판정 거부는 판정 함수 (T15) 몫이라 WARN. 끄기: validate_dataset.py --disable-rule W-REF-11 또는 config/default.yaml validate.disable_rules,ref.calibration_id:kind = bed_bare면 그 기준을;;meta.calibration_id:그 스캔의 `meta.bed_ref_id`가 가리키는
+W-REF-11,CROSS,ref.calibration_id;meta.calibration_id;meta.bed_ref_id,WARN,구현,,,bed_bare 기준의 ref.calibration_id ≠ 그 기준을 가리키는 스캔의 meta.calibration_id (판정 거부 X4),"D-21 채택 (10-27) · 기본 켬. 명세 v1.1 11절: 검증기는 경고 (WARN, 종료 코드 그대로), 거부는 판정 함수 (T15). 끄기: validate_dataset.py --disable-rule W-REF-11 또는 config/default.yaml validate.disable_rules","ref.calibration_id:kind = bed_bare면 그 기준을;;meta.calibration_id:그 스캔의 `meta.bed_ref_id`가 가리키는;;ref.calibration_id:검증기는 경고, 거부는 판정 함수;;meta.calibration_id:검증기는 경고, 거부는 판정 함수"
 X-REF-12,CROSS,ref.gauge_block_id;cal.gauge_block_id,ERROR,구현,,,ref.gauge_block_id (GB-00 말고)가 같은 캠페인 cal_manifest.csv의 cal.gauge_block_id에 없음,,ref.gauge_block_id:GB-00이 아니면 같은 캠페인
 X-REF-13,CROSS,ref.gauge_block_id;ref.kind,ERROR,구현,,,"step_gauge인데 GB-·FG-로, feeler인데 FG-로 시작하지 않음",,ref.gauge_block_id:step_gauge면 GB- (블록 · 베드 면) 또는 FG-
 X-REF-14,CROSS,ref.gauge_height_mm;cal.gauge_block_height_mm;cal.gauge_measured_mm,ERROR,구현,,,"ref.gauge_height_mm ≠ cal 교정값 (GB- 블록: gauge_block_height_mm, FG-: gauge_measured_mm, 차 > 1e-9)",,ref.gauge_height_mm:GB- 블록이면 = 그 블록
 X-REF-15,CROSS,ref.gauge_height_mm;meta.layer_z_mm,ERROR,구현,,,"step_gauge 높이 > 짝 스캔 layer_z_mm (노즐 충돌, 같은 높이는 허용, 명세 4절 C2)",,ref.gauge_height_mm:kind = step_gauge면 **x ≤
 X-REF-16,CROSS,ref.kind;pos.z_mm;meta.scan_pass_idx,ERROR,구현,,,"같은 Z 연속 측정 (D-16, 명세 4절): 그 층 다른 줄 스캔 · 두 단 기준 위치 로그의 스캔 구간 cmd 행 하나가 기준 Z (첫 줄 스캔 구간 cmd 평균)와 0.001 mm 넘게 다름",,pos.z_mm:계단 기준물과의 같은 Z 규칙은 4절
-X-REF-17,CROSS,ref.layer_idx;ref.kind,ERROR,구현,,,"bed_bare · feeler인데 ref.layer_idx ≠ -1이거나, 층에 매인 기준 (bed_marker · ref_tower · step_gauge)인데 ref.layer_idx < 0",,"ref.layer_idx:kind ∈ {bed_bare, feeler}면 -1;;ref.layer_idx:필수이고 0 ≤ x"
-X-REF-18,CROSS,ref.ref_id;ref.t_start_ns,ERROR,구현,,,같은 세션 · 같은 약어 안 ref_id 숫자가 001부터 빈 번호 없이 t_start_ns 순서로 매겨지지 않음,,ref.ref_id:001부터 빈 번호 없이
+X-REF-17,CROSS,ref.layer_idx;ref.kind,ERROR,구현,,,"bed_bare · feeler인데 ref.layer_idx ≠ -1이거나, 층에 매인 기준 (bed_marker · ref_tower · step_gauge)인데 ref.layer_idx < 0",,"ref.layer_idx:kind ∈ {bed_bare, feeler}면 필수이고 x = -1;;ref.layer_idx:필수이고 0 ≤ x"
+X-REF-18,CROSS,ref.ref_id;ref.t_start_ns,ERROR,구현,,,같은 세션 · 같은 약어 안 ref_id 숫자가 001부터 빈 번호 없이 t_start_ns 순서로 매겨지지 않음 (같은 시각끼리는 순서 자유),,ref.ref_id:001부터 빈 번호 없이;;ref.ref_id:`ref.t_start_ns`가 같은 두 기준은 어느 쪽이 작은 번호여도 됨
 X-REF-19,CROSS,ref.ref_id,ERROR,구현,,,같은 세션 안에 같은 ref_id가 둘 이상,,ref.ref_id:세션 안에서 유일
 X-REF-20,CROSS,ref.kind;ref.scan_id;ref.gauge_block_id;ref.gauge_height_mm;meta.layer_z_mm;meta.zero_ref_method,ERROR,구현,,,"두 단 규칙 (C1, 명세 4절) 위반: 첫 줄 스캔을 짝으로 하는 step_gauge 행이 2개가 아니거나, 두 ID가 같거나, 0 < h1 − h2 ≤ 3.04 · h1 ≤ 층 Z · 층 Z − h2 ≤ 8.0 중 하나가 거짓",,"ref.kind:step_gauge는 4절 ""두 단 규칙"";;meta.zero_ref_method:step_gauge면 그 층 첫 줄 스캔을 짝으로"
 X-REF-21,CROSS,ref.scan_pass_idx;ref.kind;meta.scan_pass_idx,ERROR,구현,,,"세션의 bed_bare 줄 번호가 0부터 빈 번호 없이 이어지지 않거나, 그 세션 스캔의 줄 번호 최댓값까지 다 있지 않음",,ref.scan_pass_idx:한 세션의 bed_bare 행은 0부터;;ref.kind:줄 번호 (`meta.scan_pass_idx`)마다 1행 이상
 X-REF-22,CROSS,ref.scan_pass_idx;pos.x_mm;meta.scan_x_mm;meta.bed_ref_id,ERROR,구현,,,bed_bare 기준 위치 로그 스캔 구간 x_mm 평균이 그 기준을 가리키는 스캔의 meta.scan_x_mm와 0.01 mm 넘게 다름,,ref.scan_pass_idx:기준 위치 로그 스캔 구간 `pos.x_mm` 평균
 X-REF-23,CROSS,ref.gauge_height_mm;ref.gauge_block_id,ERROR,구현,,,"gauge_height_mm = 0인데 GB-00이 아니거나, GB-00인데 gauge_height_mm ≠ 0",,ref.gauge_height_mm:x = 0은 GB-00
 X-REF-24,CROSS,ref.scan_id;meta.scan_pass_idx,ERROR,구현,,,층에 매인 기준의 ref.scan_id가 가리키는 스캔이 첫 줄 (scan_pass_idx = 0)이 아님,,ref.scan_id:그 스캔의 `meta.scan_pass_idx` = 0
+W-REF-25,CROSS,ref.gauge_height_mm;ref.gauge_block_id;meta.layer_z_mm;cal.gauge_block_u_um;cal.gauge_u_um,WARN,구현,,,"두 단 비 경고 (C1, 명세 4절 v1.1): (층 Z − h1) ÷ (h1 − h2) > 4 µm ÷ √(2 × 1.5² + 2u²) (u = 두 단 교정 표준불확도 중 큰 값, GB-00은 다른 단 값)","명세 v1.1 4절: σ 1.5 µm가 추정값이고 데이터 형식은 맞아 WARN (종료 코드 그대로). 두 단 규칙 (X-REF-20)을 통과한 층만 봄 (post 포함, 첫 줄 스캔 없는 층 · 두 단 규칙 실패 층은 건너뜀). 끌 수 있는 목록 (SWITCHABLE_OFF)에 넣지 않음: 사용자 결정 대기 규칙이 아니고 T3 정상 캠페인은 이 경고도 0이어야 함 (명세 4절)","ref.kind:step_gauge는 4절 ""두 단 규칙"""
 X-MET-01,CROSS,meta.scan_id;meta.timing;meta.layer_idx,ERROR,구현,,,scan_id의 _L 부분이 timing·layer_idx와 맞지 않음,,meta.scan_id:timing = layer면;;meta.scan_id:timing = post면
 X-MET-02,CROSS,meta.campaign_id;meta.source,ERROR,구현,,,캠페인 첫 글자 V ⇔ source = virtual 위반,,meta.campaign_id:첫 글자 V
 X-MET-03,CROSS,meta.specimen_id;meta.scan_id,ERROR,구현,,,specimen_id ≠ scan_id 앞 세 글자,,meta.specimen_id:scan_id 앞 세 글자
@@ -880,7 +882,7 @@ X-MET-51,CROSS,meta.injected_factors;meta.source;meta.blind,ERROR,구현,,,실�
 H-MET-52,보류,meta.slicer_name,ERROR,보류,,,slicer_name = G코드 머리말 값,G코드 해석 (T4a) 결과가 있어야 함,meta.slicer_name:G코드 머리말에서 읽고
 X-MET-54,CROSS,meta.scan_id;meta.scan_pass_idx,ERROR,구현,,,"scan_id의 _p 부분이 scan_pass_idx와 맞지 않음 (0이면 _p 없음, 1 이상이면 _p 숫자 = scan_pass_idx)",,meta.scan_id:`meta.scan_pass_idx` = 0이면
 X-MET-55,CROSS,meta.scan_pass_idx,ERROR,구현,,,같은 시편·반복·층 (post끼리)의 scan_pass_idx가 0부터 빈 번호 없이 이어지지 않음,,meta.scan_pass_idx:같은 시편·반복·층;;meta.scan_pass_idx:줄이 하나면 0
-W-MET-56,CROSS,meta.layer_idx;meta.layer_count;meta.thermal_state,WARN,구현,,,같은 시편·반복의 in_process 스캔에 0 ~ layer_count − 1 층이 다 있지 않음 (판정 거부 X7),D-21 채택 (10-27) · 기본 켬. 판정 거부는 판정 함수 (T15) 몫이라 WARN. 끄기: validate_dataset.py --disable-rule W-MET-56 또는 config/default.yaml validate.disable_rules,meta.layer_idx:모든 층 스캔 (D-18)
+W-MET-56,CROSS,meta.layer_idx;meta.layer_count;meta.thermal_state,WARN,구현,,,같은 시편·반복의 in_process 스캔에 0 ~ layer_count − 1 층이 다 있지 않음 (판정 거부 X7),"D-21 채택 (10-27) · 기본 켬. 명세 v1.1 11절: 검증기는 경고 (WARN, 종료 코드 그대로), 거부는 판정 함수 (T15). 끄기: validate_dataset.py --disable-rule W-MET-56 또는 config/default.yaml validate.disable_rules","meta.layer_idx:모든 층 스캔 (D-18);;meta.layer_idx:검증기는 경고, 거부는 판정 함수"
 W-MET-57,CROSS,meta.bed_motion;meta.scan_axis,WARN,구현,,,"bed_motion = y인데 scan_axis가 ±X가 아님 (권장 위반, T2 MF-MEC-10)",,meta.bed_motion:y면 `meta.scan_axis`;;meta.scan_axis:베드가 Y로 움직이는 프린터면
 X-MET-58,CROSS,meta.z_drive;meta.timing;meta.scan_pass_idx;pos.event,ERROR,구현,,,"z_drive = belt인데 post 첫 줄 위치 로그의 cool_start ~ scan_end 사이나 다른 post 줄 위치 로그에 motor_off가 있음 (식힌 재측정 동안 모터 유지, T2 MF-SYN-09)",,meta.z_drive:belt면 식힌 재측정 동안;;meta.z_drive:판정은 post 위치 로그의 motor_off;;pos.event:motor_off: `meta.z_drive` = belt면
 X-MET-59,CROSS,meta.firmware;meta.firmware_fork,ERROR,구현,,,meta.firmware에 제조사 접두사가 있는데 firmware_fork ≠ vendor,,meta.firmware:제조사 접두사는
@@ -900,7 +902,7 @@ H-REP-05,보류,rep.run_order,WARN,보류,,,행 순서와 다른 무작위 순�
 X-REP-06,CROSS,rep.noise_seed,ERROR,구현,,,같은 study 안 noise_seed 중복,,rep.noise_seed:같은 study 안에서 행마다 다름
 X-REP-07,CROSS,rep.truth_id;rep.specimen_id,ERROR,구현,,,같은 specimen_id인데 truth_id가 다름,,rep.truth_id:같은 specimen_id면 같음
 X-TRU-01,CROSS,truth.judgement;truth.pass_pct,ERROR,구현,,,truth.judgement = pass ⇔ truth.pass_pct ≥ 95 위반 (부록 A),,
-X-TRU-02,CROSS,truth.gauge_block_heights_mm;truth.gauge_temp_params,ERROR,구현,,,"계단 기준물 참값 위반: step_gauge 기준이 있는데 gauge_block_heights_mm · gauge_temp_params가 없거나 (없으면 null이어야 함), 키가 GB- 정규식이 아니거나 GB-00이거나 쓴 블록 ID가 빠짐, abs(값 − ID 숫자 합) > 0.02, cte_um_per_m_c 키 없음 (부록 A)",,
+X-TRU-02,CROSS,truth.gauge_block_heights_mm;truth.gauge_temp_params,ERROR,구현,,,"계단 기준물 참값 위반: step_gauge 기준이 있는데 gauge_block_heights_mm · gauge_temp_params가 없거나 (없으면 null이어야 함), 키가 GB- 정규식이 아니거나 GB-00이거나 쓴 블록 ID가 빠짐, abs(값 − ID 숫자 합) > 0.02, cte_um_per_m_c 키 없음, v1.1: cte ≠ 0인데 temp_c (dict)가 없거나, temp_c 키가 ^L\d{3}$ · post가 아님 (_pNN 금지), 키 집합 ≠ step_gauge 기준 층 (L###) + post 두 단이면 post, 값이 −10 ≤ x ≤ 130 수가 아님 (부록 A)",,
 X-TRU-03,CROSS,truth.scan_seeds;truth.scan_factors;meta.blind,ERROR,구현,,,"블라인드 참값 위반: blind = true인데 scan_seeds · scan_factors가 없거나 (false면 null), 키 집합 ≠ 캠페인 스캔 ID, 시드가 0 ≤ x < 2^63 정수가 아님, 요인 원소가 ^MF-[A-Z]{3}-\d{2}$가 아님 (부록 A)",,
 X-TRU-04,CROSS,truth.factor_params;meta.injected_factors;truth.scan_factors,ERROR,구현,,,truth.factor_params 키 집합 ≠ 주입 요인 합집합 (blind면 truth.scan_factors 값의 합집합) (부록 A),,
 X-TRU-05,CROSS,truth.gauge_thickness_mm,ERROR,구현,,,"truth.gauge_thickness_mm 키 ∉ {0.20, 0.30, 0.40, 0.50}이거나 abs(값 − 공칭) > 0.02 (부록 A)",,

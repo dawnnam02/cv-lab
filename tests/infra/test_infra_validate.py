@@ -24,7 +24,7 @@ def test_every_hand_rule_has_a_fault_sample():
     """구현한 손 규칙 (CROSS · FILE · CSV · JSON · LEAK · WARN)마다 고장·경고 표본이 하나 이상."""
     _, rules, _ = schema()
     got = {h[1] for h in st.hand_faults()} | {w[1] for w in st.warn_tests()} | {s[1] for s in st.switch_tests()} \
-        | {t[2] for t in st.truth_tests() if t[2]}
+        | {t[2] for t in st.truth_tests() if t[2]} | ({"W-REF-25"} if any(t[2] for t in st.ratio_tests()) else set())
     hand = [r["rule_id"] for r in rules if r["status"] == "구현" and r["kind"] not in ("REQ", "DTYPE", "REGEX", "ENUM", "RANGE")
             and not r["rule_id"].startswith("CROSS-EMPTY.")]
     assert [h for h in hand if h not in got] == []
@@ -203,6 +203,61 @@ def test_gauge_height_equal_layer_z_is_allowed():
     st._scan(m)["meta"]["layer_z_mm"] = st.FG5_H - 0.0001
     got = {f.rule_id for f in v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)}
     assert "X-REF-15" in got
+
+
+def test_v11_two_step_ratio_rule():
+    """명세 v1.1 4절 두 단 비 경고 (W-REF-25): 문턱 값, 양성 · 음성 · 경계, 두 단 규칙 실패 층 · 첫 줄 없는 층은 건너뜀, 끌 수 없음."""
+    from cvlab.io import validate as vd
+    lim = lambda u: vd.TWO_STEP_LIMIT_UM / (2 * vd.TWO_STEP_SIGMA_UM ** 2 + 2 * u ** 2) ** 0.5  # noqa: E731
+    assert round(lim(2.0), 3) == 1.131 and round(lim(1.0), 3) == 1.569
+    assert round(1.2 / 0.7, 3) == 1.714 and round((1.0 - 0.5021) / 0.5021, 3) == 0.992  # 6차 예 · B.4
+    gap = st.GB_H - st.FG5_H
+    assert (1.9912 - st.GB_H) / gap < lim(2.0) < (1.9914 - st.GB_H) / gap  # 경계 표본이 문턱 바로 아래 · 위
+    fields, rules, fc = schema()
+    v = Validator(fields, rules, fc, repo_exists=st.repo_exists)
+    for name, fm, want in st.ratio_tests():
+        m = st.normal_model()
+        fm(m)
+        out = v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)
+        w = [f for f in out if f.rule_id == "W-REF-25"]
+        assert bool(w) == want and all(f.severity == "WARN" for f in w), name
+        assert not [f for f in out if f.severity == "ERROR"], name
+
+    def six(m):
+        st.set_gauge_height(m, st.GB_ID, 1.2)
+        st.set_gauge_height(m, st.FG5_ID, 0.5)
+        st.set_layer_z(m, 1, 2.4)
+    L001 = f"/{st.SR}/L001/"
+    # 두 단 규칙 실패 층 (L001 두 단 중 하나 빠짐): X-REF-20만, 그 층 두 단 비는 안 봄 (post는 그대로 경고)
+    m = st.normal_model()
+    six(m)
+    st._scan(m, "L001")["refs"].pop("REF-STG-003")
+    out = v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)
+    assert "X-REF-20" in {f.rule_id for f in out}
+    assert not [f for f in out if f.rule_id == "W-REF-25" and L001 in f.file]
+    assert [f for f in out if f.rule_id == "W-REF-25" and f"/{st.SR}/post/" in f.file]
+    # 첫 줄 스캔 없는 층 (L001 줄 0을 줄 2로): X-MET-55, 그 층 두 단 · 두 단 비는 안 봄
+    m = st.normal_model()
+    six(m)
+    st._scan(m, "L001")["meta"].update(scan_pass_idx=2, scan_id=f"{st.SR}_L001_p02")
+    out = v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)
+    assert "X-MET-55" in {f.rule_id for f in out}
+    assert not [f for f in out if f.rule_id == "W-REF-25" and "L001" in f.file]
+    # 끌 수 있는 목록에 없음 (D-21 X4 · X7만)
+    assert "W-REF-25" not in vd.SWITCHABLE_OFF
+    with pytest.raises(KeyError):
+        Validator(fields, rules, fc, disabled_rules={"W-REF-25"})
+
+
+def test_v11_spec_version_values():
+    """명세 v1.1: meta.spec_version ∈ {1.0, 1.1}. 1.0 데이터도 같은 규칙으로 통과, 1.2는 ENUM."""
+    fields, rules, fc = schema()
+    v = Validator(fields, rules, fc, repo_exists=st.repo_exists)
+    for val, want in (("1.1", set()), ("1.0", set()), ("1.2", {"ENUM.meta.spec_version"})):
+        m = st.normal_model()
+        for sc in m["sessions"][st.SESSION]["scans"][st.SR].values():
+            sc["meta"]["spec_version"] = val
+        assert {f.rule_id for f in v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)} == want, val
 
 
 def test_repo_root_default_is_cvlab_for_outside_data(tmp_path):

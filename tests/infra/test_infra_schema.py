@@ -88,8 +88,10 @@ def test_parse_examples():
     assert ss.parse_range("= 0.20 (D-05 고정)") == ("0.20", "=", "0.20", "=")
     assert ss.parse_range("−180 < x ≤ 180") == ("-180", "<", "180", "≤")
     assert ss.parse_range("1 ≤ x. kind = static_repeat면 x ≥ 100") == ("1", "≤", "", "")
-    # v1.0: 범위 뒤에 쉼표로 다른 조건이 붙어도 범위는 뽑음 (ref.gauge_height_mm)
-    assert ss.parse_range("필수. 0 ≤ x ≤ 60, x = 0은 GB-00 (베드 면)일 때만") == ("0", "≤", "60", "≤")
+    # v1.1: ref.gauge_height_mm 범위 문장이 따로 나뉨 → 특례 없이 뽑힘. v1.0 특례 (범위 뒤 쉼표 조건)는 지워서
+    # 쉼표로 붙은 위 끝은 다른 필드 끝처럼 비움 (아래 끝만)
+    assert ss.parse_range("필수. 0 ≤ x ≤ 60. x = 0은 GB-00 (베드 면)일 때만이고, GB-00이면 x = 0") == ("0", "≤", "60", "≤")
+    assert ss.parse_range("필수. 0 ≤ x ≤ 60, x = 0은 GB-00 (베드 면)일 때만") == ("0", "≤", "", "")
     assert ss.parse_enum("값 ∈ {klipper, marlin} [대기: T14]. 관계") == ("klipper,marlin", True)
     assert ss.parse_regex("target = top_face면 정규식 `^S$`") == ""
     assert ss.parse_regex("정규식 `^a$` 또는 `^b$`. 끝") == "^a$||^b$"
@@ -149,6 +151,22 @@ def test_v10_resync_rules():
     assert "H-CAL-24" not in ids  # 재료 교차 규칙 구현 (X-CAL-26 · 27)
     assert "CROSS-EMPTY.ref.layer_idx" not in ids  # bed_bare · feeler는 빈 칸이 아니라 -1 (X-REF-17)
     assert sum(r["status"] == "보류" for r in rules) == 9
+
+
+def test_v11_resync_rules():
+    """v1.1 (V-1) 재동기화: 필드 그대로, spec_version 허용 값, 두 단 비 경고 규칙, gauge_height_mm 범위 (특례 없이)."""
+    fields, rules, _ = schema()
+    fd = {f["field"]: f for f in fields}
+    ids = {r["rule_id"]: r for r in rules}
+    assert "spec_sha256: debd2e51c7846b6bf594e8d9e1963373e229d33bb472b9ab2fd22987fc7965e3" in \
+        (SPEC_DIR / "SOURCE.txt").read_text(encoding="utf-8")
+    assert fd["meta.spec_version"]["enum"] == "1.0,1.1" and ids["ENUM.meta.spec_version"]["severity"] == "ERROR"
+    assert (fd["ref.gauge_height_mm"]["min"], fd["ref.gauge_height_mm"]["max"], fd["ref.gauge_height_mm"]["max_op"]) == ("0", "60", "≤")
+    assert ids["W-REF-25"]["severity"] == "WARN" and ids["W-REF-25"]["status"] == "구현"
+    assert "SWITCHABLE_OFF" in ids["W-REF-25"]["reason"]  # 끌 수 있는 목록에 넣지 않은 이유를 규칙표에 남김
+    for rid in ("W-REF-11", "W-MET-56"):
+        assert "검증기는 경고" in ids[rid]["reason"]
+    assert "temp_c" in ids["X-TRU-02"]["message"]
 
 
 def test_bad_cell_count_fails(tmp_path):

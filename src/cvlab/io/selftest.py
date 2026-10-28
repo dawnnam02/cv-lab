@@ -161,7 +161,7 @@ def _meta(lay, layer_idx, layer_z, layer_end, S, dt_text, post=False, pass_idx=0
     m = {
         "scan_id": (f"{SR}" if post else f"{SR}_L{layer_idx:03d}") + p, "scan_pass_idx": pass_idx,
         "campaign_id": CAMPAIGN, "session_id": SESSION,
-        "source": "virtual", "spec_version": "1.0", "specimen_id": "S01", "specimen_role": "user_gcode", "repeat": 1,
+        "source": "virtual", "spec_version": "1.1", "specimen_id": "S01", "specimen_role": "user_gcode", "repeat": 1,
         "datetime": dt_text, "operator": "sim", "notes": "-",
         "timing": "post" if post else "layer", "layer_idx": layer_idx, "layer_count": 2, "layer_z_mm": layer_z,
         "gcode_line_start": 1 + 100 * layer_idx, "gcode_line_end": 100 + 100 * layer_idx,
@@ -951,7 +951,83 @@ def _v10_hand_faults() -> list[tuple]:
     mod("material_sample인데 color 빔", "REQ.cal.color", lambda m: _cal_row(m, "material_sample").update(color=None))
     mod("filler_gauge 행에 material", "CROSS-EMPTY.cal.material", lambda m: _cal_row(m, "filler_gauge").update(material="PLA"))
     mod("feeler에 scan_pass_idx", "CROSS-EMPTY.ref.scan_pass_idx", lambda m: refs(m)["REF-FLR-001"]["index"][0].update(scan_pass_idx=0))
+    H.extend(_v11_hand_faults())
     return H
+
+
+def _v11_hand_faults() -> list[tuple]:
+    """명세 v1.1 (V-1, 2026-10-28)에서 바뀐 규칙마다 ERROR 고장 표본. 두 단 비 (WARN)는 ratio_tests()."""
+    H = []
+
+    def mod(name, rid, fm=None, fb=None):
+        H.append((name, rid, fm, fb))
+
+    refs = lambda m: m["sessions"][SESSION]["refs"]  # noqa: E731
+
+    def msa_only(m):
+        """스캔 없이 msa/만 있는 가상 캠페인 (blind를 알 수 없음 → false로 봄) + noise_seed 한 칸 비움."""
+        m["sessions"].clear()
+        m["msa"]["MSA-01"]["design.csv"][0].update(noise_seed=None)
+
+    mod("spec_version 1.2 (정규식은 맞고 허용 값 밖)", "ENUM.meta.spec_version", lambda m: _scan(m)["meta"].update(spec_version="1.2"))
+    mod("bed_bare layer_idx 빈 칸 (v1.1: 필수이고 −1)", "REQ.ref.layer_idx", lambda m: refs(m)["REF-BED-001"]["index"][0].update(layer_idx=None))
+    mod("feeler layer_idx 빈 칸 (v1.1: 필수이고 −1)", "REQ.ref.layer_idx", lambda m: refs(m)["REF-FLR-001"]["index"][0].update(layer_idx=None))
+    mod("스캔 없는 가상 MSA 캠페인에 noise_seed 빔 (v1.1: blind = false로 봄)", "REQ.rep.noise_seed", msa_only)
+    return H
+
+
+def set_layer_z(m, layer_idx: int, z: float) -> None:
+    """층 번호가 layer_idx인 모든 스캔 (post 포함)의 층 Z를 z로: meta.layer_z_mm, 스캔 · 그 층 기준 위치 로그 Z를 같은 만큼 옮김."""
+    for sc in m["sessions"][SESSION]["scans"][SR].values():
+        if sc["meta"]["layer_idx"] != layer_idx:
+            continue
+        dz = z - sc["meta"]["layer_z_mm"]
+        sc["meta"]["layer_z_mm"] = z
+        for r in sc["pos"]:
+            r["z_mm"] = round(r["z_mm"] + dz, 6)
+        for ref in sc["refs"].values():
+            for r in ref.get("pos", []):
+                r["z_mm"] = round(r["z_mm"] + dz, 6)
+
+
+def set_gauge_height(m, gid: str, h: float) -> None:
+    """기준물 gid의 교정 높이를 h로: cal 행 (GB- gauge_block_height_mm, FG- gauge_measured_mm)과 그 ID를 쓰는 모든 기준 행."""
+    key = "gauge_block_height_mm" if gid.startswith("GB-") else "gauge_measured_mm"
+    for r in m["cal"][CAL]["cal_manifest.csv"]:
+        if r["gauge_block_id"] == gid:
+            r[key] = h
+    for sc in m["sessions"][SESSION]["scans"][SR].values():
+        for ref in sc["refs"].values():
+            if ref["index"][0]["gauge_block_id"] == gid:
+                ref["index"][0]["gauge_height_mm"] = h
+
+
+def ratio_tests() -> list[tuple]:
+    """두 단 비 경고 W-REF-25 (명세 v1.1 4절). (이름, 모형 고침, WARN이 나와야 하는지).
+
+    문턱 = 4 ÷ √(2 × 1.5² + 2u²): u 2 µm → 1.13137, u 1 µm → 1.56893 [계산]. 모두 ERROR 0이어야 함 (형식은 맞는 데이터).
+    - 양성: 6차 예. h1 1.2 (GB-01.2) · h2 0.5 (FG-0.50) · 층 Z 2.4 → 비 1.2 ÷ 0.7 = 1.714, u = max(2, 1) = 2 → 1.131 넘음 (L001 · post)
+    - 음성: B.4. h1 0.5021 (FG-0.50, u 1) · h2 0 (GB-00, 다른 단 값 1) · 층 Z 1.0 → 비 0.4979 ÷ 0.5021 = 0.992 < 1.569 (L000)
+    - 경계: L001 h1 1.2008 · h2 0.5021 (간격 0.6987), u 2. 층 Z 1.9912 → 비 1.13124 (아래), 1.9914 → 1.13153 (위)
+    - u는 cal 값: L000 (FG-0.50 · GB-00)에서 FG-0.50 `cal.gauge_u_um`을 1 → 2로 올리면 문턱 1.569 → 1.131, 정상 L000 비 1.390이 넘음
+      (u = 두 단 중 큰 값이라 GB-00 = 다른 단 값 규칙은 결과를 바꾸지 않음)
+    """
+    def six(m):
+        set_gauge_height(m, GB_ID, 1.2)
+        set_gauge_height(m, FG5_ID, 0.5)
+        set_layer_z(m, 1, 2.4)
+
+    def fg5_u2(m):
+        for r in m["cal"][CAL]["cal_manifest.csv"]:
+            if r["gauge_block_id"] == FG5_ID:
+                r["gauge_u_um"] = 2.0
+    return [
+        ("6차 예 (h1 1.2 · h2 0.5 · 층 Z 2.4, 비 1.714 > 1.131)", six, True),
+        ("B.4 (h1 0.5021 · h2 GB-00 · 층 Z 1.0, 비 0.992 < 1.569)", lambda m: set_layer_z(m, 0, 1.0), False),
+        ("경계 아래 (u 2, 층 Z 1.9912, 비 1.13124 < 1.13137)", lambda m: set_layer_z(m, 1, 1.9912), False),
+        ("경계 위 (u 2, 층 Z 1.9914, 비 1.13153 > 1.13137)", lambda m: set_layer_z(m, 1, 1.9914), True),
+        ("u는 cal 값 (FG-0.50 u 1 → 2, L000 비 1.390 > 1.131)", fg5_u2, True),
+    ]
 
 
 def _extra_cell(b: bytes) -> bytes:
@@ -1024,7 +1100,8 @@ def switch_tests() -> list[tuple]:
 def truth_context(blind: bool = False) -> dict:
     """정상 표본 캠페인의 참값 대조용 사실 (Validator.run 뒤 truth_ctx와 같아야 함, 시험이 맞춰 봄)."""
     ids = ["S01_r01", "S01_r01_L000", "S01_r01_L001", "S01_r01_L001_p01", "S01_r01_p01"]
-    return {"has_step_gauge": True, "gauge_ids": [GB_ID], "blind": blind, "scan_ids": ids,
+    # v1.1: temp_c 키 집합 = step_gauge 기준이 있는 층 (L000 · L001) + post 두 단
+    return {"gauge_layers": ["L000", "L001", "post"], "has_step_gauge": True, "gauge_ids": [GB_ID], "blind": blind, "scan_ids": ids,
             "factors": [] if blind else ["MF-SYN-01"]}
 
 
@@ -1032,7 +1109,8 @@ def normal_truth(blind: bool = False) -> dict:
     """정상 표본에 맞는 참값 객체의 v1.0 관련 키 (형식 시험용 값, 부록 A 예시 꼴)."""
     t = {"judgement": "pass", "pass_pct": 97.0,
          "gauge_thickness_mm": {"0.20": 0.2031, "0.50": 0.5021},
-         "gauge_block_heights_mm": {GB_ID: 1.2006}, "gauge_temp_params": {"cte_um_per_m_c": 11.5, "temp_c": {"L000": 45.0}},
+         "gauge_block_heights_mm": {GB_ID: 1.2006},
+         "gauge_temp_params": {"cte_um_per_m_c": 11.5, "temp_c": {"L000": 45.0, "L001": 45.0, "post": 23.0}},
          "scan_seeds": None, "scan_factors": None, "factor_params": {"MF-SYN-01": {"dt_ns": 10_000_000}}}
     if blind:
         ids = truth_context(True)["scan_ids"]
@@ -1062,6 +1140,22 @@ def truth_tests() -> list[tuple]:
         ("블록 참 높이 − ID 합 > 0.02", w(N(), gauge_block_heights_mm={GB_ID: 1.23}), "X-TRU-02", ctx),
         ("블록 참 높이 키에 GB-00", w(N(), gauge_block_heights_mm={GB_ID: 1.2006, "GB-00": 0.0}), "X-TRU-02", ctx),
         ("기준물 열 모델에 cte 키 없음", w(N(), gauge_temp_params={"temp_c": {}}), "X-TRU-02", ctx),
+        # v1.1 (V-1): temp_c 키 L### · post, _pNN 금지, 키 집합 = step_gauge 층 + post, 값 −10–130
+        ("열 모델 끔 (cte 0, temp_c 없음)", w(N(), gauge_temp_params={"cte_um_per_m_c": 0.0}), None, ctx),
+        ("temp_c 경계 −10 · 130", w(N(), gauge_temp_params={"cte_um_per_m_c": 11.5, "temp_c": {"L000": -10.0, "L001": 130, "post": 23.0}}),
+         None, ctx),
+        ("열 모델 켬인데 temp_c 없음", w(N(), gauge_temp_params={"cte_um_per_m_c": 11.5}), "X-TRU-02", ctx),
+        ("temp_c 키에 _p01", w(N(), gauge_temp_params={"cte_um_per_m_c": 11.5,
+                                                       "temp_c": {"L000": 45.0, "L001": 45.0, "L001_p01": 45.0, "post": 23.0}}), "X-TRU-02", ctx),
+        ("temp_c 키 post_p01", w(N(), gauge_temp_params={"cte_um_per_m_c": 11.5,
+                                                        "temp_c": {"L000": 45.0, "L001": 45.0, "post_p01": 23.0}}), "X-TRU-02", ctx),
+        ("temp_c 키 집합에 post 빠짐", w(N(), gauge_temp_params={"cte_um_per_m_c": 11.5, "temp_c": {"L000": 45.0, "L001": 45.0}}),
+         "X-TRU-02", ctx),
+        ("temp_c 키에 기준 없는 층 L005", w(N(), gauge_temp_params={"cte_um_per_m_c": 11.5,
+                                                                "temp_c": {"L000": 45.0, "L001": 45.0, "L005": 45.0, "post": 23.0}}), "X-TRU-02", ctx),
+        ("temp_c 값 130.5", w(N(), gauge_temp_params={"cte_um_per_m_c": 11.5, "temp_c": {"L000": 45.0, "L001": 130.5, "post": 23.0}}),
+         "X-TRU-02", ctx),
+        ("temp_c가 dict 아님", w(N(), gauge_temp_params={"cte_um_per_m_c": 11.5, "temp_c": [45.0]}), "X-TRU-02", ctx),
         ("blind인데 scan_seeds null", w(N(True), scan_seeds=None), "X-TRU-03", bctx),
         ("blind 아닌데 scan_factors 값", w(N(), scan_factors=N(True)["scan_factors"]), "X-TRU-03", ctx),
         ("scan_seeds 키 집합 ≠ 스캔 ID", w(N(True), scan_seeds={"S01_r01": {"sim_seed": 1, "noise_seed": None}}), "X-TRU-03", bctx),
@@ -1194,6 +1288,15 @@ def run_selftest(fields: list[dict], rules_list: list[dict], file_cols: dict, di
         off = Validator(fields, rules_list, file_cols, disabled_rules={rid}, repo_exists=repo_exists)
         off_ids = {x.rule_id for x in off.run(MemFS(fs), CAMPAIGN)}
         warns.append({"name": f"[스위치] {name}", "expected": rid, "detected": rid in on_ids and rid not in off_ids})
+    # 두 단 비 경고 (v1.1): 양성은 W-REF-25가 나와야, 음성 · 경계 아래는 안 나와야 통과. 모두 ERROR 0 (형식은 맞는 데이터)
+    for name, fm, want in ratio_tests():
+        m = clone(base)
+        fm(m)
+        fnd = check(serialize(m, file_cols))
+        got = any(x.rule_id == "W-REF-25" for x in fnd)
+        errs = sorted({x.rule_id for x in fnd if x.severity == "ERROR"})
+        warns.append({"name": f"[두 단 비] {name}", "expected": "W-REF-25" if want else "W-REF-25 없음",
+                      "detected": got == want and not errs, "errors": errs})
     # 참값 (부록 A): judgement ⇔ pass_pct, v1.0 새 참값 필드 (캠페인 사실 ctx와 대조)
     for name, obj, rid, tctx in truth_tests():
         ids = {x.rule_id for x in V.check_truth(obj, ctx=tctx) if x.severity == "ERROR"}
