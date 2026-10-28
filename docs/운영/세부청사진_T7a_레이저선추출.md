@@ -1,6 +1,6 @@
 # 세부청사진 T7a · 레이저 선 추출 1차 (F1)와 좌표계 (C4)
 
-> 상위: [청사진_가상데이터단계](청사진_가상데이터단계.md) §1 (측정 방식) · §2.1 (2 실측) · §4.1 (T7) · §4.3 (T7) · §5.2 · 작성: 2026-10-27 총괄 팀장 · 상태: **착수 전 (메인 확인 대기)**
+> 상위: [청사진_가상데이터단계](청사진_가상데이터단계.md) §1 (측정 방식) · §2.1 (2 실측) · §4.1 (T7) · §4.3 (T7) · §5.2 · 작성: 2026-10-27 총괄 팀장 · 상태: **완료 (c80e251, 5차 조건부 통과) · 후속 T-1–T-3 끝 (a9052cf, 6차 통과)** · **정정 2026-10-28 (팀장검증 6차): §4 공개 이름 `*, bit_depth`, 명령 ③ 호출에 `bit_depth=10`, LX5 반사 자리 10곳, LX10 측정 조건. 결과는 §12**
 > **일정 앞당김.** 청사진 T7은 11-25 ~ 12-04 (G1 · T3 뒤)입니다. 사용자 지시 (10-27) "선행 작업 없이 병렬로 진행할 수 있는 작업 진행해."에 따라 시뮬레이터 없이 할 수 있는 몫만 떼어 **10-27에 시작해 11-03에 마감**합니다 (29일 앞당김). T4b · T5와 동시에 돕니다.
 > **청사진과 다른 점 (청사진은 고치지 않음, 메인에게 보고).**
 > ① **T7을 둘로 나눕니다.** T7a (지금) = F1 선 중심 추출 (worker가 만든 단순 합성 영상으로) + C4 좌표계 문서와 변환 함수 뼈대 (교정값은 인자로). T7b (G1 뒤, 11-25 ~) = 시뮬레이터 데이터로 정지 평판 100장 반복성 표 · 채점기 기준 프로파일 오차 표 · 교정값을 넣은 삼각측량. 청사진 §4.3 T7 완료 기준 두 개는 T7b에 남습니다.
@@ -36,12 +36,12 @@
 | LX2 | **기본 정확도 (F1 7절 #1 · #2).** `f1_basic_8bit` · `nominal_10bit` (§6.3)에서 `cog` \|bias\| < 0.02 px, RMS < 0.15 px, 유효 100 %. `noiseless_10bit`에서 `gauss3` 최대 오차 < 0.05 px | 명령 ② |
 | LX3 | **비교표.** `docs/레이저선-추출_자료/방법비교.csv` (§6.3 시나리오 전부 × 방법, 열 고정). RMS를 µm로 바꾼 열 (§6.6 환산). 정지 100장 열별 표준편차 중앙값 (보고만) | 명령 ② |
 | LX4 | **포화.** `saturated_10bit` (피크 1600 DN → 1023에서 잘림)에서 기본 방법 \|bias\| < 0.05 px, 포화 화소가 있는 열에 `saturated` 비트 100 % | 명령 ② · 시험 |
-| LX5 | **다중 피크 (반사, F1 7절 #3).** `reflection_10bit` (21열, 진짜 선보다 밝은 가짜 피크)에서 연속성 안내를 켠 기본 방법 P95 < 0.3 px. 그 열의 `multi_peak` 비트 ≥ 95 %. 안내를 끈 결과도 함께 적음 | 명령 ② · 시험 |
+| LX5 | **다중 피크 (반사, F1 7절 #3).** `reflection_10bit` (21열, 진짜 선보다 밝은 가짜 피크)에서 연속성 안내를 켠 기본 방법 P95 < 0.3 px. 그 열의 `multi_peak` 비트 ≥ 95 %. 안내를 끈 결과도 함께 적음. **6차 정정 (5차 T-1):** 반사 자리 여러 곳 (u 100 · 300 · 600 · 900 · 1100 × ±12 px, 21열, 1.5배) 10/10에서 같은 기준, 기울어진 선 + 반사 시험 1개 이상. 한 자리만 보는 시험은 선 기울기에 따라 통과 · 실패가 갈림 (5차 §4.4) | 명령 ② · 시험 |
 | LX6 | **선 없음 (F1 7절 #4).** `no_line_10bit`의 레이저 없는 열 200개에서 값 낸 수 0 (가짜 값 0 %), `no_line` 비트 100 %. 문턱 아래 약한 신호도 NaN + 비트 | 명령 ② · 시험 |
 | LX7 | **품질 지표.** `line_quality`: 열마다 `peak_dn` · `fwhm_px` · `n_sat` · `n_peaks` · `snr`. 표시 비트 6개 (§6.4) 각각을 켜는 시험이 하나 이상 | 시험 |
 | LX8 | **가우시안이 아닌 단면 (모델 분리의 작은 판).** `skewed_10bit` (가우시안 ⊗ 한쪽 지수 꼬리)에서 방법마다 bias를 보고. 통과 문턱은 없음. 문서에 "T7b에서 T3 단면으로 다시 잼"과 꼬리 쪽 치우침의 부호 · 크기 | 명령 ② · 문서 §4 |
 | LX9 | **ROI · 비트.** `roi_to_full(v, roi_y0_px)` = v + roi_y0. 전체 영상에서 잘라 낸 ROI의 결과를 전체 행 좌표로 바꾸면 전체 영상 결과와 같음 (차 < 1e-4 px). 8비트 · 10비트 (16비트 그릇, 아래 비트 정렬) 모두. 포화값 = 2^bit_depth − 1 | 시험 · 명령 ③ |
-| LX10 | **속도 (F1 7절 #7).** 기본 방법 ROI 1280 × 256 한 장 ≤ 15 ms, 전체 1280 × 800 한 장 ≤ 30 ms (= 2,000장 60 s) [추정: F1 기준을 이 PC numpy에 맞춤]. 중앙값 20회. 다른 방법은 보고만 | 명령 ② |
+| LX10 | **속도 (F1 7절 #7).** 기본 방법 ROI 1280 × 256 한 장 ≤ 15 ms, 전체 1280 × 800 한 장 ≤ 30 ms (= 2,000장 60 s) [추정: F1 기준을 이 PC numpy에 맞춤]. 중앙값 20회. 다른 방법은 보고만. **6차 정정 (5차 T-2):** 잴 때 CPU 부하를 함께 적고 (예: `Get-Counter '\Processor(_Total)\% Processor Time'` 3회), 부하가 높으면 여러 번 재서 중앙값. 부하에 따라 두 배 가까이 흔들림 (5차 §4.2) | 명령 ② |
 | LX11 | **좌표계 문서.** `docs/좌표계.md` 절 0–9 (§4 목차). 다섯 좌표계 표가 명세 0.4절과 같음 ({S} x = 레이저 선 = 프린터 X, {M} y = 스캔 = 프린터 Y, z 위 +). 이름 규칙 `T_<to>_<from>`. 사슬의 고리마다 교정값 이름 · 단위 · 정하는 교정 단계 (D1 – D5) · 명세 필드 (뜻). 명세 0.4절 높이 식과의 관계 (Z_n · d_s · 메시 항은 T9) | 명령 ⑤ |
 | LX12 | **변환 뼈대.** `Tf`: 이름 안 맞는 곱 · det(R) ≠ +1 · 직교 아님 → ValueError (100 %), 왕복 < 1e-9 mm. `distort_points` = OpenCV 순서 (k1, k2, p1, p2, k3) 식과 차 < 1e-12, `undistort_points` 왕복 < 1e-9 (정규 좌표). `image_to_G`가 합성 기하에서 {G} 점을 1e-6 mm 안으로 되찾음. 교정값이 빠지면 오류 (기본값 없음) | 명령 ④ · 시험 |
 | LX13 | **얇은 읽기.** `read_frames_index(scan_dir)` · `load_frame(scan_dir, row)`: PNG 16비트 · 8비트와 `frames.npz#f000000`. 필수 열은 `SPEC_FRAME_COLUMNS` 한 곳, 모르는 열은 그대로 통과, 필수 열이 없으면 그 열 이름을 담은 ValueError. `laser_on`은 bool로. 시험은 `tmp_path`에서만 (`data/raw/`에 쓰지 않음) | 시험 · 명령 ③ |
@@ -84,8 +84,10 @@
 ```python
 METHODS = ("max", "cog", "parabola3", "gauss3", "gaussfit", "steger")
 TriParams.from_dict(d) ; TriParams.from_yaml(path)                    # 최상위 키 triangulation
-extract_centers(img, method="cog", params=None, background=None) -> (v: float32[W], flags: uint8[W])
+extract_centers(img, method="cog", params=None, background=None, *, bit_depth=None) -> (v: float32[W], flags: uint8[W])
     # img: uint8/uint16 [H, W], 행 = v, 열 = u. v는 ROI 행 좌표. background: 레이저 끈 프레임 (선택)
+    # bit_depth: frame.bit_depth (포화값 2^bit − 1). uint16 그릇이면 필수 (없으면 ValueError, 5차 T-3 · a9052cf).
+    #            uint8이면 생략 가능 (= 8), 실수 영상이면 포화 없음. load_frame은 8비트 PNG도 uint16으로 돌려줌
 roi_to_full(v, roi_y0_px) -> float32[W]
 line_quality(img, v, bit_depth, params=None) -> dict   # 키 peak_dn, fwhm_px, n_sat, n_peaks, snr (열마다 배열)
 FLAG = {"no_line": 1, "low_peak": 2, "wide": 4, "saturated": 8, "multi_peak": 16, "edge_window": 32}
@@ -347,7 +349,7 @@ for sft in (np.arange(5) - 2) / 5:
 img = 40 + 700 * img; img = img + rng.normal(0, 1, img.shape) * np.sqrt(4 * np.maximum(img, 0)) + rng.normal(0, 8, img.shape)
 img = np.clip(np.round(img), 0, 1023).astype(np.uint16); img[:, 100:140] = np.clip(np.round(40 + rng.normal(0, 8, (H, 40))), 0, 1023).astype(np.uint16)
 M = yaml.safe_load(open('config/triangulation.yaml', encoding='utf-8'))['triangulation']['method']
-v, flags = extract_centers(img, method=M); vf = roi_to_full(v, y0); ok = np.isfinite(vf); m = np.ones(W, bool); m[100:140] = False
+v, flags = extract_centers(img, method=M, bit_depth=10); vf = roi_to_full(v, y0); ok = np.isfinite(vf); m = np.ones(W, bool); m[100:140] = False
 e = vf[m & ok] - v_full[m & ok]
 print('기본', M, '/ 유효', round(100 * ok[m].mean(), 2), '% (≥ 99) / 없는 열에서 값 낸 수', int(ok[~m].sum()), '(0)')
 print('bias', round(float(e.mean()), 4), 'px (|·| < 0.05) / RMS', round(float(np.sqrt((e ** 2).mean())), 4), 'px (< 0.2)')
@@ -517,3 +519,14 @@ cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && sha256sum scripts/method
 검증 명령 실행 결과: (①–⑧ 출력 붙여 넣기)
 남은 문제: (없으면 "없음")
 ```
+
+## 12. 후속 결과 (5차 · 6차)
+
+| 항목 | 결과 | 근거 |
+|---|---|---|
+| 1차 산출물 (c80e251) | LX1–LX4 ○, LX5 △ (반사 안내가 기울어진 선에서 무너짐), LX6–LX15 ○, `bit_depth` 기본값 함정 | [팀장검증 5차](팀장검증_5차.md) §4 |
+| T-1 | 안내선 계산에서 봉우리 ≥ 2인 열을 빼고 이웃으로 메움. 팀장 독립 영상 114건 (반사 자리 6 × 오프셋 3 × 폭 3 × 비트 2 + 직선 3) 실패 0, 최악 p95 0.051 px. 반사 폭 51 · 81열도 0.034 · 0.033 px | a9052cf · [6차](팀장검증_6차.md) §8.1 |
+| T-2 | `방법비교.csv` 기존 156행의 속도 밖 칸 차이 0, 새 120행 (반사 10 시나리오). cog 안내 켬 ROI 5.19 ms (CPU 35 % 기록) | 6차 §8.2 |
+| T-3 | uint16 + `bit_depth` 없음 → `extract_centers` · `line_quality` 둘 다 ValueError. 8비트 포화 → uint16 그릇 + `bit_depth=8` → saturated 100 % | 6차 §8.1 |
+| 이 문서 명령 ③ | T-3 뒤 `bit_depth` 없이 부르면 오류라 `bit_depth=10`을 넣음. 고친 명령으로 다시 돌려 유효 100 % · bias 0.001 · RMS 0.0676 px (5차 값과 같음) | 6차 §8.2 |
+| 다음 | T7b (T3 데이터로 비가우시안 · 산란 단면 다시 잼), T9 (`load_frame` → `extract_centers(…, bit_depth=frame.bit_depth)`) | 청사진 §4.1 |

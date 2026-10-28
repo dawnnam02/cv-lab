@@ -1,6 +1,6 @@
 # 세부청사진 T4b · 판정 영역 (G4)
 
-> 상위: [청사진_가상데이터단계](청사진_가상데이터단계.md) §2.1 (1 정답) · §2.3 (D-20 R2 · R6) · §4.1 · §4.3 (T4b) · §5.2 · 작성: 2026-10-27 총괄 팀장 · 상태: **착수 전 (메인 확인 대기)**
+> 상위: [청사진_가상데이터단계](청사진_가상데이터단계.md) §2.1 (1 정답) · §2.3 (D-20 R2 · R6) · §4.1 · §4.3 (T4b) · §5.2 · 작성: 2026-10-27 총괄 팀장 · 상태: **완료 (4e2a369, 5차 조건부 통과) · 후속 R-1–R-3 끝 (116f9cd, 6차 통과)** · **정정 2026-10-28 (팀장검증 6차): 5차 §7에서 미룬 명령 ② 두 줄, 코드 9 → 6, §6.9 키 4개, RG13 · RG15 시간 문구, RG16 (post 영역) 추가. 결과는 §12**
 > **일정 앞당김.** 청사진 일정은 11-05 ~ 11-17 (T5 뒤)입니다. 사용자 지시 (10-27) "선행 작업 없이 병렬로 진행할 수 있는 작업 진행해."에 따라 **10-27에 시작해 11-02에 마감**합니다 (9일 앞당김). T5 · T7a와 동시에 돕니다.
 > **청사진과 다른 점 (청사진은 고치지 않음, 메인에게 보고).**
 > ① 선행 T5를 기다리지 않습니다. D-19 두 파일 (`data/gcode_samples/_local/`)을 그대로 씁니다. T5가 다시 슬라이스를 권하면 새 G코드로 같은 코드를 다시 돌립니다.
@@ -34,18 +34,19 @@
 | RG1 | **격자 원점 맞춤.** `aligned_grid`가 낸 격자는 x0_mm · y0_mm이 0.4 mm (`cell_mm_alt`, D-20 R1)의 정수배이고 nx · ny가 20 (= 0.4 ÷ 0.02)의 배수. 같은 {G} 점에서 맞춘 격자의 정답 높이 = T4a 기본 격자의 정답 높이 (`value_at`, 차 0). `object_bbox`는 스커트·브림·서포트·PRIME-TOWER를 빼고 정할 수 있음 | 시험 · 명령 ② |
 | RG2 | **엣지 띠 (이유 edge, 코드 1).** 층 n 정답 높이 (출력물 없음 = 베드 0)에서 3 × 3 이웃의 높이 차가 `step_mm`을 넘는 칸이 경계, 경계에서 거리 ≤ `edge_band_mm`인 칸이 띠 (G4 거리 변환 방식). 기본 `step_mm` = 최소 층 높이 ÷ 2, `edge_band_mm` = 외벽 선폭 ÷ 2 + 2 × res (E2 · G4). H20 가운데 줄에서 한쪽 띠 칸 수 = (띠 ÷ res) + 1 ± 1 | 시험 · 명령 ② |
 | RG3 | **가림 예측 (이유 occlusion, 코드 2).** 레이저 수직, 카메라는 수직에서 θ (`meta.triang_angle_deg`, 30°) 기울어 **±Y 쪽** (명세 0.4: 레이저 선 = {S} x = 프린터 X, 스캔 = 프린터 Y). 칸 p에서 카메라 쪽으로 s 간 곳의 높이 > z_p + s ÷ tanθ면 가림. 높이 h 단차 뒤 그림자 길이 h·tanθ ± 1칸. 예측 그림자를 2칸 넓힘 (E2). `camera_side` ∈ {+y, −y, both}, 기본 both | 시험 · 명령 ② |
-| RG4 | **심도 밖 (이유 depth, 코드 9).** 층 n에서 Z_ref(x, y, n) < z_n + `dof_top_mm` − `dof_mm`이면 심도 밖. 기본 `dof_mm` 8.0 (청사진 §1), `dof_top_mm` 0.0 [추정]. 비교는 nm 정수. caliper_pyramid: 심도 밖 칸이 있는 층 수 = 41, 마지막 층 심도 밖 넓이 ÷ 물체 넓이 (스커트 뺌) = 62 % ± 1 %p (T4a GC12 값). 다르면 이유를 문서에. `dof_top_mm` ± 1 mm 민감도 | 시험 · 명령 ② · ③ |
+| RG4 | **심도 밖 (이유 depth, 코드 6 — J-2 · R-3 뒤. 처음 지시는 9).** 층 n에서 Z_ref(x, y, n) < z_n + `dof_top_mm` − `dof_mm`이면 심도 밖. 기본 `dof_mm` 8.0 (청사진 §1), `dof_top_mm` 0.0 [추정]. 비교는 nm 정수. caliper_pyramid: 심도 밖 칸이 있는 층 수 = 41, 마지막 층 심도 밖 넓이 ÷ 물체 넓이 (스커트 뺌) = 62 % ± 1 %p (T4a GC12 값). 다르면 이유를 문서에. `dof_top_mm` ± 1 mm 민감도 | 시험 · 명령 ② · ③ |
 | RG5 | **경로 종류·PRIME (이유 type · prime, 코드 4).** 꼭대기 층 종류 (`type_at(n)`)가 `exclude_types` (기본 SKIRT · BRIM · SUPPORT · PRIME-TOWER, G4)면 뺌. PRIME 선분 (`segments` 종류 PRIME, 층 −1)은 격자 안이면 캡슐로 칸을 칠해 이유 prime. IRONING은 넣음 (근거를 문서 §6에). 출력물 없는 칸은 이유 no_material (코드 5) | 시험 |
 | RG6 | **시야 밖 (이유 fov, 코드 3).** §6.5 스캔 패스 약속 (T5와 같은 규칙)으로 패스 사각형을 만들고, 어느 패스에도 칸 중심이 들지 않으면 시야 밖. 패스를 인자로 직접 줄 수도 있음. voron24 · caliper 기본 패스 수를 문서에 적음 (팀장이 T5 값과 대조). 패스 하나를 강제하면 \|x − x_c\| > 10 mm 칸이 모두 시야 밖 | 시험 · 명령 ③ |
 | RG7 | **이유 비트와 코드.** 칸마다 이유 비트 (uint8, §6.2, 겹침 허용)와 주 코드 (int8, T15 코드표) 둘 다. 주 코드는 §6.2 우선순위. 영역 칸 ⇔ 비트 0 ⇔ 코드 0. 코드 값 ⊂ `cvlab.judge.aggregate.EXCLUSION_CODES` | 시험 |
 | RG8 | **판정 영역 비율.** 층마다 · 전체 층 합산 (D-08과 같은 가중): 출력물 칸, 영역 칸, 영역 비율 = 영역 ÷ 출력물, 이유별 칸 수 (비트 기준, 겹침 허용)와 주 코드별 칸 수 (겹침 없음). 판정 칸 0.2 · 0.4 mm로 묶은 영역 칸 수 (`region_fill_min` 1.0, D-20 R6). `summary()` 열 고정 (§6.8) | 시험 · 명령 ③ |
-| RG9 | **T15 연결.** `layer_input(n, delta_mm)`이 `cvlab.judge.LayerInput`을 만듦 (오류 없이). 영역 안 Δ = 0, 밖 NaN으로 모든 층을 `judge_print_fine` (U 0.0209 mm)에 넣으면 주 판정 pass. 결과의 뺀 이유별 칸 수가 `summary()`를 판정 칸으로 묶은 값과 같음. 식힌 재측정 (post)은 마지막 층 영역을 씀 | 시험 · 명령 ② |
+| RG9 | **T15 연결.** `layer_input(n, delta_mm)`이 `cvlab.judge.LayerInput`을 만듦 (오류 없이). 영역 안 Δ = 0, 밖 NaN으로 모든 층을 `judge_print_fine` (U 0.0209 mm)에 넣으면 주 판정 pass. 결과의 뺀 이유별 칸 수가 `summary()`를 판정 칸으로 묶은 값과 같음. 식힌 재측정 (post)은 **RG16 post 영역**을 씀 (5차 R-2 · J-3. 처음 지시는 마지막 층 판정 영역) | 시험 · 명령 ② |
 | RG10 | **caliper 심도 처리안.** A안 (심도 밖은 영역에서 뺌)과 B안 (높이를 나눠 스캔) 비교표: 층마다 심도 밖 비율, 필요한 스캔 높이 수 (⌈윗면 높이 폭 ÷ 심도⌉), B안 추가 시간, B안으로 되찾는 칸 (심도 이유만 있는 칸. 가림 등 다른 이유가 같이 있으면 못 되찾음). A안의 **최종 윗면 덮임률** (§6.7, 기대 100 %). 권장안과 근거 | 명령 ③ · 문서 §9 |
 | RG11 | **결정 기록.** MF-GCD-02 (결: 정답 지도에 안 넣음, 판정 칸 평균이 맡음), MF-GCD-03 (첫 층 눌림: 안 넣음, 보고서 주의), MF-GCD-07 (아이롱: 넣음), MF-JDG-03 (영역은 기하만으로, 측정값을 안 봄) 처리와 근거. 바꾸면 팀장에게 먼저 | 문서 §11 |
 | RG12 | **저장·재현.** `RegionStack.save` → `load` 뒤 영역 · 코드 · 비트 배열이 모두 같음 (`np.packbits`). 같은 입력 두 번 → `np.array_equal`. 스크립트 요약 줄 `REGION {json}` (§4) | 시험 · 명령 ③ |
-| RG13 | **속도.** voron24 모든 층 `build_region` ≤ 30 s, caliper (물체 격자) ≤ 120 s [추정 목표]. 넘으면 시간과 원인을 적음 | 명령 ③ |
+| RG13 | **속도.** voron24 모든 층 `build_region` ≤ 30 s, caliper (물체 격자) ≤ 120 s [추정 목표]. 넘으면 시간과 원인을 적음. **판정은 명령 ③ REGION 줄 `build_s`로만, 잴 때 CPU 부하를 함께 적음** (5차 R-1) | 명령 ③ |
 | RG14 | **문서.** `docs/판정-영역.md` 절 0–13 (§4 목차). 두 파일 결과 수치, 코드표, 우선순위, 처리안 | 명령 ④ |
-| RG15 | **시험·차단.** `tests/region/` 시험 함수 ≥ 30개 모두 통과, 120 s 이내 (`_local/`이 없으면 해당 시험만 skip). import는 `cvlab.gcode` · `cvlab.judge`만. `cvlab.io` · `cvlab.sim` import 0, `_truth` · T5 시나리오 경로 언급 0. 소유 위반 0, V2 지문 같음, `src/cvlab/gcode` · `src/cvlab/judge` 변경 0 | 명령 ① · ⑤ · ⑥ |
+| RG16 | **식힌 재측정 비교 영역 (5차 R-2, 116f9cd).** `RegionStack.post_region()`: 마지막 층 출력물 칸에서 type · fov · depth · occlusion · 출력물 없음은 빼고, 엣지는 좁은 띠 max(2 × res, α × 반폭 × ΔT) [추정]만 뺌. 0칸이면 엣지 포함 (P-A)으로 넘어가고 규칙 이름 (`info["post_rule"]`)을 남김. `post_input`이 이 영역 · 코드를 넘김. caliper 띠 0.0433 mm · 고운 288 360 · 0.2 mm 940 · 0.4 mm 72칸, voron24 판정 칸 141 760 그대로. 스크립트 `POST {json}` 줄 | 시험 · 명령 ③ |
+| RG15 | **시험·차단.** `tests/region/` 시험 함수 ≥ 30개 모두 통과 (`_local/`이 없으면 해당 시험만 skip). **시험 안에 시간 단정문을 두지 않음** (시간은 RG13대로 부하와 함께 기록, 5차 R-1). import는 `cvlab.gcode` · `cvlab.judge`만. `cvlab.io` · `cvlab.sim` import 0, `_truth` · T5 시나리오 경로 언급 0. 소유 위반 0, V2 지문 같음, `src/cvlab/gcode` · `src/cvlab/judge` 변경 0 | 명령 ① · ⑤ · ⑥ |
 
 ## 3. 입력
 
@@ -222,7 +223,7 @@ REASON_BITS = {"edge": 1, "occlusion": 2, "fov": 4, "type": 8, "no_material": 16
 
 ### 6.8 `summary()` 열 (고정)
 
-`layer_idx, layer_z_mm, n_material, n_region, region_pct, bit_edge, bit_occlusion, bit_fov, bit_type, bit_depth, bit_prime, code_1, code_2, code_3, code_4, code_5, code_9, n_region_cell02, n_region_cell04` + 마지막에 `layer_idx = -1` 전체 합산 행.
+`layer_idx, layer_z_mm, n_material, n_region, region_pct, bit_edge, bit_occlusion, bit_fov, bit_type, bit_depth, bit_prime, code_1, code_2, code_3, code_4, code_5, code_6, n_region_cell02, n_region_cell04` + 마지막에 `layer_idx = -1` 전체 합산 행. (6차 정정: `code_9` → `code_6`, 5차 R-3)
 
 - `bit_*`는 출력물 칸 중 그 비트가 켜진 칸 수 (겹침 허용). `code_*`는 주 코드별 칸 수 (출력물 없는 칸의 코드 4 · 5 포함). `n_region_cell0x`는 T15 `aggregate_to_cells`와 같은 규칙 (`region_fill_min` 1.0)으로 묶은 영역 칸 수.
 
@@ -245,6 +246,10 @@ region:
   scan_len_mm: 40.0        # M54 · LM-T14-2 scan_len
   pass_overlap_mm: 2.0     # MF-GCD-08
   extend_scan_len: false   # true면 Y는 스캔 길이를 늘려 패스 1개
+  lead_in_mm: 5.0          # (worker 추가, 5차 받아들임) LM-T14-2 lead_in. B안 추가 시간 계산에만
+  scan_speed_mm_s: 2.4     # (worker 추가, 5차 받아들임) meta.scan_speed_mm_s. B안 추가 시간 계산에만
+  post_edge_band_mm: null  # (R-2) post 영역 엣지 띠. null = max(2·res, α·반폭·ΔT) [추정]
+  post_delta_t_c: 30.0     # (R-2) 식힘 온도차 ΔT [추정]. post 띠 자동값에만
 ```
 
 - 모르는 키는 오류입니다. 값마다 주석 근거를 유지합니다.
@@ -302,8 +307,9 @@ def tower(top_k):
 r = parse_file('data/gcode_samples/hand/H20_block.gcode'); g = aligned_grid(*object_bbox(r))
 print('원점 ÷ 0.4', [Fraction(str(g[k])) / Fraction('0.4') for k in ('x0_mm', 'y0_mm')], '/ nx·ny 20 배수', g['nx'] % 20 == 0 and g['ny'] % 20 == 0)
 ref = build_reference(r, grid=g); rs = build_region(r, ref, P()); n = rs.n_layers - 1
-fp = ~np.isnan(ref.height_at_layer(n)); reg = rs.region(n); iy = int(np.argmax(fp.sum(1)))
-print('H20 가운데 줄 발자국', int(fp[iy].sum()), '영역', int(reg[iy].sum()), '한쪽 띠 칸', (fp[iy].sum() - reg[iy].sum()) / 2, '(기대 0.25/0.02 + 1 = 13.5 ± 1)')
+fp = ~np.isnan(ref.height_at_layer(n)); reg = rs.region(n)
+rows = fp.sum(1); top = np.flatnonzero(rows == rows.max()); iy = int(top[len(top) // 2])  # 6차 정정: argmax는 가장자리 줄을 고를 수 있어 최댓값 줄들의 가운데
+print('H20 가운데 줄 발자국', int(fp[iy].sum()), '영역', int(reg[iy].sum()), '한쪽 띠 칸', (fp[iy].sum() - reg[iy].sum()) / 2, '(기대 0.25/0.02 + 1 = 13.5 ± 1, 6차 실행 13.0)')
 print('코드 ⊂ T15 코드표', set(np.unique(rs.exclusion_code(n)).tolist()) <= set(EXCLUSION_CODES), '/ 영역 ⇔ 코드 0', bool(((rs.exclusion_code(n) == 0) == reg).all()))
 Ls = [rs.layer_input(k, np.where(rs.region(k), 0.0, np.nan)) for k in range(rs.n_layers)]
 out = judge_print_fine(Ls, JudgeParams(T_mm=0.2, U_mm=0.0209, U_source='T4b 검증'), res_mm=g['res_mm'])
@@ -311,10 +317,12 @@ print('T15 연결 판정', out['primary'].verdict, '(기대 pass)', out['primary
 # 2) 가림: 탑 y 0–5 (Z 2.0), 바닥 y 0–10 (Z 0.2), 카메라 -y
 t = tower(10); gt = aligned_grid(*object_bbox(t)); rt = build_reference(t, grid=gt); h = rt.height_at_layer(9)
 occ = predict_occlusion(h, gt['res_mm'], 30.0, '-y'); ix = int(round((5.0 - gt['x0_mm']) / gt['res_mm']))
-ys = gt['y0_mm'] + np.arange(gt['ny']) * gt['res_mm']; col = occ[:, ix] & (ys > 5.0) & ~np.isnan(h[:, ix])
-print('그림자 길이', round(col.sum() * gt['res_mm'], 3), 'mm (기대', round(1.8 * math.tan(math.radians(30)), 3), '± 0.02)')
+ys = gt['y0_mm'] + np.arange(gt['ny']) * gt['res_mm']
+behind = (ys > 4.8 + 1e-9) & (ys < 9.0)  # 6차 정정: block(0,10,0,5)는 y ≤ 4.8까지 깔아 탑 끝 = 4.8. 탑 뒤 출력물 칸만 셈
+col = occ[:, ix] & behind & ~np.isnan(h[:, ix])
+print('그림자 길이', round(col.sum() * gt['res_mm'], 3), 'mm (기대 51칸 = 1.02 mm, 연속식', round(1.8 * math.tan(math.radians(30)), 3), '의 이산값)')
 rst = build_region(t, rt, P(camera_side='-y')); bits = rst.reasons(9)
-print('넓힌 뒤 칸 수', int(((bits & REASON_BITS['occlusion']) > 0)[:, ix][ys > 5.0].sum()), '(기대 넓히기 전 +', base['occlusion_grow_cells'], '± 1)')
+print('넓힌 뒤 칸 수', int(((bits & REASON_BITS['occlusion']) > 0)[:, ix][behind].sum()), '(기대 51 +', base['occlusion_grow_cells'], '= 53)')
 # 3) 심도: 탑을 Z 10.0까지 (50층)
 d = tower(50); gd = aligned_grid(*object_bbox(d)); rd = build_reference(d, grid=gd); rsd = build_region(d, rd, P())
 nd = sum(int(((rsd.reasons(k) & REASON_BITS['depth']) > 0).any()) for k in range(rsd.n_layers))
@@ -327,7 +335,7 @@ EOF
 ③ 테스트 G코드 실행 (`_local/`이 있을 때. 요약 줄 형식 `REGION {json}` 고정)
 
 ```bash
-cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && for f in data/gcode_samples/_local/*.gcode; do [ -f "$f" ] || continue; echo "=== $f"; PYTHONIOENCODING=utf-8 PYTHONPATH=src python scripts/region_mask.py "$f" --summary --out "$TEMP/t4b_out" 2>&1 | grep -E "^REGION|Error|오류"; done; echo '--- data/ 아래 쓰기 거부 확인 (오류가 나야 정상)'; PYTHONIOENCODING=utf-8 PYTHONPATH=src python scripts/region_mask.py data/gcode_samples/hand/H20_block.gcode --summary --out data/x 2>&1 | tail -1; ls data/x 2>/dev/null && echo '거부 안 됨 (✗)' || echo '거부됨 (○)'
+cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && for f in data/gcode_samples/_local/*.gcode; do [ -f "$f" ] || continue; echo "=== $f"; PYTHONIOENCODING=utf-8 PYTHONPATH=src python scripts/region_mask.py "$f" --summary --out "$TEMP/t4b_out" 2>&1 | grep -E "^REGION|^POST|Error|오류"; done; echo '--- data/ 아래 쓰기 거부 확인 (오류가 나야 정상)'; PYTHONIOENCODING=utf-8 PYTHONPATH=src python scripts/region_mask.py data/gcode_samples/hand/H20_block.gcode --summary --out data/x 2>&1 | tail -1; ls data/x 2>/dev/null && echo '거부 안 됨 (✗)' || echo '거부됨 (○)'
 ```
 
 판정용: caliper `depth_layers` 41, `last_layer_depth_pct_object` 62 ± 1, `coverage_final_top_pct` 100 (아니면 문서에 원인), voron24 `depth_layers` 0, 두 파일 `build_s` ≤ 120 (voron24 ≤ 30), `passes`는 팀장이 T5 값과 대조.
@@ -383,7 +391,7 @@ EOF
 cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && sha256sum scripts/method_screening/*.py tests/test_method_screening.py
 ```
 
-판정: ① 모두 통과 (`_local/`이 있으면 skip 0), 함수 ≥ 30, 120 s 이내. ② 원점 몫이 정수, 20 배수 True, 한쪽 띠 칸 12.5–14.5, 코드 두 줄 True, T15 연결 pass, 그림자 1.039 ± 0.02 mm, 넓힌 뒤 칸 수 = 넓히기 전 + 2 ± 1, 심도 밖 층 9, 마지막 층 약 50 %. ③ 위 판정용 값. 쓰기 거부 "(○)". ④ 절 누락 빈 목록, 키워드 모두 True. ⑤ grep exit=1, 변경 줄 0. ⑥ 위반 빈 목록 (T5 · T7a 파일은 그 소유로 보이면 정상). ⑦ 시작 값과 같음.
+판정: ① 모두 통과 (`_local/`이 있으면 skip 0), 함수 ≥ 30 (시간은 판정에 안 씀, 부하와 함께 기록). ② 원점 몫이 정수, 20 배수 True, 한쪽 띠 칸 12.5–14.5, 코드 두 줄 True, T15 연결 pass, 그림자 51칸 = 1.02 mm (± 1칸), 넓힌 뒤 53칸 (± 1), 심도 밖 층 9, 마지막 층 약 50 %. (6차 정정: 5차 §3.1 손계산대로 H20 줄 고르기 · 탑 끝 4.8 mm를 고침) ③ 위 판정용 값. 쓰기 거부 "(○)". ④ 절 누락 빈 목록, 키워드 모두 True. ⑤ grep exit=1, 변경 줄 0. ⑥ 위반 빈 목록 (T5 · T7a 파일은 그 소유로 보이면 정상). ⑦ 시작 값과 같음.
 
 ### 8.2 팀장 검사
 
@@ -444,3 +452,15 @@ cd "/c/Users/dawnn/OneDrive/바탕 화면/CV/cv-lab" && sha256sum scripts/method
 검증 명령 실행 결과: (①–⑦ 출력 붙여 넣기)
 남은 문제: (없으면 "없음")
 ```
+
+## 12. 후속 결과 (5차 · 6차)
+
+| 항목 | 결과 | 근거 |
+|---|---|---|
+| 1차 산출물 (4e2a369) | RG1–RG14 ○, RG15 △ (시험 안 시간 단정문이 부하 때 실패) | [팀장검증 5차](팀장검증_5차.md) §3 |
+| R-1 | `tests/region` 시간 단정문 0 (다섯 폴더 grep 0), voron24 141 760칸 단정문으로 바꿈 | 116f9cd · [6차](팀장검증_6차.md) §7 |
+| R-2 → RG16 | 팀장이 POST 줄을 다시 냄: caliper P-B 0.04330 mm (= 68e-6 × 21.2255 × 30) · 288 360 · 940 · 72칸, voron24 0.04 mm · 15 348 · 3 707칸 (판정 칸 141 760 그대로) | 6차 §1 · §7.1 |
+| R-3 | `code_6` (마지막 행 24 626 619 고운 칸), `code_9` 없음 | 6차 §7.1 |
+| J-3 연결 | `judge_print`가 post 영역 ∩ 두 Δ 유효 칸으로 비교, caliper 비교 칸 940 · 72 (T15 시험) | 6939ef0 · 6차 §6.3 |
+| 명령 ② 정정 | H20 13.0칸, 그림자 51칸 = 1.02 mm, 넓힌 뒤 53칸 (팀장이 고친 명령으로 실행) | 6차 §7.2 |
+| 다음 | T5-2 (T4b 판정 영역 · post 영역으로 기대 판정 다시 계산, T3 S2 안), T10 (마지막 층 Δ를 영역 밖까지 남겨 `delta_cmp_mm`으로) | 세부청사진 T3 §12 |
