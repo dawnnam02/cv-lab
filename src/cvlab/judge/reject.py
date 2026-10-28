@@ -15,6 +15,8 @@ META_FIELDS = {
     # 스캔 행 (판정에 넣은 층 스캔마다 1행, 줄 나눔 스캔이면 줄마다 1행)
     "scan_id": "meta.scan_id",
     "session_id": "meta.session_id",
+    "scan_pass_idx": "meta.scan_pass_idx",  # 스캔 줄 번호 (J-4, 명세 v1.0). 없으면 줄 하나 (0)로 봄
+    "timing": "meta.timing",  # layer · post. post (식힌 재측정)는 X5 · X7에서 뺌 (J-4). 없으면 layer
     "layer_idx": "meta.layer_idx",
     "layer_count": "meta.layer_count",
     "layer_macro_version": "meta.layer_macro_version",
@@ -30,6 +32,7 @@ META_FIELDS = {
     "ref_kind": "ref.kind",
     "ref_calibration_id": "ref.calibration_id",
     "ref_t_start_ns": "ref.t_start_ns",
+    "ref_scan_pass_idx": "ref.scan_pass_idx",  # bed_bare를 잰 줄 번호 (J-4). 없으면 0으로 봄
     "ref_session_id": "rep.session_id",
 }
 
@@ -70,6 +73,20 @@ def _rows(meta: Mapping, key: str) -> list:
     return list(rows)
 
 
+def _is_int(v: Any) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
+def _pass_idx(row: Mapping, key: str) -> Any:
+    """줄 번호. 빈 값이면 0 (줄 하나, 명세 "줄이 하나면 0"). 0 이상 정수가 아니면 그 값을 그대로 돌려 X1로 거른다."""
+    v = row.get(F[key])
+    return 0 if _empty(v) else v
+
+
+def _is_post(s: Mapping) -> bool:
+    return s.get(F["timing"]) == "post"
+
+
 def _label(s: Mapping) -> str:
     sid = s.get(F["scan_id"])
     return str(sid) if not _empty(sid) else f"층 {s.get(F['layer_idx'])}"
@@ -102,8 +119,11 @@ def check_meta(layer_states: Mapping[int, Any], meta: Mapping | None) -> tuple[d
     scans = _rows(meta, "scans")
     refs = {r.get(F["ref_id"]): r for r in _rows(meta, "refs") if not _empty(r.get(F["ref_id"]))}
 
+    # post (timing = post, 식힌 재측정)는 층 판정 대상이 아님: X5 · X7에서 빼고 X1–X4는 그대로 봄 (J-4)
+    layer_scans = [s for s in scans if not _is_post(s)]
+
     by_layer: dict[int, list] = {}
-    for s in scans:
+    for s in layer_scans:
         li = s.get(F["layer_idx"])
         if isinstance(li, bool) or not isinstance(li, int):
             hit("X7", f"{_label(s)}: {F['layer_idx']} 없음 · 정수 아님 ({li!r})")
@@ -114,20 +134,29 @@ def check_meta(layer_states: Mapping[int, Any], meta: Mapping | None) -> tuple[d
     for k in sorted(layer_states):
         if k not in by_layer:
             hit("X5", f"층 {k}: 스캔 메타 행 없음 (열 상태 모름)")
-    for s in scans:
+    for s in layer_scans:
         st = s.get(F["thermal_state"])
         if st != "in_process":
             hit("X5", f"{_label(s)}: {F['thermal_state']} = {st!r}")
 
-    # X1 · X4: 베드 기준 스캔
-    first_end = [s.get(F["layer_end_t_ns"]) for s in scans]
-    first_end = min((t for t in first_end if isinstance(t, int) and not isinstance(t, bool)), default=None)
-    bed_ids = {s.get(F["bed_ref_id"]) for s in scans if not _empty(s.get(F["bed_ref_id"]))}
-    if len(bed_ids) > 1:
-        hit("X1", f"세션 안 {F['bed_ref_id']}가 여러 개 {sorted(map(str, bed_ids))}")
+    # X1 · X4: 베드 기준 스캔. 줄마다 bed_bare (명세 v1.0 meta.bed_ref_id, LM-T14-3):
+    # 같은 scan_pass_idx끼리 같은 bed_ref_id, 가리킨 bed_bare의 ref.scan_pass_idx = 스캔 줄 번호
+    first_end = [s.get(F["layer_end_t_ns"]) for s in layer_scans]
+    first_end = min((t for t in first_end if _is_int(t)), default=None)
+    ids_by_pass: dict[int, set] = {}
+    for s in scans:
+        p, bid = _pass_idx(s, "scan_pass_idx"), s.get(F["bed_ref_id"])
+        if _is_int(p) and p >= 0 and not _empty(bid):
+            ids_by_pass.setdefault(p, set()).add(bid)
+    for p, ids in sorted(ids_by_pass.items()):
+        if len(ids) > 1:
+            hit("X1", f"줄 {p} ({F['scan_pass_idx']}) 안 {F['bed_ref_id']}가 여러 개 {sorted(map(str, ids))}")
     for s in scans:
         lab = _label(s)
         bid = s.get(F["bed_ref_id"])
+        sp = _pass_idx(s, "scan_pass_idx")
+        if not (_is_int(sp) and sp >= 0):
+            hit("X1", f"{lab}: {F['scan_pass_idx']} = {sp!r} (0 이상 정수 아님, 줄마다 기준을 맞출 수 없음)")
         ref = None
         if _empty(bid):
             hit("X1", f"{lab}: {F['bed_ref_id']} 없음")
@@ -137,11 +166,14 @@ def check_meta(layer_states: Mapping[int, Any], meta: Mapping | None) -> tuple[d
             ref = refs[bid]
             if ref.get(F["ref_kind"]) != "bed_bare":
                 hit("X1", f"{lab}: 기준 {bid} {F['ref_kind']} = {ref.get(F['ref_kind'])!r} (bed_bare 아님)")
+            rp = _pass_idx(ref, "ref_scan_pass_idx")
+            if _is_int(sp) and sp >= 0 and rp != sp:
+                hit("X1", f"{lab}: 줄 {sp}인데 기준 {bid} {F['ref_scan_pass_idx']} = {rp!r} (같은 줄 bed_bare 아님)")
             rs, ss = ref.get(F["ref_session_id"]), s.get(F["session_id"])
             if _empty(rs) or _empty(ss) or rs != ss:
                 hit("X1", f"{lab}: 기준 세션 {rs!r} ≠ 스캔 세션 {ss!r} (같은 세션이어야 함)")
             t0 = ref.get(F["ref_t_start_ns"])
-            if isinstance(t0, int) and not isinstance(t0, bool) and first_end is not None and t0 >= first_end:
+            if _is_int(t0) and first_end is not None and t0 >= first_end:
                 hit("X1", f"{lab}: 기준 {bid} {F['ref_t_start_ns']} {t0} ≥ 첫 층 끝 {first_end} (출력 전이 아님)")
         cal = s.get(F["calibration_id"])
         if _empty(cal):
@@ -159,11 +191,11 @@ def check_meta(layer_states: Mapping[int, Any], meta: Mapping | None) -> tuple[d
         if s.get(F["mesh_enabled"]) is not False and _empty(s.get(F["bed_mesh_file"])):
             hit("X3", f"{lab}: {F['mesh_enabled']} = {s.get(F['mesh_enabled'])!r}인데 {F['bed_mesh_file']} 없음")
 
-    # X7: 0부터 layer_count − 1까지 모든 층이 판정에 들어왔는지 (D-18)
-    counts = {s.get(F["layer_count"]) for s in scans}
-    good = {c for c in counts if isinstance(c, int) and not isinstance(c, bool) and c >= 1}
-    macro = sorted({str(s.get(F["layer_macro_version"])) for s in scans})
-    if not scans:
+    # X7: 0부터 layer_count − 1까지 모든 층이 판정에 들어왔는지 (D-18). post 행은 층 수에 안 셈 (J-4)
+    counts = {s.get(F["layer_count"]) for s in layer_scans}
+    good = {c for c in counts if _is_int(c) and c >= 1}
+    macro = sorted({str(s.get(F["layer_macro_version"])) for s in layer_scans})
+    if not layer_scans:
         hit("X7", "스캔 메타 행 없음 (G코드 층 수 모름)")
     elif len(good) != 1 or len(counts) != 1:
         hit("X7", f"{F['layer_count']} 없음 · 여러 값 {sorted(map(str, counts))}")

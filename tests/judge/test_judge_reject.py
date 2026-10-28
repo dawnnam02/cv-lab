@@ -219,6 +219,102 @@ def test_fine_passes_meta_through():
     assert out["primary"].reject["codes"] == out["alt"].reject["codes"] == ["X4"]
 
 
+# ---- J-4: 명세 v1.0 (한 층 여러 줄 · 줄마다 bed_bare · post) ----
+
+def v10_meta(n=3, passes=2, post=True):
+    """명세 v1.0 꼴 정상 메타: 층 n개 × 줄 passes개, 줄 p → REF-BED-00(p+1), post는 마지막 층 줄마다 (cooled)."""
+    def row(k, p, timing):
+        lay = timing == "layer"
+        return {
+            F["scan_id"]: (f"S01_r01_L{k:03d}" if lay else "S01_r01") + (f"_p{p:02d}" if p else ""),
+            F["session_id"]: SES, F["layer_idx"]: k, F["scan_pass_idx"]: p, F["timing"]: timing,
+            F["layer_count"]: n, F["layer_macro_version"]: "LM-T14-3",
+            F["layer_end_t_ns"]: 5_000_000_000 + k * 10**9,
+            F["thermal_state"]: "in_process" if lay else "cooled",
+            F["bed_ref_id"]: f"REF-BED-{p + 1:03d}", F["zero_ref_method"]: "step_gauge", F["mesh_enabled"]: True,
+            F["bed_mesh_file"]: "printer/bed_mesh.json", F["calibration_id"]: CAL,
+        }
+    scans = [row(k, p, "layer") for k in range(n) for p in range(passes)]
+    if post:
+        scans += [row(n - 1, p, "post") for p in range(passes)]
+    refs = [{F["ref_id"]: f"REF-BED-{p + 1:03d}", F["ref_kind"]: "bed_bare", F["ref_scan_pass_idx"]: p,
+             F["ref_calibration_id"]: CAL, F["ref_t_start_ns"]: 1_000_000_000 + p, F["ref_session_id"]: SES}
+            for p in range(passes)]
+    return {"scans": scans, "refs": refs}
+
+
+def _find(m, k, p, timing="layer"):
+    return next(s for s in m["scans"] if s[F["layer_idx"]] == k and s[F["scan_pass_idx"]] == p
+                and s[F["timing"]] == timing)
+
+
+def test_j4_field_names():
+    assert F["scan_pass_idx"] == "meta.scan_pass_idx" and F["timing"] == "meta.timing"
+    assert F["ref_scan_pass_idx"] == "ref.scan_pass_idx"
+
+
+@pytest.mark.parametrize("passes,post", [(2, False), (2, True), (1, True), (3, True)])
+def test_j4_v10_multi_pass_no_reject(passes, post):
+    """팀장 재현 (6차 §6.1): 층 3 × 두 줄, 줄마다 bed_bare, post 포함 → 거부 0, 판정 그대로."""
+    for a, want in ((np.zeros((10, 20)), "pass"), (counts_map(188, 2, 10, (10, 20)), "hold"),
+                    (counts_map(189, 0, 11, (10, 20)), "fail")):
+        r0 = judge_print(layers(3, a), params())
+        r = judge_print(layers(3, a), params(), meta=v10_meta(3, passes, post))
+        assert r.verdict == r0.verdict == want, r.reject
+        assert r.reject["codes"] == [] and r.reject["meta_checked"] and r.counts == r0.counts
+
+
+@pytest.mark.parametrize("case", ["one_scan_wrong", "pass1_points_pass0", "ref_pass_missing",
+                                  "ref_pass_wrong", "bad_scan_pass", "post_wrong"])
+def test_j4_x1_per_pass(case):
+    m = v10_meta()
+    if case == "one_scan_wrong":  # 줄 1 스캔 하나만 줄 0 기준
+        _find(m, 1, 1)[F["bed_ref_id"]] = "REF-BED-001"
+    elif case == "pass1_points_pass0":  # 줄 1 전부 줄 0 기준 (줄 안에선 한 값이지만 다른 줄 bed_bare)
+        for s in m["scans"]:
+            if s[F["scan_pass_idx"]] == 1:
+                s[F["bed_ref_id"]] = "REF-BED-001"
+    elif case == "ref_pass_missing":  # bed_bare 줄 번호 빈 칸 → 줄 0으로 봄 → 줄 1 스캔과 안 맞음
+        m["refs"][1][F["ref_scan_pass_idx"]] = None
+    elif case == "ref_pass_wrong":
+        m["refs"][1][F["ref_scan_pass_idx"]] = 0
+    elif case == "bad_scan_pass":
+        _find(m, 2, 1)[F["scan_pass_idx"]] = -1
+    else:  # post 행도 X1은 그대로 봄
+        _find(m, 2, 1, "post")[F["bed_ref_id"]] = "REF-BED-001"
+    r = rejected(m, "X1")
+    assert r.reject["codes"] == ["X1"], r.reject
+    if case == "one_scan_wrong":
+        reasons = " ".join(r.reject["reasons"]["X1"])
+        assert "줄 1" in reasons and "여러 개" in reasons and "같은 줄 bed_bare 아님" in reasons
+
+
+def test_j4_post_rows_not_x5_x7():
+    m = v10_meta()
+    # post 행은 cooled가 정상이고 층 수에 안 셈: layer_count 빈 칸이어도 X7 아님
+    for s in m["scans"]:
+        if s[F["timing"]] == "post":
+            s[F["layer_count"]] = None
+    r = judge_print(layers(), params(), meta=m)
+    assert r.verdict == "pass" and r.reject["codes"] == [], r.reject
+    # 줄 0 + post 하나 (팀장 재현 3행) → 거부 0
+    m = v10_meta(3, 1, post=True)
+    assert judge_print(layers(), params(), meta=m).reject["codes"] == []
+    # post 행이 마지막 층 layer 행을 대신하지 못함: 층 2 layer 행을 빼면 X5 · X7 그대로
+    m = v10_meta()
+    m["scans"] = [s for s in m["scans"] if not (s[F["layer_idx"]] == 2 and s[F["timing"]] == "layer")]
+    r = judge_print(layers(), params(), meta=m)
+    assert r.verdict == "insufficient" and r.reject["codes"] == ["X5", "X7"], r.reject
+    # timing = layer인데 cooled인 행은 X5 그대로 (timing 빈 칸도 layer로 봄, J-2 시험 그대로)
+    m = v10_meta(post=False)
+    _find(m, 1, 0)[F["thermal_state"]] = "cooled"
+    assert rejected(m, "X5").reject["codes"] == ["X5"]
+    # post 행의 교정 ID가 다르면 X4는 그대로
+    m = v10_meta()
+    _find(m, 2, 0, "post")[F["calibration_id"]] = "CAL-2026-11-21-B"
+    assert rejected(m, "X4").reject["codes"] == ["X4"]
+
+
 def test_code6_depth_out_of_range():
     assert 6 in EXCLUSION_CODES
     a = np.zeros((4, 4))
