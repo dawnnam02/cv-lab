@@ -1,0 +1,74 @@
+# 처리 담당 (T4b · T7–T12) 열람 금지. 가상 센서 시뮬레이터 기본 설정 (T3, 세부청사진 §6.12)
+# 숫자마다 근거: [출처] · [계산] · [추정] · [미상] (청사진 §8). 모르는 키는 오류.
+# 평가용 시드는 여기에 쓰지 않음 (환경 변수 CVLAB_EVAL_SEED로만, §6.9).
+
+paths:
+  # 데이터 물리 뿌리 (명세 8절의 data/raw · data/_truth는 논리 경로). 2026-10-29 사용자 승인 (OneDrive 밖).
+  # 바꿀 때는 이 두 값만 고침. --out-root를 주면 이 값 대신 raw = <out-root>/raw, truth = <out-root>/truth (시험용).
+  raw_root: "C:/cvlab_data/raw"
+  truth_root: "C:/cvlab_truth"
+  # 저장소 (OneDrive) 안에는 쓰지 않음. 뿌리가 저장소 안이면 오류.
+
+clock:
+  start_iso: "2026-11-20T09:00:00+09:00"  # 가상 시계 시작 (벽시계 안 씀, §6.8). 날짜는 개발용 자리표시 [추정]
+
+run:
+  sim_version: "sim-0.1.0"
+  workers: 1                 # 기본 작업자 수. 결과는 작업자 수와 무관 (SM10)
+
+grid:
+  res_mm: 0.02               # config/default.yaml grid.res_mm (G3 결정)과 같음
+  margin_mm: 1.0             # 물체 경계 상자 + 1 mm (T5 scenario_expected.py와 같은 격자 → SM2 대조)
+  depth_of_field_mm: 8.0     # 심도 [출처 청사진 §1 · M54]. 임시 판정 영역 (stand-in-v1)의 심도 밖 문턱
+
+specimens:
+  # 이름은 MANIFEST.csv · 시나리오 YAML과 같음. gcode는 저장소 뿌리 기준
+  plate20:
+    gcode: docs/G코드-점검_자료/plate20.gcode
+    sha256: a37acffb1357f80b5c0791d706e67f26f840e1dfb28ffd2c0390208f20355cdc   # G코드 점검 §1
+    layer_print_s: 20.0      # 층 출력 시간 [추정: 20 × 20 mm 지그재그 0.4 mm 간격 50줄 × 20 mm ÷ 60 mm/s ≈ 17 s + 이동]
+    pause_s: 30.0            # 층당 스캔 정지 [추정: 층표 없음, 1줄 스캔 20 mm ÷ 2.4 mm/s ≈ 8 s + 기준물 두 단 · 이동]
+  voron24_test_box:
+    manifest: voron24_test_box
+    layer_print_s: 12.3      # [계산] 3분 17초 ÷ 16층 (파일 이름의 슬라이서 추정 시간)
+    pause_s: 54.7            # [계산] T14 층표_voron24.csv t_layer_s 54.5–54.9의 가운데 (층마다 값은 S4에서 층표로)
+  caliper_pyramid:
+    manifest: caliper_pyramid
+    layer_print_s: 15.0      # [계산] 16분 ÷ 64층
+    pause_s: 68.4            # [계산] T14 층표_caliper.csv t_layer_s 67.1–69.7의 가운데
+
+judge:
+  cell_mm: 0.2               # D-20 R1 (참 판정 칸)
+  pass_min_pct: 95           # 명세 부록 A truth.judgement (pass ⇔ pass_pct ≥ 95)
+  excluded_types: [SKIRT, BRIM, SUPPORT, PRIME-TOWER]   # 임시 판정 영역에서 뺄 꼭대기 종류 (T5 stand-in-v1)
+  region_source: stand-in-v1 # T5-2 배열이 나오면 그 파일 경로로 바꿈 (세부청사진 §12)
+
+thermal:                     # SM3 · MF-THM-05 (layer_thermal_field)
+  cte_um_per_m_c: 68.0       # PLA [출처 청사진 §1.2, 사용자 제시]
+  t_solid_c: 57.5            # 굳는 온도 [T2 MF-THM-05 추정 55–60 °C의 가운데]
+  t_low_c: 42.5              # 아래층이 닿는 온도 [T2 MF-THM-05 추정 35–50 °C의 가운데]
+  depth_mm: 2.0              # 윗면에서 아래로 온도가 t_low 쪽으로 떨어지는 길이 [추정]
+  tau_top_s: 40.0            # 정지 중 윗면이 t_low 쪽으로 식는 시정수 [추정]
+  wait_first_pass_s: 6.0     # 층 끝 → 첫 줄 스캔 시작 (리트랙트 · Z 2 mm · 도움닫기 5 mm · M400) [추정]. S4에서 위치 로그 시각으로 바꿈
+  t_room_c: 22.0             # 실내 [추정]
+  tau_bulk_s: 600.0          # 식힌 재측정 동안 시편 전체가 실내 온도로 가는 시정수 [추정]
+  post_wait_s: 1800.0        # 식힌 재측정 대기 [출처 T14 9.3절 계산값]
+
+gauge_thermal:               # 계단 기준물 (강철) 온도 · 팽창
+  cte_um_per_m_c: 11.5       # [T2 5.4절 C3 추정, 강철 통상값]
+  t_start_c: 22.0            # 출력 시작 때 기준물 온도 = 실내 [추정]
+  t_end_c: 30.0              # 가열 베드 위에서 다다르는 온도 [추정]
+  tau_s: 1200.0              # [추정]
+
+z_axis:                      # SV08 벨트 Z 4개 + QGL (MF-MEC-04 · CAL-05 · THM-08). 출력과 센서에 같이 넣음
+  gain_ppm: 0.0              # 배율 (벨트 늘어남). 시나리오 z_scale이 이 값에 더해짐. T2 범위 0–1000 ppm (0–0.1 %)
+  nonrep_sigma_um: 3.0       # 층마다 무작위 [T14 §12 추정 1–10 µm]
+  wobble_amp_um: 0.0         # 주기 오차 [T2 0–15 µm]. 벨트 Z라 기본 끔
+  wobble_period_mm: 8.0      # [T2 리드 2 · 4 · 8 mm 중 하나, 벨트 Z 값 미상]
+  step_um: 0.0               # 걸음 양자화 [미상]. 0이면 끔
+  frame_drift_um_per_h: 7.0  # 프레임 열 드리프트 [T2 MF-THM-08 계산: 알루미늄 300 mm × 1 K]
+
+deposition:                  # 바탕 꼴 deposition (MF-GCD-01 · 02)
+  bead_bias_um: 0.0          # 비드 꼭대기 치우침 [T2 범위 −40–+40 µm]
+  flow_ratio: 1.0            # 압출 배율 [T2 범위 0.9–1.1]
+  profile: stadium           # 단면: 가운데 평평 + 양쪽 반원 (넓이 (w − h) h + π h² ÷ 4) [추정, 흔한 슬라이서 단면 모델]

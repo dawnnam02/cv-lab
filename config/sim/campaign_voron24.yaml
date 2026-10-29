@@ -1,0 +1,14 @@
+# 처리 담당 (T4b · T7–T12) 열람 금지. 첫 판 캠페인 (SM14: voron24 16층 전 층 + post + 세션 기준 + 교정 + 반복)
+# S1–S2 뼈대. 기준 · 교정 · 반복 항목은 S4, raw 쓰기는 S5에서 채움.
+campaign:
+  campaign_id: VC-2026-11-20-A
+  session_id: PS-2026-11-20-A
+  calibration_id: CAL-2026-11-20-A
+  base: deposition
+  passes_per_layer: 2               # 두 파일 모두 2줄, 레이저 X 166 · 184 [출처 T14 9절 P1]
+  specimens:
+    - specimen_id: S01
+      name: voron24_test_box
+      repeat: 1
+      print_layers: all
+      scenario: NOM-P00

@@ -1,0 +1,14 @@
+# 처리 담당 (T4b · T7–T12) 열람 금지. 시험용 작은 캠페인 (SM14: plate20 2층, ≤ 2분)
+# S1–S2 뼈대: 계획 (스캔 목록 · 가상 시각 · 시드) + 참 높이맵. raw 쓰기는 S5.
+campaign:
+  campaign_id: VC-2026-11-20-S      # 개발용. 끝 글자 S = small
+  session_id: PS-2026-11-20-A
+  calibration_id: CAL-2026-11-20-A
+  base: deposition                  # C5 · C12 본 시험 기본 (§6.2)
+  passes_per_layer: 1               # plate20 폭 20 mm → max(1, ⌈(20 − 2) ÷ 18⌉) = 1 [계산, T14 9절 P1 식]
+  specimens:
+    - specimen_id: S01
+      name: plate20
+      repeat: 1
+      print_layers: 2               # 앞 두 층에서 출력을 멈춘 것으로 봄 (작은 캠페인, 마지막 층 = 1 → post)
+      scenario: NOM-P00

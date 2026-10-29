@@ -1,0 +1,9 @@
+# 처리 담당 (T4b · T7–T12) 열람 금지. 요인 스위치 (T3, 세부청사진 §6.12)
+# 스위치 이름은 T2 §6 제안 이름을 따름. enabled = 개발용 캠페인 기본 켬. 강도 값은 default.yaml (참값 쪽에만 기록).
+# S2 범위 (참 형상)만 채움. 광학 · 카메라 · 움직임 · 교정 스위치는 S3 · S4에서 더함.
+factors:
+  layer_thermal_field: {mf: [MF-THM-05, MF-PRC-01], enabled: true, stage: shape}
+  z_axis_error:        {mf: [MF-MEC-04, MF-CAL-05], enabled: true, stage: shape}
+  frame_drift:         {mf: [MF-THM-08], enabled: true, stage: shape}
+  bead_model_bias:     {mf: [MF-GCD-01], enabled: false, stage: shape}
+  bead_texture:        {mf: [MF-GCD-02], enabled: true, stage: shape}
