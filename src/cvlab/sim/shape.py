@@ -160,18 +160,23 @@ class PrintError:
             kk = max(1, layer_of(p["layer_rel"], nL))
             self.missing = (inside, kk, kk + int(p["n_layers"]) - 1)
 
-    def effective_top(self, top: np.ndarray) -> np.ndarray:
+    def effective_top(self, top: np.ndarray, sl=None) -> np.ndarray:
         if self.missing is None:
             return top
         inside, k0, k1 = self.missing
+        if sl is not None:
+            inside = inside[sl]
         hit = inside & (top >= k0) & (top <= k1)
         return np.where(hit, k0 - 1, top)
 
-    def additive(self, top: np.ndarray) -> np.ndarray:
+    def additive(self, top: np.ndarray, sl=None) -> np.ndarray:
+        st = self.static if sl is None else self.static[sl]
         if self.local is None:
-            return self.static
+            return st
         g, k0, k1 = self.local
-        return self.static + np.where((top >= k0) & (top <= k1), g, 0.0)
+        if sl is not None:
+            g = g[sl]
+        return st + np.where((top >= k0) & (top <= k1), g, 0.0)
 
 
 # ---------------------------------------------------------------- Z축
@@ -395,34 +400,46 @@ def simulate_specimen(spec: Specimen, cfg: dict, peps: list, base: str = "refere
         runs.append(ScenarioRun(pep["scenario"], pep, err, za))
     ny, nx = spec.grid["ny"], spec.grid["nx"]
     top = np.full((ny, nx), -1, np.int32)
-    tcode = np.full((ny, nx), -1, np.int16)
+    excl = np.zeros((ny, nx), bool)
+    Zref = np.zeros((ny, nx))
     offs = np.zeros((ny, nx))
     tcodes = spec.ref._type_codes  # cvlab.gcode 저장 형식 (읽기만, RefStack.type_at과 같은 값 · T5와 같은 요령)
     want = set(range(nL)) if layers is None else set(layers)
+    fcell = int(round(cell / res))
+    dof_nm = int(round(dof * 1e6))
     region_cells = []
     layer_temp = []
     last_H = {}
     for n in range(nL):
         fp = spec.ref.footprint(n)
-        top[fp] = n
-        tcode.ravel()[np.flatnonzero(fp.ravel())] = tcodes[n]
+        idx = np.flatnonzero(fp.ravel())
+        top.ravel()[idx] = n
+        excl.ravel()[idx] = np.isin(tcodes[n], spec.exc_codes)
+        zn = float(zl[n])
+        Zref.ravel()[idx] = zn
         if base == "deposition":
             dn = deposition_offset(spec, n, cfg["deposition"], f["bead_texture"], f["bead_model_bias"])
             offs[fp] = dn[fp]
         has = top >= 0
-        zn = float(zl[n])
-        Zref = np.where(has, zl[np.maximum(top, 0)], 0.0)
-        region = stand_in_region(top, tcode, zl, zn, spec.exc_codes, dof)
+        # T5 stand-in-v1: 출력물 칸 − 꼭대기 제외 종류 − 심도 밖 (z_n − Z_ref > 심도, nm 정수 비교)
+        region = has & ~excl & (np.rint((zn - Zref) * 1e6).astype(np.int64) <= dof_nm)
         layer_temp.append(round(thermal.top_temp(wait) if thermal.on else thermal.c["t_solid_c"], 3))
-        if region.any():
+        sl = _cell_crop(region, fcell)
+        if sl is not None:
             region_cells.append(int(region.sum()))
+        need_full_any = (on_heightmap is not None and n in want) or n == nL - 1
         for r in runs:
             if r.err.missing is not None and n == r.err.missing[1] - 1:
                 r.snap = offs.copy()
-            H = _height(r, top, offs, has, thermal, zn, wait, final=False)
-            if region.any():
-                d = np.where(region, H - Zref, np.nan)
-                r.cells.append(fine_to_cell_layer(LayerInput(n, "in_process", d, region), res, cell, P0))
+            if need_full_any:
+                H = _height(r, top, offs, has, thermal, zn, wait, final=False)
+                Hc = H[sl] if sl is not None else None
+            elif sl is not None:
+                Hc = _height(r, top[sl], offs[sl], has[sl], thermal, zn, wait, final=False, sl=sl)
+            if sl is not None:
+                rc = region[sl]
+                d = np.where(rc, Hc - Zref[sl], np.nan)
+                r.cells.append(fine_to_cell_layer(LayerInput(n, "in_process", d, rc), res, cell, P0))
             if on_heightmap is not None and n in want:
                 on_heightmap(r.name, n, H.astype(np.float32))
             if n == nL - 1:
@@ -452,13 +469,33 @@ def simulate_specimen(spec: Specimen, cfg: dict, peps: list, base: str = "refere
     return out
 
 
-def _height(r: ScenarioRun, top, offs, has, thermal: Thermal, zn: float, wait: float, final: bool) -> np.ndarray:
-    topx = r.err.effective_top(top)
+def _cell_crop(region: np.ndarray, f: int):
+    """판정 영역을 덮는 판정 칸 경계 맞춤 창 (칸 f개 단위, 배열 끝 칸 버림 규칙은 aggregate와 같음).
+    창 밖에는 영역 칸이 없으므로 창 안에서 센 칸 수 · 값이 전체 배열로 센 것과 같다."""
+    rows = np.flatnonzero(region.any(axis=1))
+    if rows.size == 0:
+        return None
+    cols = np.flatnonzero(region.any(axis=0))
+    ny, nx = (region.shape[0] // f) * f, (region.shape[1] // f) * f
+    y0, x0 = (rows[0] // f) * f, (cols[0] // f) * f
+    y1 = min(-(-(rows[-1] + 1) // f) * f, ny)
+    x1 = min(-(-(cols[-1] + 1) // f) * f, nx)
+    if y1 <= y0 or x1 <= x0:
+        return None
+    return (slice(int(y0), int(y1)), slice(int(x0), int(x1)))
+
+
+def _height(r: ScenarioRun, top, offs, has, thermal: Thermal, zn: float, wait: float, final: bool,
+            sl=None) -> np.ndarray:
+    """참 높이 (모듈 머리말 식). sl을 주면 top · offs · has는 그 창의 조각이고 결과도 창 크기."""
+    topx = r.err.effective_top(top, sl)
     za = r.zaxis.layer_actual
     zgeom = np.where(topx >= 0, za[np.maximum(topx, 0)], 0.0)
-    b = offs
+    H = zgeom + r.err.additive(top, sl)
     if r.snap is not None:
-        b = np.where(topx != top, r.snap, offs)
-    H = zgeom + b + r.err.additive(top)
-    H = H - (thermal.post_shrink(zgeom) if final else thermal.shrink(zgeom, zn, wait))
+        H += np.where(topx != top, r.snap if sl is None else r.snap[sl], offs)
+    elif offs.any():
+        H += offs
+    if thermal.on:
+        H -= thermal.post_shrink(zgeom) if final else thermal.shrink(zgeom, zn, wait)
     return np.where(has, H, 0.0)

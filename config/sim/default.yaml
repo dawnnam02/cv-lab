@@ -72,3 +72,126 @@ deposition:                  # 바탕 꼴 deposition (MF-GCD-01 · 02)
   bead_bias_um: 0.0          # 비드 꼭대기 치우침 [T2 범위 −40–+40 µm]
   flow_ratio: 1.0            # 압출 배율 [T2 범위 0.9–1.1]
   profile: stadium           # 단면: 가운데 평평 + 양쪽 반원 (넓이 (w − h) h + π h² ÷ 4) [추정, 흔한 슬라이서 단면 모델]
+
+optics:                      # S3 · SM4 (세부청사진 §6.3). 식은 docs/시뮬레이터_모델.md §3
+  triang_angle_deg: 30.0     # 카메라 축과 레이저 시트 사이 [출처 청사진 §1 · M54]
+  working_distance_mm: 50.1  # 렌즈 중심 → {S} 원점 [계산: 얇은 렌즈 f (1 + 1 ÷ M) = 8 × (1 + 1 ÷ 0.19)]
+  focal_mm: 8.0              # M12 f 8 mm [출처 청사진 §1]
+  f_number: 4.0              # [출처 청사진 §1]
+  wavelength_um: 0.45        # 450 nm [출처 청사진 §1]
+  pixel_um: 3.0              # OV9281 [출처 M54]
+  sensor_w_px: 1280
+  sensor_h_px: 800
+  roi_y0_px: 272             # 저장 ROI 시작 행 (명세 B.2 예시와 같음)
+  roi_h_px: 256              # [계산: 심도 8 mm ÷ 31.6 µm = 253 → 256, 명세 9절]
+  principal_jitter_px: 3.0   # 주점이 센서 가운데서 벗어난 정도 (1σ, 장착 공차) [추정]
+  mount_angle_sigma_deg: 0.3 # 카메라 장착 각 공차 (1σ) [추정]
+  mount_pos_sigma_mm: 0.2    # 장착 위치 공차 (1σ) [추정]
+  laser_plane_tilt_sigma_deg: 0.3  # 레이저 평면이 스캔 축 수직에서 벗어난 정도 (1σ, MF-OPT-13) [추정]
+  nozzle_sensor_offset_mm: [0.0, 25.0, -2.0]  # {S} 원점 − 노즐 끝 (명목). dz = −Z hop (윗면에 초점) [계산], dx · dy는 브래킷 설계 전 자리표시 [추정]
+  dist_k: [-0.05, 0.01, 0.0002, -0.0001, -0.002, 0.004, -0.002, 0.0005]  # 참 왜곡 (OpenCV 유리 모델 8개: k1 k2 p1 p2 k3 k4 k5 k6). 뒤 3개 = 5계수 모델 밖 고차항 (MF-OPT-07 lens_residual) [추정]
+  sheet_w_um: 25.0           # 레이저 시트 1/e² 반폭 [추정: 선 발생기 초점 선폭 30–100 µm 범위]
+  fan_w_mm: 30.0             # 선 방향 밝기 1/e² 반폭 (MF-OPT-08) [추정]
+  laser_height_mm: 60.0      # 레이저 광원 높이 ({S} 원점 위, 부채꼴 그림자 계산용) [추정]
+  samples_per_px: 2          # 선 방향 표본 수 (화소 적분 렌더, MF-OPT-11)
+  ambient: 0.004             # 외함 안 주변광 (명목 선 꼭대기 = 1 기준) [추정]
+  room_light: 0.03           # 스위치 room_light 켬일 때 더함 [추정]
+  materials:                 # diffuse = 람베르트 몫, spec · lobe_deg = 정반사 로브, beta · delta_um = 표면 아래 산란
+    pla:   {diffuse: 1.0, spec: 0.3, lobe_deg: 6.0, beta: 0.143, delta_um: 60.0}  # β δ = 8.6 µm [T2 MF-MAT-01 목표 8.55 µm에 맞춤]
+    steel: {diffuse: 0.5, spec: 2.0, lobe_deg: 3.0, beta: 0.0, delta_um: 0.0}    # 강철: 산란 없음, 정반사 큼 (§6.3)
+    bed:   {diffuse: 0.8, spec: 0.2, lobe_deg: 8.0, beta: 0.05, delta_um: 30.0}  # PEI 판 [추정]
+  stress_tail_px: 2.0        # T7a 스트레스 꼬리 τ (높이 약 63 µm) — 스위치 subsurface_stress
+  stress_beta: 0.73          # [계산: 46 µm ÷ 63 µm, T7a 치우침 41–51 µm의 가운데]
+  hot_gloss_gain: 2.0        # 뜨거운 윗면 정반사 배율 [T2 MF-MAT-02 0–3배]
+  hot_gloss_temp_c: 45.0     # 이 온도 넘는 윗면을 '뜨거움'으로 봄 [추정]
+  speckle_contrast: 0.46     # 스펙클 세기 대비 (부분 발달). 한 점 1σ 약 7 µm에 맞춤 (시험, 창 무게중심 기준) [T2 MF-OPT-03 목표 7.2]
+  speckle_corr_u_px: 3.0     # 선 방향 상관 길이 [계산: 2.44 λ N (1 + M) = 5.2 µm ≈ 1.7 px, 시트 적분으로 늘림 추정]
+  speckle_corr_v_px: 1.7     # 높이 방향 상관 길이 [계산 같은 식]
+  speckle_rho_frame: 0.7     # 다음 프레임 (Y 20 µm 이동)과의 상관 [추정]. 칸 평균 1σ 약 2.6 µm (T2 2.9, 칸당 독립 셀 약 6개)
+
+camera:                      # S3 · SM5 (§6.4). OV9281 자료 미확인 값은 [추정]
+  full_well_e: 8000          # [추정]
+  read_noise_e: 4.0          # [추정]
+  dark_e_per_s_25c: 20.0     # [추정]
+  dark_double_c: 8.0         # 암전류가 두 배가 되는 온도 [T2 MF-THM-02 6–10 °C]
+  prnu: 0.01                 # 화소 감도 고정 패턴 1σ [추정]
+  dsnu_e: 2.0                # 어두운 고정 패턴 1σ [추정]
+  peak_fill: 0.7             # 명목 PLA 선 꼭대기 = 포화의 70 % (노출 고정) [추정]
+  exposure_us: 800.0         # [출처 명세 B.2 예시값, 1 ÷ 120 s 안]
+  gain_db: 0.0
+  bit_depth: 8               # 첫 판 8비트 (사용자 지시)
+  fps: 120.0                 # [출처 M54]
+  readout_ms: 4.0            # 노출 끝 → 호스트 수신 [추정]
+  host_jitter_ms: 0.5        # [추정, T2 MF-SYN-10 범위 0–30 ms 안]
+  drop_prob_on: 0.001        # 스위치 frame_drop 켬일 때 빠진 프레임 확률 [추정]
+  sensor_temp_c: 40.0        # [추정]
+  background_frames: 10      # 스캔마다 레이저 끈 배경 프레임 (명세 B.4: 1,000 + 10)
+
+motion:                      # S4 · SM6 (LM-T14-3, T14 9.4절 · §12)
+  macro_version: LM-T14-3
+  z_hop_mm: 2.0              # [출처 T14 9.4 variable_z_hop]
+  retract_mm: 0.8            # [출처 T14 9.4]
+  scan_speed_mm_s: 2.4       # [출처 T14 9.4]
+  lead_in_mm: 5.0            # [출처 T14 9.4]
+  lane_y_mm: 95.0            # [출처 T14 9.4]
+  travel_speed_mm_s: 100.0   # F6000 [출처 T14 9.4]
+  z_speed_mm_s: 10.0         # F600 [출처 T14 9.4]
+  accel_mm_s2: 3000.0        # [추정, SV08 기본 수준]
+  m400_settle_s: 0.05        # [추정]
+  gcode_roundtrip_s: 0.02    # M118 · GET_POSITION 응답 [추정]
+  cmd_lead_s: 0.1            # cmd 행이 실제보다 앞섬 [출처 T14 §12 0.1 s 이상, 값은 추정]
+  pulse_start_delay_on_ms: 5.0   # 스위치 pulse_delay 켬일 때 펄스 시작 지연 [T14 §12 권고 0–10 ms]
+  trigger_period_s: 0.0083333333  # 1 ÷ 120 s [출처 T14 9.4 cycle_time]
+  scan_margin_mm: 0.0        # 시편 스캔 길이 = 물체 Y 폭 + 이 값 (양쪽 합)
+  line_x_mm: [166.0, 184.0]  # [출처 T14 9절 P1, 두 파일 같음]
+  host_boot_s: 1000.0        # 호스트 단조 시계 = 가상 시계 경과 + 이 값 [추정]
+  bed_temp_c: 60.0           # [추정, PLA]
+  nozzle_temp_c: 210.0       # [추정, PLA]
+
+steps:                       # T14 9.1 배정표 (블록배정.csv와 같음)
+  ids: ["GB-00", "FG-0.20", "FG-0.30", "FG-0.40", "FG-0.50", "GB-01.2", "GB-01.4+01.1", "GB-02+01.8+01.5", "GB-07+01", "GB-06+05", "GB-10+04", "GB-09+08", "GB-20"]
+  height_mm: [0.0, 0.2, 0.3, 0.4, 0.5, 1.2, 2.5, 5.3, 8.0, 11.0, 14.0, 17.0, 20.0]
+  laser_x_mm: [20.0, 40.0, 60.0, 80.0, 100.0, 124.0, 152.0, 180.0, 208.0, 236.0, 264.0, 292.0, 320.0]
+  use: [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  y0_mm: 45.0
+  len_mm: 20.0
+  gap_mm: 3.0
+  block_dev_um: 0.5          # 블록 하나 참 높이 − 공칭, 균일 ± [추정, 등급 공차 원문 미확인]
+  contact_um: 1.0            # 밀착 면 하나의 몫, 균일 0–이 값 [추정]
+  block_u_um: 2.0            # 마이크로미터 교정 표준불확도 (cal.gauge_block_u_um) [T2 B29]
+  feeler_dev_mm: 0.008       # 잎 참 두께 − 공칭, 균일 ± [추정, 명세 한계 0.02 안]
+  feeler_u_um: 1.0           # [명세 B.5 예시값]
+  footprint_mm: [9.0, 30.0]  # 블록 윗면 X × Y [추정, T14 9.1]
+
+bed:                         # MF-MEC-06 · MEC-07 (bed_zero_error), 메시
+  tilt_x_deg: 0.02           # [추정, T2 범위 0–0.2°]
+  tilt_y_deg: -0.015
+  bowl_um: 20.0              # 가운데 대비 가장자리 휨 [추정, T2 0–50 µm]
+  size_mm: [350.0, 350.0]    # SV08 베드 [추정]
+  mesh_n: 5                  # 메시 5 × 5 [추정, Klipper 최소 3 × 3]
+  probe_sigma_um: 2.0        # 메시 프로브 반복성 [추정]
+  mesh_enabled: true         # [출처 세부청사진 §6.5]
+
+calib:                       # S4 · SM7 (D1–D5, §6.6)
+  d1_poses: 20
+  d2_heights: 8
+  d3_moves: 10
+  d4_features: [3, 3]        # 원기둥 3 × 3 [추정]
+  d4_pitch_mm: 6.0
+  d4_cyl_h_mm: 2.0
+  d4_cyl_d_mm: 3.0
+  touch_sigma_um: 5.0        # 노즐 접촉 Z 반복성 [추정]
+  charuco: {rows: 6, cols: 9, square_mm: 1.5, marker_mm: 1.1, dict: DICT_4X4_50, flatness_um: 5.0}  # [출처 명세 3절 D1 권장]
+  flat_plate_flatness_um: 5.0
+  material: PLA
+  color: gray
+  material_u_um: 2.0         # [T2 5.4절 ④ 가정]
+  gauge_scan_len_mm: 10.0    # D5 단마다 10 mm [출처 세부청사진 §6.6]
+  room_temp_c: 22.5          # [추정]
+
+refs:                        # S4 · SM8 (§6.7)
+  bkg_frames: 100
+  dark_frames: 100
+  static_frames: 100
+  msa_repeats: 5             # 같은 층 반복 ≥ 5 [출처 세부청사진 SM8]
+  msa_operator: sim_A

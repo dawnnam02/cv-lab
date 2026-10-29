@@ -13,7 +13,8 @@ SIM_CONFIG_DIR = ROOT / "config" / "sim"
 SCENARIO_YAML = ROOT / "config" / "scenarios" / "판정시나리오_v1.yaml"
 MANIFEST = ROOT / "data" / "gcode_samples" / "MANIFEST.csv"
 
-TOP_KEYS = {"paths", "clock", "run", "grid", "specimens", "judge", "thermal", "gauge_thermal", "z_axis", "deposition"}
+TOP_KEYS = {"paths", "clock", "run", "grid", "specimens", "judge", "thermal", "gauge_thermal", "z_axis", "deposition",
+            "optics", "camera", "motion", "steps", "bed", "calib", "refs"}
 
 
 def _load(path) -> dict:

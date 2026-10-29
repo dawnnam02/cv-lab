@@ -1,9 +1,20 @@
 # 처리 담당 (T4b · T7–T12) 열람 금지. 요인 스위치 (T3, 세부청사진 §6.12)
 # 스위치 이름은 T2 §6 제안 이름을 따름. enabled = 개발용 캠페인 기본 켬. 강도 값은 default.yaml (참값 쪽에만 기록).
-# S2 범위 (참 형상)만 채움. 광학 · 카메라 · 움직임 · 교정 스위치는 S3 · S4에서 더함.
+# S2 (참 형상) · S3 (광학 · 카메라) · S4 (움직임 · 기준). T2 §6에 이름이 없는 것은 시뮬레이터 이름 (speckle · occlusion).
 factors:
   layer_thermal_field: {mf: [MF-THM-05, MF-PRC-01], enabled: true, stage: shape}
   z_axis_error:        {mf: [MF-MEC-04, MF-CAL-05], enabled: true, stage: shape}
   frame_drift:         {mf: [MF-THM-08], enabled: true, stage: shape}
   bead_model_bias:     {mf: [MF-GCD-01], enabled: false, stage: shape}
   bead_texture:        {mf: [MF-GCD-02], enabled: true, stage: shape}
+  subsurface_scatter:  {mf: [MF-MAT-01], enabled: true, stage: optics}
+  subsurface_stress:   {mf: [MF-MAT-01], enabled: false, stage: optics}   # T7a 꼬리 τ 2 px (스트레스 값)
+  hot_gloss:           {mf: [MF-MAT-02], enabled: true, stage: optics}
+  speckle:             {mf: [MF-OPT-03], enabled: true, stage: optics}
+  occlusion:           {mf: [MF-OPT-01], enabled: true, stage: optics}
+  lens_residual:       {mf: [MF-OPT-07], enabled: true, stage: optics}    # 왜곡 고차항 (default.yaml dist_k 뒤 3개)
+  room_light:          {mf: [MF-ENV-02], enabled: false, stage: optics}
+  frame_drop:          {mf: [MF-SYN-04], enabled: false, stage: camera}
+  pulse_delay:         {mf: [MF-SYN-02], enabled: false, stage: motion}
+  bed_zero_error:      {mf: [MF-MEC-06, MF-CAL-11], enabled: true, stage: scene}
+  bed_mesh_z:          {mf: [MF-MEC-07], enabled: true, stage: scene}
