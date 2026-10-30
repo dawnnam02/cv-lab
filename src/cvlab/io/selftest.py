@@ -98,11 +98,14 @@ def _frames(scan_id, layer_idx, t0, n_on, n_off, seed0, laser_off_first=True):
     return rows, imgs
 
 
-def _pos(scan_id, layer_idx, layer_end, S, z_top, post=False, x=110.0):
-    """post=True면 식힌 재측정 첫 줄 (cool_start · cool_end 있음, v1.0: 다른 post 줄에는 없음)."""
+def _pos(scan_id, layer_idx, layer_end, S, z_top, post=False, x=110.0, q=0):
+    """post=True면 식힌 재측정 첫 줄 (cool_start · cool_end 있음, v1.0: 다른 post 줄에는 없음).
+
+    q: 같은 층 반복 번호 (v1.2). 모든 행 pass_idx = q (스캔 ID `_qNN`, 첫 측정은 0).
+    """
     E = S + 83_333_333  # 0.2 mm ÷ 2.4 mm/s [계산]
     off = S - 1_000_000
-    base = {"scan_id": scan_id, "x_mm": x, "e_mm": 152.331, "layer_idx": layer_idx, "pass_idx": 0, "mesh_dz_mm": 0.012,
+    base = {"scan_id": scan_id, "x_mm": x, "e_mm": 152.331, "layer_idx": layer_idx, "pass_idx": q, "mesh_dz_mm": 0.012,
             "clock_offset_ns": None, "acc_x_mm_s2": None, "acc_y_mm_s2": None, "acc_z_mm_s2": None}
     rows = [dict(base, t_ns=layer_end, clock="host", source="cmd", y_mm=90.0, z_mm=z_top - 2.0, feed_mm_s=40.0, event="layer_change")]
     if post:  # 식힌 재측정: cool_start < cool_end ≤ scan_start (T14)
@@ -156,12 +159,13 @@ def _ref(ref_id, kind, scan_id, layer_idx, t_start, seed, marker=True, z=None, g
     return out
 
 
-def _meta(lay, layer_idx, layer_z, layer_end, S, dt_text, post=False, pass_idx=0):
+def _meta(lay, layer_idx, layer_z, layer_end, S, dt_text, post=False, pass_idx=0, q=0):
     p = f"_p{pass_idx:02d}" if pass_idx else ""
+    qq = f"_q{q:02d}" if q else ""  # v1.2: 같은 층 반복 (층별만)
     m = {
-        "scan_id": (f"{SR}" if post else f"{SR}_L{layer_idx:03d}") + p, "scan_pass_idx": pass_idx,
+        "scan_id": (f"{SR}" if post else f"{SR}_L{layer_idx:03d}") + p + qq, "scan_pass_idx": pass_idx,
         "campaign_id": CAMPAIGN, "session_id": SESSION,
-        "source": "virtual", "spec_version": "1.1", "specimen_id": "S01", "specimen_role": "user_gcode", "repeat": 1,
+        "source": "virtual", "spec_version": "1.2", "specimen_id": "S01", "specimen_role": "user_gcode", "repeat": 1,
         "datetime": dt_text, "operator": "sim", "notes": "-",
         "timing": "post" if post else "layer", "layer_idx": layer_idx, "layer_count": 2, "layer_z_mm": layer_z,
         "gcode_line_start": 1 + 100 * layer_idx, "gcode_line_end": 100 + 100 * layer_idx,
@@ -201,29 +205,33 @@ def _meta(lay, layer_idx, layer_z, layer_end, S, dt_text, post=False, pass_idx=0
 
 
 def normal_model() -> dict:
-    """최소 정상 캠페인 (명세 v1.0, LM-T14-3 꼴): 세션 1, 시편·반복 1, 층 2 + post.
+    """최소 정상 캠페인 (명세 v1.2, LM-T14-3 꼴): 세션 1, 시편·반복 1, 층 2 + post.
 
     마지막 층과 post는 두 줄 (`L001_p01` · `post_p01`, 스캔 X 130), 줄마다 bed_bare (REF-BED-001 · 002),
     층마다 첫 줄 스캔에 베드 마커 1개와 두 단 계단 기준물 2개 (그 층 모든 줄 뒤 같은 Z). ref_id는 세션 안 순번 001부터.
+    v1.2: L001 첫 줄을 같은 Z에서 한 번 더 잰 같은 층 반복 `L001_q01` (pos.pass_idx 1, reference/ 없음, 명세 8절 트리 꼴).
+    MSA 실행 행 S01은 `S01_r01_L001` (repeat_idx 1) · `S01_r01_L001_q01` (repeat_idx 2) (명세 B.6 v1.2 예).
     """
     scans = {}
     seed = 1000
-    # (폴더, 층, 층 Z, 층 끝 ns, 대기 s, datetime, post, 줄). 층 Z는 형식 시험용 값 (두 단 높이보다 높게)
-    plan = [("L000", 0, 1.2, 100_000_000_000, 15, "2026-11-20T14:20:00+09:00", False, 0),
-            ("L001", 1, 1.4, 300_000_000_000, 15, "2026-11-20T14:24:00+09:00", False, 0),
-            ("L001_p01", 1, 1.4, 300_000_000_000, 20, "2026-11-20T14:24:05+09:00", False, 1),
-            ("post", 1, 1.4, 300_000_000_000, 1800, "2026-11-20T14:57:00+09:00", True, 0),
-            ("post_p01", 1, 1.4, 300_000_000_000, 1810, "2026-11-20T14:57:10+09:00", True, 1)]
+    # (폴더, 층, 층 Z, 층 끝 ns, 대기 s, datetime, post, 줄, 반복). 층 Z는 형식 시험용 값 (두 단 높이보다 높게)
+    plan = [("L000", 0, 1.2, 100_000_000_000, 15, "2026-11-20T14:20:00+09:00", False, 0, 0),
+            ("L001", 1, 1.4, 300_000_000_000, 15, "2026-11-20T14:24:00+09:00", False, 0, 0),
+            # 같은 층 반복 (v1.2, T14 REPEAT: 첫 줄 뒤 PASS=1): Z를 움직이지 않고 첫 줄을 다시 잼
+            ("L001_q01", 1, 1.4, 300_000_000_000, 17, "2026-11-20T14:24:02+09:00", False, 0, 1),
+            ("L001_p01", 1, 1.4, 300_000_000_000, 20, "2026-11-20T14:24:05+09:00", False, 1, 0),
+            ("post", 1, 1.4, 300_000_000_000, 1800, "2026-11-20T14:57:00+09:00", True, 0, 0),
+            ("post_p01", 1, 1.4, 300_000_000_000, 1810, "2026-11-20T14:57:10+09:00", True, 1, 0)]
     n_mrk = n_stg = 0
-    for lay, li, z, le, wait_s, dtt, post, pidx in plan:
+    for lay, li, z, le, wait_s, dtt, post, pidx, q in plan:
         S = le + wait_s * 1_000_000_000
-        meta = _meta(lay, li, z, le, S, dtt, post, pidx)
+        meta = _meta(lay, li, z, le, S, dtt, post, pidx, q)
         sid = meta["scan_id"]
         frows, imgs = _frames(sid, li, S, 10, 2, seed)
         seed += 100
         scans[lay] = {"meta": meta, "frames": frows, "images": imgs, "refs": {},
-                      "pos": _pos(sid, li, le, S, z + 2.0, post and pidx == 0, PASS_X[pidx])}
-        if pidx == 0:  # 층에 매인 기준은 그 층 첫 줄 스캔과 짝 (명세 4절)
+                      "pos": _pos(sid, li, le, S, z + 2.0, post and pidx == 0, PASS_X[pidx], q)}
+        if pidx == 0 and q == 0:  # 층에 매인 기준은 그 층 첫 줄 스캔 (_q 없음)과 짝 (명세 4절)
             n_mrk += 1
             mrk = f"REF-MRK-{n_mrk:03d}"
             scans[lay]["refs"][mrk] = _ref(mrk, "bed_marker", sid, li, frows[0]["t_host_ns"] - 5_000_000_000, seed)
@@ -309,7 +317,8 @@ def normal_model() -> dict:
         dict(rep, specimen_id="S02", part_idx=1, repeat_idx=2, run_order=1, noise_seed=1004, truth_id="T-S02"),
     ]
     executed = copy.deepcopy(design)
-    for r, s in zip(executed, ("S01_r01_L000", "S01_r01_L001", "S02_r01_L000", "S02_r01")):
+    # v1.2: 같은 층 반복 연구 (S01): repeat_idx 1 = 층 스캔 자체, 2 = _q01 (명세 7절 · B.6). scan_id는 study 안에서 행마다 다름
+    for r, s in zip(executed, ("S01_r01_L001", "S01_r01_L001_q01", "S02_r01_L000", "S02_r01")):
         r["scan_id"] = s
     return {
         "campaign": CAMPAIGN,
@@ -844,7 +853,8 @@ def _sv13_hand_faults() -> list[tuple]:
     mod("기준물 ID가 교정에 없음", "X-REF-12", lambda m: stg(m)["index"][0].update(gauge_block_id="GB-02"))
     mod("feeler인데 GB-", "X-REF-13", lambda m: flr(m)["index"][0].update(gauge_block_id=GB_ID))
     mod("기준물 높이 ≠ cal 교정값", "X-REF-14", lambda m: stg(m)["index"][0].update(gauge_height_mm=1.0))
-    mod("기준물 높이 > 짝 층 Z", "X-REF-15", lambda m: me(m).update(layer_z_mm=0.5))  # h1 0.5021 > 0.5
+    # v1.2 C2 두 줄: 공칭 FG-0.50 = 0.5 > 층 Z 0.49 + 0.0001 (교정 0.5021 ≤ 0.49 + 0.02 = 0.51라 공칭 줄만 걸림)
+    mod("기준물 공칭 높이 > 짝 층 Z", "X-REF-15", lambda m: me(m).update(layer_z_mm=0.49))
     mod("기준물 Z ≠ 스캔 Z (> 0.001)", "X-REF-16", lambda m: setall(stg(m)["pos"], z_mm=stg(m)["pos"][0]["z_mm"] + 0.01))
     mod("bed_bare에 gauge_temp_c", "CROSS-EMPTY.ref.gauge_temp_c", lambda m: bed(m)["index"][0].update(gauge_temp_c=22.0))
     # meta
@@ -969,11 +979,150 @@ def _v11_hand_faults() -> list[tuple]:
         m["sessions"].clear()
         m["msa"]["MSA-01"]["design.csv"][0].update(noise_seed=None)
 
-    mod("spec_version 1.2 (정규식은 맞고 허용 값 밖)", "ENUM.meta.spec_version", lambda m: _scan(m)["meta"].update(spec_version="1.2"))
+    # v1.2: 1.2가 허용 값에 들어가 (V-4) 다음 판 1.3으로 바꿈
+    mod("spec_version 1.3 (정규식은 맞고 허용 값 밖)", "ENUM.meta.spec_version", lambda m: _scan(m)["meta"].update(spec_version="1.3"))
     mod("bed_bare layer_idx 빈 칸 (v1.1: 필수이고 −1)", "REQ.ref.layer_idx", lambda m: refs(m)["REF-BED-001"]["index"][0].update(layer_idx=None))
     mod("feeler layer_idx 빈 칸 (v1.1: 필수이고 −1)", "REQ.ref.layer_idx", lambda m: refs(m)["REF-FLR-001"]["index"][0].update(layer_idx=None))
     mod("스캔 없는 가상 MSA 캠페인에 noise_seed 빔 (v1.1: blind = false로 봄)", "REQ.rep.noise_seed", msa_only)
+    H.extend(_v12_hand_faults())
     return H
+
+
+def _layers(m) -> dict:
+    return m["sessions"][SESSION]["scans"][SR]
+
+
+def _set_q(sc, sid: str, q: int) -> None:
+    """스캔 하나의 scan_id · pos.pass_idx를 같은 층 반복 번호 q로 (frames · pos · meta)."""
+    sc["meta"]["scan_id"] = sid
+    for r in sc["frames"]:
+        r["scan_id"] = sid
+    for r in sc["pos"]:
+        r.update(scan_id=sid, pass_idx=q)
+
+
+def _v12_hand_faults() -> list[tuple]:
+    """명세 v1.2 (V-3, 2026-10-29)에서 바뀌거나 새로 생긴 규칙마다 ERROR 고장 표본 (팀장검증 7차 V-4 목록 포함).
+
+    정상 쪽 (교정 h1 = 층 Z + 0.0200, 공칭 = 층 Z + 0.0001, d < 0 경고 없음, `_q01` 정상 스캔)은 c2_tests() · ratio_tests() ·
+    정상 표본이 맡음.
+    """
+    H = []
+
+    def mod(name, rid, fm=None, fb=None):
+        H.append((name, rid, fm, fb))
+
+    L = _layers
+    q1 = lambda m: L(m)["L001_q01"]  # noqa: E731
+    stg_l001 = lambda m: [r for r in L(m)["L001"]["refs"].values() if r["index"][0]["kind"] == "step_gauge"]  # noqa: E731
+
+    def gb_cal(m, h):
+        set_gauge_height(m, GB_ID, h)
+        set_layer_z(m, 0, 1.0)  # 층 Z 순서 (X-MET-07): L000을 L001 (1.19–1.2)보다 낮게
+
+    def q_only(m):
+        """층 L000에 _q 스캔만 (바탕 L000 없음): L001_q01을 L000_q01로 옮기고 L000을 지움."""
+        sc = L(m)
+        c = clone(sc["L001_q01"])
+        sid = f"{SR}_L000_q01"
+        _set_q(c, sid, 1)
+        c["meta"].update(layer_idx=0, layer_z_mm=sc["L000"]["meta"]["layer_z_mm"])
+        for r in c["frames"] + c["pos"]:
+            r["layer_idx"] = 0
+        sc.pop("L000")
+        sc["L000_q01"] = c
+
+    def post_q(m):
+        """post 스캔에 _q (post_q01 폴더 · scan_id S01_r01_q01, pass_idx 1)."""
+        sc = L(m)
+        c = clone(sc["post_p01"])
+        c["meta"]["scan_pass_idx"] = 0
+        _set_q(c, f"{SR}_q01", 1)
+        sc["post_q01"] = c
+
+    def q00(m):
+        sc = L(m)
+        sc["L001_q00"] = sc.pop("L001_q01")
+        _set_q(sc["L001_q00"], f"{SR}_L001_q00", 0)
+
+    def q_gap(m):
+        sc = L(m)
+        sc["L001_q02"] = sc.pop("L001_q01")
+        _set_q(sc["L001_q02"], f"{SR}_L001_q02", 2)
+
+    def q_ref(m):
+        """_q 폴더 아래 reference/ (첫 줄 스캔의 베드 마커를 복사)."""
+        mk = next(k for k, v in L(m)["L001"]["refs"].items() if v["index"][0]["kind"] == "bed_marker")
+        r = clone(L(m)["L001"]["refs"][mk])
+        q1(m)["refs"]["REF-MRK-009"] = r
+        r["index"][0].update(ref_id="REF-MRK-009", scan_id=f"{SR}_L001_q01")
+
+    def ref_to_q(m):
+        """L001 두 단 하나가 _q 스캔을 가리킴 (ref.scan_id 정규식은 _q 꼬리 없음)."""
+        stg_l001(m)[0]["index"][0]["scan_id"] = f"{SR}_L001_q01"
+
+    def folder_q_mismatch(m):
+        """폴더 L001_q01인데 meta.scan_id에 _q 없음 (pos.pass_idx도 0으로 맞춰 X-POS-12는 안 걸리게)."""
+        _set_q(q1(m), f"{SR}_L001", 0)
+
+    ex = lambda m: m["msa"]["MSA-01"]["design_executed.csv"]  # noqa: E731
+    # C2 두 줄 (X-REF-15, 7차 V-4: 교정 + 0.0201 ERROR, 공칭 > 층 Z ERROR (교정은 층 Z 아래))
+    mod("C2 교정 h1 = 층 Z + 0.0201 (L001 층 Z 1.1999, GB-01.2 교정 1.22, 공칭 1.2는 허용차 안)", "X-REF-15",
+        lambda m: (set_layer_z(m, 1, 1.1999), gb_cal(m, 1.22)))
+    mod("C2 공칭 h1 > 층 Z (GB-01.2 공칭 1.2, 층 Z 1.19, 교정 1.1808 < 층 Z)", "X-REF-15",
+        lambda m: (set_layer_z(m, 1, 1.19), gb_cal(m, 1.1808)))
+    mod("C2 공칭 경계 밖 (공칭 1.2 = 층 Z 1.1998 + 0.0002)", "X-REF-15",
+        lambda m: (set_layer_z(m, 1, 1.1998), gb_cal(m, 1.1998)))
+    # pos.pass_idx (X-POS-12, 7차 V-4: _q01인데 0, _q 없는데 1)
+    mod("_q01 스캔인데 pos.pass_idx 0", "X-POS-12", lambda m: [r.update(pass_idx=0) for r in q1(m)["pos"]])
+    mod("_q 없는 스캔인데 pos.pass_idx 1", "X-POS-12", lambda m: [r.update(pass_idx=1) for r in L(m)["L000"]["pos"]])
+    mod("pos.pass_idx가 파일 안에서 다름 (_q01 한 행만 2)", "X-POS-12", lambda m: q1(m)["pos"][2].update(pass_idx=2))
+    mod("기준 폴더 위치 로그 pass_idx 1", "X-POS-12",
+        lambda m: [r.update(pass_idx=1) for r in m["sessions"][SESSION]["refs"]["REF-BED-001"]["pos"]])
+    # 짝 · 첫 줄 (7차 V-4: ref.scan_id가 _q 스캔 ERROR)
+    mod("ref.scan_id가 _q 스캔 (정규식 _q 꼬리 없음)", "REGEX.ref.scan_id", ref_to_q)
+    mod("ref.scan_id가 _q 스캔 (첫 줄 아님)", "X-REF-24", ref_to_q)
+    mod("paired_scan_id가 _q 스캔", "REGEX.meta.paired_scan_id", lambda m: L(m)["post"]["meta"].update(paired_scan_id=f"{SR}_L001_q01"))
+    # _q 꼴 (X-MET-68, 7차 V-4: post에 _q ERROR, 층에 _q 스캔만 ERROR)
+    mod("post에 _q (폴더 post_q01)", "FILE-02", post_q)
+    mod("post 스캔 scan_id에 _q (S01_r01_p01_q01)", "X-MET-68",
+        lambda m: _set_q(L(m)["post_p01"], f"{SR}_p01_q01", 1))
+    mod("층 L000에 _q 스캔만 (바탕 L000 없음)", "X-MET-68", q_only)
+    mod("_q00", "X-MET-68", q00)
+    mod("_q 빈 번호 (_q01 없이 _q02)", "X-MET-68", q_gap)
+    mod("폴더 L001_q01인데 meta.scan_id에 _q 없음", "FILE-05", folder_q_mismatch)
+    mod("_q 폴더에 reference/", "FILE-01", q_ref)
+    # 같은 Z에 _q 스캔도 듦 (X-REF-16)
+    mod("_q01 스캔 구간 Z가 기준 Z와 0.002 다름", "X-REF-16",
+        lambda m: [r.update(z_mm=round(r["z_mm"] + 0.002, 6)) for r in q1(m)["pos"]])
+    # 개수 · 줄 번호: _q 스캔은 X-MET-55에 세지 않음 → 줄 번호가 정말 빠진 경우만
+    mod("_q 스캔은 세지 않음: L001 줄 0을 줄 2로 (바탕 없음)", "X-MET-55",
+        lambda m: L(m)["L001"]["meta"].update(scan_pass_idx=2, scan_id=f"{SR}_L001_p02"))
+    # rep (X-REP-08 · 09)
+    mod("rep.scan_id가 study 안에서 겹침", "X-REP-08", lambda m: ex(m)[1].update(scan_id=f"{SR}_L001"))
+    mod("rep.scan_id _q01인데 repeat_idx 3", "X-REP-09",
+        lambda m: (m["msa"]["MSA-01"]["design.csv"][1].update(repeat_idx=3), ex(m)[1].update(repeat_idx=3)))
+    return H
+
+
+def c2_tests() -> list[tuple]:
+    """C2 두 줄 (명세 v1.2 4절) 정상 쪽 경계 표본 (이름, 모형 고침). 모두 ERROR 0 · WARN 0이어야 함.
+
+    - 교정 h1 = 층 Z + 0.0200 (GB-01.2 교정 1.22, L001 층 Z 1.2): 교정 줄 끝값, d = −0.02 < 0이라 두 단 비 경고 없음
+    - 공칭 h1 = 층 Z + 0.0001 (공칭 1.2, 층 Z 1.1999): 공칭 허용차 끝값
+    - 공칭 h1 = 층 Z (L000 FG-0.50 공칭 0.5, 층 Z 0.5, 교정 0.5021 = Z + 0.0021)
+    """
+    def l001(z, h):
+        def f(m):
+            set_layer_z(m, 0, 1.0)  # 층 Z 순서 (X-MET-07): L000을 L001보다 낮게 (B.4 꼴, 두 단 비 0.992)
+            set_layer_z(m, 1, z)
+            set_gauge_height(m, GB_ID, h)
+        return f
+    return [
+        ("교정 h1 = 층 Z + 0.0200 (층 Z 1.2, GB-01.2 교정 1.22)", l001(1.2, 1.22)),
+        ("공칭 h1 = 층 Z + 0.0001 (층 Z 1.1999, 공칭 1.2, 교정 1.1999)", l001(1.1999, 1.1999)),
+        ("공칭 h1 = 층 Z (L000 층 Z 0.5, FG-0.50 교정 0.5021 = Z + 0.0021)", lambda m: set_layer_z(m, 0, 0.5)),
+    ]
 
 
 def set_layer_z(m, layer_idx: int, z: float) -> None:
@@ -1021,12 +1170,19 @@ def ratio_tests() -> list[tuple]:
         for r in m["cal"][CAL]["cal_manifest.csv"]:
             if r["gauge_block_id"] == FG5_ID:
                 r["gauge_u_um"] = 2.0
+
+    def d_neg(m):
+        set_layer_z(m, 0, 1.0)  # L000 < L001 (X-MET-07). L000은 B.4 꼴 (비 0.992, 경고 없음)
+        set_layer_z(m, 1, 1.2)
+        set_gauge_height(m, GB_ID, 1.21)
     return [
         ("6차 예 (h1 1.2 · h2 0.5 · 층 Z 2.4, 비 1.714 > 1.131)", six, True),
         ("B.4 (h1 0.5021 · h2 GB-00 · 층 Z 1.0, 비 0.992 < 1.569)", lambda m: set_layer_z(m, 0, 1.0), False),
         ("경계 아래 (u 2, 층 Z 1.9912, 비 1.13124 < 1.13137)", lambda m: set_layer_z(m, 1, 1.9912), False),
         ("경계 위 (u 2, 층 Z 1.9914, 비 1.13153 > 1.13137)", lambda m: set_layer_z(m, 1, 1.9914), True),
         ("u는 cal 값 (FG-0.50 u 1 → 2, L000 비 1.390 > 1.131)", fg5_u2, True),
+        # v1.2 (7차 V-4): d < 0 (교정 h1이 층 Z를 0.02 안에서 넘음)이면 경고 없음. L001 · post 층 Z 1.2, GB-01.2 교정 1.21
+        ("d < 0 (교정 h1 = 층 Z + 0.01, 비 −0.0141)", d_neg, False),
     ]
 
 
@@ -1099,10 +1255,11 @@ def switch_tests() -> list[tuple]:
 
 def truth_context(blind: bool = False) -> dict:
     """정상 표본 캠페인의 참값 대조용 사실 (Validator.run 뒤 truth_ctx와 같아야 함, 시험이 맞춰 봄)."""
-    ids = ["S01_r01", "S01_r01_L000", "S01_r01_L001", "S01_r01_L001_p01", "S01_r01_p01"]
+    ids = ["S01_r01", "S01_r01_L000", "S01_r01_L001", "S01_r01_L001_p01", "S01_r01_L001_q01", "S01_r01_p01"]
     # v1.1: temp_c 키 집합 = step_gauge 기준이 있는 층 (L000 · L001) + post 두 단
+    # v1.2: 재료 조각 (material_sample) 쌍 = (PLA, gray) → truth.material_offset_um 필수
     return {"gauge_layers": ["L000", "L001", "post"], "has_step_gauge": True, "gauge_ids": [GB_ID], "blind": blind, "scan_ids": ids,
-            "factors": [] if blind else ["MF-SYN-01"]}
+            "factors": [] if blind else ["MF-SYN-01"], "has_material_sample": True, "material_pairs": [("PLA", "gray")]}
 
 
 def normal_truth(blind: bool = False) -> dict:
@@ -1111,7 +1268,8 @@ def normal_truth(blind: bool = False) -> dict:
          "gauge_thickness_mm": {"0.20": 0.2031, "0.50": 0.5021},
          "gauge_block_heights_mm": {GB_ID: 1.2006},
          "gauge_temp_params": {"cte_um_per_m_c": 11.5, "temp_c": {"L000": 45.0, "L001": 45.0, "post": 23.0}},
-         "scan_seeds": None, "scan_factors": None, "factor_params": {"MF-SYN-01": {"dt_ns": 10_000_000}}}
+         "scan_seeds": None, "scan_factors": None, "factor_params": {"MF-SYN-01": {"dt_ns": 10_000_000}},
+         "material_offset_um": {"PLA": {"gray": -8.6}}}  # v1.2 (부록 A 예시)
     if blind:
         ids = truth_context(True)["scan_ids"]
         t["scan_seeds"] = {s: {"sim_seed": 7310045 + i, "noise_seed": None} for i, s in enumerate(ids)}
@@ -1162,6 +1320,19 @@ def truth_tests() -> list[tuple]:
         ("factor_params 키 ≠ 주입 요인", w(N(), factor_params={"MF-SYN-02": {}}), "X-TRU-04", ctx),
         ("blind인데 factor_params 키 ≠ scan_factors 합집합", w(N(True), factor_params={}), "X-TRU-04", bctx),
         ("필러 참 두께 키 0.60", w(N(), gauge_thickness_mm={"0.60": 0.6}), "X-TRU-05", ctx),
+        # v1.2 (V-3): truth.material_offset_um {재료: {색: µm}}, 쌍 집합 = material_sample 행, abs ≤ 100
+        ("재료 치우침 경계 −100",w(N(), material_offset_um={"PLA": {"gray": -100}}), None, ctx),
+        ("재료 치우침 0.0 (재료 모델 끔)", w(N(), material_offset_um={"PLA": {"gray": 0.0}}), None, ctx),
+        ("material_sample 없는 캠페인에 null", w(N(), material_offset_um=None), None,
+         dict(ctx, has_material_sample=False, material_pairs=[])),
+        ("material_sample 있는데 재료 치우침 null (빠짐)", w(N(), material_offset_um=None), "X-TRU-06", ctx),
+        ("재료 치우침 쌍 다름 (PLA white)", w(N(), material_offset_um={"PLA": {"white": -8.6}}), "X-TRU-06", ctx),
+        ("재료 치우침 쌍 하나 더 (PETG gray)", w(N(), material_offset_um={"PLA": {"gray": -8.6}, "PETG": {"gray": -3.0}}),
+         "X-TRU-06", ctx),
+        ("재료 치우침 범위 밖 (100.5)", w(N(), material_offset_um={"PLA": {"gray": 100.5}}), "X-TRU-06", ctx),
+        ("재료 치우침 바깥 키가 허용 값 밖 (pla)", w(N(), material_offset_um={"pla": {"gray": -8.6}}), "X-TRU-06", ctx),
+        ("재료 치우침 안쪽이 dict 아님 (PLA: −8.6)", w(N(), material_offset_um={"PLA": -8.6}), "X-TRU-06", ctx),
+        ("material_sample 없는데 재료 치우침 값", N(), "X-TRU-06", dict(ctx, has_material_sample=False, material_pairs=[])),
     ]
 
 
@@ -1234,8 +1405,15 @@ def run_selftest(fields: list[dict], rules_list: list[dict], file_cols: dict, di
             used.add(name)
             combo.append((name, v))
     boundary_combined = [x for x in check(serialize(m, file_cols)) if x.severity == "ERROR"]
+    # v1.2 C2 두 줄 끝값 (교정 Z + 0.02 · 공칭 Z + 0.0001 · 공칭 = Z): ERROR · WARN 모두 0이어야 함
+    boundary_c2 = []
+    for name, fm in c2_tests():
+        mc = clone(base)
+        fm(mc)
+        boundary_c2 += [(name, x.rule_id, x.value) for x in check(serialize(mc, file_cols))]
     rep.update(boundary_n=len(bvals), boundary_local=boundary_local, boundary_cross=boundary_cross,
-               boundary_combined_fields=len(combo), boundary_combined_error=boundary_combined)
+               boundary_combined_fields=len(combo), boundary_combined_error=boundary_combined,
+               boundary_c2_n=len(c2_tests()), boundary_c2=boundary_c2)
     timing["경계"] = time.perf_counter() - t0
 
     # 고장
@@ -1311,7 +1489,7 @@ def run_selftest(fields: list[dict], rules_list: list[dict], file_cols: dict, di
     d = sum(r["detected"] for r in results)
     rep["summary"] = {
         "normal_error": len(rep["normal_error"]),
-        "boundary_error": len(boundary_local) + len(boundary_combined),
+        "boundary_error": len(boundary_local) + len(boundary_combined) + len(boundary_c2),
         "n_fault": n, "n_auto": sum(r["kind"] == "자동" for r in results), "n_hand": sum(r["kind"] == "손" for r in results),
         "n_detected": d, "rate": 100.0 * d / n if n else 0.0,
         "warn_ok": sum(w["detected"] for w in warns), "warn_n": len(warns),

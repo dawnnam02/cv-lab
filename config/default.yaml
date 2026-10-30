@@ -4,7 +4,7 @@
 
 run:
   random_seed: 42        # J2 결정: 시드 고정 42 (J2-config-reproducibility §결정표)
-  spec_version: "1.0"    # docs/하드웨어-데이터-명세.md v1.0 (meta.spec_version 형식 ^\d+\.\d+$)
+  spec_version: "1.2"    # docs/하드웨어-데이터-명세.md v1.2 (V-4 재동기화, meta.spec_version 허용 값 {1.0, 1.1, 1.2})
 
 grid:
   res_mm: 0.02           # G3 결정, A2 XY 간격 0.02 mm (명세 truth.heightmap_step_mm "C4 기본 0.02")

@@ -20,8 +20,8 @@ def test_field_rows_match_spec():
     names = re.findall(r"^\| `((?:frame|pos|cal|ref|meta|blt|rep|truth)\.[a-z0-9_]+)` \|", text, re.M)
     fields, _, _ = schema()
     assert [f["field"] for f in fields] == names
-    assert len(fields) == 253  # v1.0 동결 (T1 3차): 2차 245 + 새 필드 8
-    assert sum(f["group"] == "truth" for f in fields) == 26
+    assert len(fields) == 254  # v1.0 동결 (T1 3차): 2차 245 + 새 필드 8, v1.2: + truth.material_offset_um
+    assert sum(f["group"] == "truth" for f in fields) == 27
     assert not any(f["group"] == "blt" for f in fields)
 
 
@@ -158,15 +158,48 @@ def test_v11_resync_rules():
     fields, rules, _ = schema()
     fd = {f["field"]: f for f in fields}
     ids = {r["rule_id"]: r for r in rules}
-    assert "spec_sha256: debd2e51c7846b6bf594e8d9e1963373e229d33bb472b9ab2fd22987fc7965e3" in \
-        (SPEC_DIR / "SOURCE.txt").read_text(encoding="utf-8")
-    assert fd["meta.spec_version"]["enum"] == "1.0,1.1" and ids["ENUM.meta.spec_version"]["severity"] == "ERROR"
+    # 지문 · 허용 값 정확한 꼴은 v1.2 시험 (test_v12_resync_rules)이 봄. 여기서는 v1.1 값이 그대로 허용되는지만
+    assert {"1.0", "1.1"} <= set(fd["meta.spec_version"]["enum"].split(",")) and ids["ENUM.meta.spec_version"]["severity"] == "ERROR"
     assert (fd["ref.gauge_height_mm"]["min"], fd["ref.gauge_height_mm"]["max"], fd["ref.gauge_height_mm"]["max_op"]) == ("0", "60", "≤")
     assert ids["W-REF-25"]["severity"] == "WARN" and ids["W-REF-25"]["status"] == "구현"
     assert "SWITCHABLE_OFF" in ids["W-REF-25"]["reason"]  # 끌 수 있는 목록에 넣지 않은 이유를 규칙표에 남김
     for rid in ("W-REF-11", "W-MET-56"):
         assert "검증기는 경고" in ids[rid]["reason"]
     assert "temp_c" in ids["X-TRU-02"]["message"]
+
+
+def test_v12_resync_rules():
+    """v1.2 (V-3) 재동기화 (V-4): 지문, 필드 254, _q 정규식 · 층 폴더, pos.pass_idx 범위, spec_version 허용 값, 새 손 규칙."""
+    from cvlab.io import validate as vd
+    fields, rules, _ = schema()
+    fd = {f["field"]: f for f in fields}
+    ids = {r["rule_id"]: r for r in rules}
+    src = (SPEC_DIR / "SOURCE.txt").read_text(encoding="utf-8")
+    assert "spec_sha256: bc63f84322c67b8aeb0b83539e1038015a976e2c47e160d8b21058f01aeea08f" in src
+    assert "fields: 254 (" in src and "truth 27" in src
+    q = r"^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?(_q\d{2})?$"
+    for f in ("frame.scan_id", "pos.scan_id", "meta.scan_id", "rep.scan_id"):
+        assert fd[f]["regex"] == q and ids[f"REGEX.{f}"]["params"] == q, f
+    # 짝 ID는 _q 꼬리 없음 (v1.1 그대로)
+    assert fd["ref.scan_id"]["regex"] == r"^S\d{2}_r\d{2}(_L\d{3})?(_p\d{2})?$"
+    assert fd["meta.paired_scan_id"]["regex"] == r"^S\d{2}_r\d{2}_L\d{3}(_p\d{2})?$"
+    assert ids["RANGE.pos.pass_idx"]["params"] == "0 ≤ x ≤ 99"
+    assert fd["meta.spec_version"]["enum"] == "1.0,1.1,1.2"
+    assert "truth.material_offset_um" in fd and fd["truth.material_offset_um"]["dtype"] == "dict"
+    for rid in ("X-MET-68", "X-REP-08", "X-REP-09", "X-TRU-06"):
+        assert ids[rid]["status"] == "구현" and ids[rid]["severity"] == "ERROR", rid
+    assert "공칭" in ids["X-REF-15"]["message"] and "0.02" in ids["X-REF-15"]["message"]
+    assert "X-REF-15" in ids["X-REF-20"]["message"]  # C2는 X-REF-15에 맡김 (겹쳐 내지 않음)
+    assert "d = 층 Z − h1 < 0" in ids["W-REF-25"]["message"]
+    assert "_q" in ids["X-POS-12"]["message"] and "scan_start~scan_end" not in ids["X-POS-12"]["covers"]
+    # 층 폴더 정규식 (명세 8절): post에는 _q 없음
+    lay = vd.NAME_RES["layer"]
+    for ok in ("L004", "L008_q01", "L008_p01_q01", "post", "post_p01"):
+        assert lay.match(ok), ok
+    for bad in ("post_q01", "post_p01_q01", "L008_q1", "L008_q01_p01"):
+        assert not lay.match(bad), bad
+    assert vd.gauge_nominal("GB-02+01.8+01.5") == 5.3 and vd.gauge_nominal("FG-0.50") == 0.5 and vd.gauge_nominal("GB-00") == 0.0
+    assert (vd.C2_NOMINAL_TOL_MM, vd.C2_CAL_TOL_MM) == (0.0001, 0.02)
 
 
 def test_bad_cell_count_fails(tmp_path):

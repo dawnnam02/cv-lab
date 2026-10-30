@@ -193,16 +193,25 @@ def test_blind_campaign_is_clean():
 
 
 def test_gauge_height_equal_layer_z_is_allowed():
-    """C2 부등호 ≤ (v1.0): 높은 단 높이 = 층 Z면 위반 아님, 넘으면 X-REF-15."""
+    """C2 두 줄 (v1.2 4절): 공칭 ≤ 층 Z (허용차 0.0001, 같은 높이 허용), 교정 ≤ 층 Z + 0.02. 넘으면 X-REF-15만 (X-REF-20은 겹쳐 내지 않음)."""
     fields, rules, fc = schema()
     v = Validator(fields, rules, fc, repo_exists=st.repo_exists)
-    m = st.normal_model()
-    st._scan(m)["meta"]["layer_z_mm"] = st.FG5_H  # L000 높은 단 FG-0.50 = 0.5021
-    got = {f.rule_id for f in v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)}
-    assert "X-REF-15" not in got and "X-REF-20" not in got
-    st._scan(m)["meta"]["layer_z_mm"] = st.FG5_H - 0.0001
-    got = {f.rule_id for f in v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)}
-    assert "X-REF-15" in got
+
+    def run(z):
+        m = st.normal_model()
+        st._scan(m)["meta"]["layer_z_mm"] = z  # L000 높은 단 FG-0.50: 공칭 0.5, 교정 0.5021
+        return {f.rule_id for f in v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)}
+    for z in (st.FG5_H, 0.5, 0.4999):  # 교정 = Z · 공칭 = Z · 공칭 = Z + 0.0001 (교정은 Z + 0.0022 ≤ Z + 0.02)
+        got = run(z)
+        assert "X-REF-15" not in got and "X-REF-20" not in got and "W-REF-25" not in got, z
+    for z in (0.4998, 0.49):  # 공칭 0.5 > Z + 0.0001
+        got = run(z)
+        assert "X-REF-15" in got and "X-REF-20" not in got, z
+    # 정상 쪽 끝값 표본 (selftest.c2_tests): 오류 · 경고 0
+    for name, fm in st.c2_tests():
+        m = st.normal_model()
+        fm(m)
+        assert v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN) == [], name
 
 
 def test_v11_two_step_ratio_rule():
@@ -250,14 +259,37 @@ def test_v11_two_step_ratio_rule():
 
 
 def test_v11_spec_version_values():
-    """명세 v1.1: meta.spec_version ∈ {1.0, 1.1}. 1.0 데이터도 같은 규칙으로 통과, 1.2는 ENUM."""
+    """명세 v1.2: meta.spec_version ∈ {1.0, 1.1, 1.2}. 옛 판 데이터도 같은 규칙으로 통과, 1.3은 ENUM."""
     fields, rules, fc = schema()
     v = Validator(fields, rules, fc, repo_exists=st.repo_exists)
-    for val, want in (("1.1", set()), ("1.0", set()), ("1.2", {"ENUM.meta.spec_version"})):
+    for val, want in (("1.2", set()), ("1.1", set()), ("1.0", set()), ("1.3", {"ENUM.meta.spec_version"})):
         m = st.normal_model()
         for sc in m["sessions"][st.SESSION]["scans"][st.SR].values():
             sc["meta"]["spec_version"] = val
         assert {f.rule_id for f in v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN)} == want, val
+
+
+def test_v12_same_layer_repeat():
+    """명세 v1.2 같은 층 반복 (_qNN): 정상 표본의 L001_q01은 위반 0, 첫 줄 · 줄 번호 · 개수에서 빠지고 같은 Z에는 듦."""
+    fields, rules, fc = schema()
+    v = Validator(fields, rules, fc, repo_exists=st.repo_exists)
+    m = st.normal_model()
+    q = st._scan(m, "L001_q01")
+    assert q["meta"]["scan_id"] == f"{st.SR}_L001_q01" and q["meta"]["scan_pass_idx"] == 0 and q["refs"] == {}
+    assert {r["pass_idx"] for r in q["pos"]} == {1}
+    assert [r["scan_id"] for r in m["msa"]["MSA-01"]["design_executed.csv"]][:2] == [f"{st.SR}_L001", f"{st.SR}_L001_q01"]
+    assert v.run(MemFS(st.serialize(m, fc)), st.CAMPAIGN) == []
+    # _q 스캔을 빼면 (첫 측정만) 그대로 정상: 반복 없는 옛 판 꼴 (pos.pass_idx 모두 0)
+    m2 = st.normal_model()
+    m2["sessions"][st.SESSION]["scans"][st.SR].pop("L001_q01")
+    m2["msa"]["MSA-01"]["design_executed.csv"][1]["scan_id"] = f"{st.SR}_L001_p01"
+    assert v.run(MemFS(st.serialize(m2, fc)), st.CAMPAIGN) == []
+    # 7차 V-4 고장 목록이 모두 v1.2 손 고장에 있음
+    names = " | ".join(h[0] for h in st._v12_hand_faults())
+    for key in ("층 Z + 0.0201", "공칭 h1 > 층 Z", "_q01 스캔인데 pos.pass_idx 0", "ref.scan_id가 _q 스캔", "post에 _q",
+                "_q 스캔만"):
+        assert key in names, key
+    assert any(not want and "d < 0" in name for name, _f, want in st.ratio_tests())
 
 
 def test_repo_root_default_is_cvlab_for_outside_data(tmp_path):

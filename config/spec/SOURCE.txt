@@ -1,7 +1,7 @@
 spec_file: docs/하드웨어-데이터-명세.md
-spec_sha256: debd2e51c7846b6bf594e8d9e1963373e229d33bb472b9ab2fd22987fc7965e3
-extracted_at: 2026-10-28T12:07:14+09:00
-fields: 253 (frame 24, pos 17, cal 38, ref 17, meta 118, blt 0, rep 13, truth 26)
+spec_sha256: bc63f84322c67b8aeb0b83539e1038015a976e2c47e160d8b21058f01aeea08f
+extracted_at: 2026-10-30T11:11:29+09:00
+fields: 254 (frame 24, pos 17, cal 38, ref 17, meta 118, blt 0, rep 13, truth 27)
 excluded_groups: blt (명세 6절 제외 표기 (D-14))
-rules: 907 (구현 898, 비활성 0, 보류 9)
+rules: 911 (구현 902, 비활성 0, 보류 9)
 extractor: scripts/extract_spec_schema.py (cvlab.io.spec_schema, cvlab.io.rules)

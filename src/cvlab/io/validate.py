@@ -29,7 +29,8 @@ NAME_RES = {
     "session": re.compile(r"^PS-\d{4}-\d{2}-\d{2}-[A-Z]$"),
     "specrep": re.compile(r"^S\d{2}_r\d{2}$"),
     # 명세 8절 (T1 2차): 한 층을 여러 줄로 재면 _pNN (= meta.scan_pass_idx, 0이면 안 붙임)
-    "layer": re.compile(r"^L\d{3}(_p\d{2})?$|^post(_p\d{2})?$"),
+    # v1.2: 같은 층 반복은 끝에 _qNN (= pos.pass_idx). post에는 붙지 않음
+    "layer": re.compile(r"^L\d{3}(_p\d{2})?(_q\d{2})?$|^post(_p\d{2})?$"),
     "frame": re.compile(r"^\d{6}\.png$"),
     "cal": re.compile(r"^CAL-\d{4}-\d{2}-\d{2}-[A-Z]$"),
     # 명세 8절 (T1 2차, T6 반영점 3): d1–d5 아래 하위 폴더 한 단계까지
@@ -56,6 +57,11 @@ TEMP_KEY_RE = re.compile(r"^L\d{3}$|^post$")
 GB_RE = re.compile(r"^GB-\d{2}(\.\d{1,3})?(\+\d{2}(\.\d{1,3})?)*$")
 MF_RE = re.compile(r"^MF-[A-Z]{3}-\d{2}$")
 LAYER_REFS = ("bed_marker", "ref_tower", "step_gauge")  # 층에 매인 기준 (명세 4절)
+# C2 두 줄 (명세 v1.2 4절): 공칭 비교 허용차 0.0001 mm (매크로 단 고르기와 같음), 교정 공차 0.02 mm
+C2_NOMINAL_TOL_MM = 0.0001
+C2_CAL_TOL_MM = 0.02
+FG_RE = re.compile(r"^FG-0\.[2345]0$")
+Q_RE = re.compile(r"_q(\d{2})$")  # 스캔 ID · 층 폴더 끝의 같은 층 반복 번호 (v1.2)
 
 
 def gauge_sum(gid: str) -> float | None:
@@ -63,6 +69,19 @@ def gauge_sum(gid: str) -> float | None:
     if not isinstance(gid, str) or not GB_RE.match(gid):
         return None
     return round(sum(float(p) for p in gid[3:].split("+")), 6)
+
+
+def gauge_nominal(gid: str) -> float | None:
+    """C2 공칭 높이 (명세 v1.2 4절): GB-는 + 로 나눈 숫자의 합, FG-는 그 숫자, GB-00은 0. 형식이 아니면 None."""
+    if isinstance(gid, str) and FG_RE.match(gid):
+        return float(gid[3:])
+    return gauge_sum(gid)
+
+
+def q_of(scan_id) -> int | None:
+    """스캔 ID (또는 층 폴더)의 _qNN 숫자. 없으면 None."""
+    m = Q_RE.search(scan_id) if isinstance(scan_id, str) else None
+    return int(m.group(1)) if m else None
 
 
 class PathRefused(ValueError):
@@ -376,6 +395,11 @@ class Validator:
             "scan_ids": sorted({x["meta"].get("scan_id") for x in self.all_scans if x["meta"].get("scan_id")}),
             "factors": sorted({f for x in self.all_scans for f in (x["meta"].get("injected_factors") or [])
                                if isinstance(f, str)}),
+            # v1.2: truth.material_offset_um의 (재료, 색) 쌍 집합 = 캠페인 material_sample 행의 쌍 집합 (X-TRU-06)
+            "has_material_sample": any(r.get("target_type") == "material_sample" for rows in self.cal_rows.values() for r in rows),
+            "material_pairs": sorted({(r.get("material"), r.get("color")) for rows in self.cal_rows.values() for r in rows
+                                      if r.get("target_type") == "material_sample"
+                                      and r.get("material") is not None and r.get("color") is not None}),
         }
         return self.out
 
@@ -400,7 +424,8 @@ class Validator:
         """참값 객체 (부록 A truth) 하나를 본다. data/raw 검사와 따로 부른다 (T3 시뮬레이터가 참값을 쓴 뒤).
 
         파일을 열지 않는다: 호출하는 쪽이 이미 읽은 사전을 넘긴다 (정보 차단, 청사진 §5.2).
-        ctx: 캠페인 쪽 사실 {has_step_gauge, gauge_ids, blind, scan_ids, factors}. 없으면 같은 검증기의 마지막 run() 값
+        ctx: 캠페인 쪽 사실 {gauge_layers, has_step_gauge, gauge_ids, blind, scan_ids, factors, has_material_sample,
+        material_pairs (v1.2)}. 없으면 같은 검증기의 마지막 run() 값
         (`truth_ctx`). 둘 다 없으면 필수 · 키 집합 규칙 (X-TRU-02 · 03 · 04의 캠페인 대조)은 건너뛰고 값 모양만 봄.
         """
         self.out = []
@@ -495,6 +520,37 @@ class Validator:
             for k, v in gt.items():
                 if k not in ("0.20", "0.30", "0.40", "0.50") or not num(v) or abs(v - float(k)) > 0.02 + 1e-12:
                     self.emit("X-TRU-05", path, row, "truth.gauge_thickness_mm", f"{k}: {v}")
+        # X-TRU-06 재료 치우침 참값 (v1.2): {재료: {색: µm}}, material_sample 행이 있으면 필수 · 없으면 null
+        mo = t.get("material_offset_um")
+        F = "truth.material_offset_um"
+        if ctx is not None and ("has_material_sample" in ctx or "material_pairs" in ctx):
+            need = bool(ctx.get("has_material_sample")) or bool(ctx.get("material_pairs"))
+            if need and not isinstance(mo, dict):
+                self.emit("X-TRU-06", path, row, F, "없음", "material_sample 행이 있는데 참값이 없음")
+            if not need and mo is not None:
+                self.emit("X-TRU-06", path, row, F, "값 있음", "material_sample 행이 없는데 null이 아님")
+        if mo is not None and not isinstance(mo, dict):
+            self.emit("X-TRU-06", path, row, F, mo, "dict가 아님")
+        elif isinstance(mo, dict):
+            mats = set((self.fields.get("meta.material") or {}).get("enum", "").split(",")) - {""}
+            pairs = set()
+            for mat, inner in mo.items():
+                if mats and mat not in mats:
+                    self.emit("X-TRU-06", path, row, F, mat, "바깥 키가 meta.material 허용 값이 아님")
+                if not isinstance(inner, dict):
+                    self.emit("X-TRU-06", path, row, F, f"{mat}: {inner}", "안쪽 값이 {색: µm} dict가 아님")
+                    continue
+                for col, v in inner.items():
+                    pairs.add((mat, col))
+                    if not isinstance(col, str) or not col.strip():
+                        self.emit("X-TRU-06", path, row, F, f"{mat}: {col!r}", "색 키가 빈 문자열")
+                    if not (num(v) and abs(v) <= 100 + 1e-12):
+                        self.emit("X-TRU-06", path, row, F, f"{mat}.{col}: {v}", "값이 abs(x) ≤ 100 수가 아님")
+            if ctx is not None and "material_pairs" in ctx:
+                want = {tuple(p) for p in ctx["material_pairs"]}
+                if pairs != want:
+                    self.emit("X-TRU-06", path, row, F, sorted(pairs ^ want, key=str)[:5],
+                              "(재료, 색) 쌍 집합 ≠ material_sample 행 쌍 집합")
 
     # -- 트리 ---------------------------------------------------------------
     def _walk(self):
@@ -541,12 +597,15 @@ class Validator:
                 elif NAME_RES["specrep"].match(sub) and len(parts) >= 5:
                     lay = parts[3]
                     if not NAME_RES["layer"].match(lay):
-                        self.emit("FILE-02", p, message="층 폴더 이름이 정규식과 맞지 않음 (L### 또는 post, 뒤에 _pNN)")
+                        self.emit("FILE-02", p, message="층 폴더 이름이 정규식과 맞지 않음 (L### 또는 post, 뒤에 _pNN, 층별 폴더만 끝에 _qNN)")
                         continue
                     sr = s["specreps"].setdefault(sub, {})
                     sc = sr.setdefault(lay, {"files": [], "refs": {}})
                     rest = parts[4:]
-                    if rest[0] == "reference" and len(rest) >= 2:
+                    if rest[0] == "reference" and q_of(lay) is not None:
+                        # v1.2 (명세 4 · 8절): 같은 층 반복 _q 폴더에는 reference/를 두지 않음 (층 기준은 첫 줄 스캔 폴더)
+                        self.emit("FILE-01", p, message="같은 층 반복 (_qNN) 스캔 폴더에 reference/가 있음 (명세 v1.2 4 · 8절)")
+                    elif rest[0] == "reference" and len(rest) >= 2:
                         self._add_ref(sc["refs"], rest[1], rest[2:], p)
                     elif len(rest) == 1 and rest[0] in ("meta.json", "frames_index.csv", "position_log.csv", "frames.npz"):
                         sc["files"].append(rest[0])
@@ -1052,7 +1111,7 @@ class Validator:
                     continue
                 P = f"{base}/{fn}"
                 rows, _ = self.read_csv(P, fn, "rep", {"virtual": self.virtual, "blind": self.blind})
-                part, truth, seen, seeds, orders = {}, {}, set(), set(), []
+                part, truth, seen, seeds, orders, sids = {}, {}, set(), set(), [], set()
                 for i, r in enumerate(rows):
                     ln = i + 2
                     if r["study_id"] is not None and r["study_id"] != sid:
@@ -1078,6 +1137,14 @@ class Validator:
                         orders.append(r["run_order"])
                     if fn == "design_executed.csv" and r["remount"] is True and r["scan_id"] is not None and "_L" in r["scan_id"]:
                         self.emit("X-REP-03", P, ln, "rep.remount", "true")
+                    # v1.2 (명세 7절): design 행 하나 = 스캔 하나 → study 안 scan_id 중복 금지, _qNN 스캔이면 repeat_idx = NN + 1
+                    if r["scan_id"] is not None:
+                        if r["scan_id"] in sids:
+                            self.emit("X-REP-08", P, ln, "rep.scan_id", r["scan_id"])
+                        sids.add(r["scan_id"])
+                        q = q_of(r["scan_id"])
+                        if q is not None and r["repeat_idx"] is not None and r["repeat_idx"] != q + 1:
+                            self.emit("X-REP-09", P, ln, "rep.repeat_idx", f"{r['repeat_idx']} ({r['scan_id']})")
 
     # -- 세션·스캔 -------------------------------------------------------------
     def _read_ref(self, base, files, ctx_meta):
@@ -1106,6 +1173,10 @@ class Validator:
                 if (r["scan_id"] is not None and fs_ids and r["scan_id"] not in fs_ids) or \
                         (r["layer_idx"] is not None and fl and r["layer_idx"] not in fl):
                     self.emit("X-POS-11", f"{base}/position_log.csv", i + 2, "pos.layer_idx", f"{r['scan_id']},{r['layer_idx']}")
+        # v1.2: 기준 폴더 위치 로그의 pass_idx는 모든 행 0 (같은 층 반복은 시편 줄만, 명세 2절)
+        bad_pass = sorted({r["pass_idx"] for r in out["pos"] if r["pass_idx"] not in (None, 0)})
+        if bad_pass:
+            self.emit("X-POS-12", f"{base}/position_log.csv", None, "pos.pass_idx", bad_pass[:10], "기준 폴더 위치 로그에 pass_idx ≠ 0")
         for i, r in enumerate(out["rows"]):
             ln = i + 2
             if r["ref_id"] is not None and r["ref_id"] != folder:
@@ -1191,7 +1262,7 @@ class Validator:
             bad.append("specimen_id")
         if srm and g("repeat") is not None and g("repeat") != int(srm.group(2)):
             bad.append("repeat")
-        lm = re.match(r"^(L(\d{3})|post)(?:_p(\d{2}))?$", x["lay"])
+        lm = re.match(r"^(L(\d{3})|post)(?:_p(\d{2}))?(?:_q\d{2})?$", x["lay"])
         if lm and lm.group(1) == "post":
             if g("timing") is not None and g("timing") != "post":
                 bad.append("timing")
@@ -1202,11 +1273,14 @@ class Validator:
                 bad.append("timing")
         if lm and g("scan_pass_idx") is not None and g("scan_pass_idx") != int(lm.group(3) or 0):
             bad.append("scan_pass_idx")
+        # v1.2: 폴더 _qNN = meta.scan_id _qNN (둘 다 없어도 같음). pos.pass_idx = _q 숫자는 X-POS-12
+        if lm and isinstance(g("scan_id"), str) and q_of(x["lay"]) != q_of(g("scan_id")):
+            bad.append("scan_id")
         if bad:
             self.emit("FILE-05", M, None, ";".join("meta." + b for b in bad), x["lay"])
         sid = g("scan_id")
         if sid is not None and g("scan_pass_idx") is not None:
-            pm = re.search(r"_p(\d{2})$", sid)
+            pm = re.search(r"_p(\d{2})(?:_q\d{2})?$", sid)
             if (g("scan_pass_idx") == 0 and pm) or (g("scan_pass_idx") > 0 and (not pm or int(pm.group(1)) != g("scan_pass_idx"))):
                 self.emit("X-MET-54", M, None, "meta.scan_id", sid)
         # 저장소 뿌리 기준 파일 (명세 0.1절)
@@ -1216,7 +1290,7 @@ class Validator:
             if isinstance(g("slicer_profile_file"), str) and not self.repo_exists(g("slicer_profile_file")):
                 self.emit("FILE-18", M, None, "meta.slicer_profile_file", g("slicer_profile_file"))
         if sid is not None and g("timing") is not None:
-            m = re.match(r"^S\d{2}_r\d{2}(?:_L(\d{3}))?(?:_p\d{2})?$", sid)
+            m = re.match(r"^S\d{2}_r\d{2}(?:_L(\d{3}))?(?:_p\d{2})?(?:_q\d{2})?$", sid)
             if m:
                 if g("timing") == "layer" and (m.group(1) is None or (g("layer_idx") is not None and int(m.group(1)) != g("layer_idx"))):
                     self.emit("X-MET-01", M, None, "meta.scan_id", sid)
@@ -1394,6 +1468,12 @@ class Validator:
             self.emit("X-POS-14", P, None, "pos.event", "post 첫 줄이 아닌 스캔에 cool_start·cool_end")
         if g("timing") == "post" and any(r["pass_idx"] not in (None, 0) for r in rows):
             self.emit("X-POS-15", P, None, "pos.pass_idx", sorted({r["pass_idx"] for r in rows if r["pass_idx"] is not None}))
+        # v1.2 (명세 2절): pass_idx = 그 스캔의 같은 층 반복 번호. 파일 안 모든 행 같은 값 = meta.scan_id의 _q 숫자 (없으면 0)
+        pv = sorted({r["pass_idx"] for r in rows if r["pass_idx"] is not None})
+        if len(pv) > 1:
+            self.emit("X-POS-12", P, None, "pos.pass_idx", pv[:10], "pass_idx가 파일 안에서 다름")
+        elif pv and isinstance(g("scan_id"), str) and pv[0] != (q_of(g("scan_id")) or 0):
+            self.emit("X-POS-12", P, None, "pos.pass_idx", f"{pv[0]} ≠ _q {q_of(g('scan_id')) or 0}")
         if post0:
             if len(cs) != 1 or len(ce) != 1:
                 self.emit("X-POS-14", P, None, "pos.event", f"cool_start {len(cs)}, cool_end {len(ce)}")
@@ -1437,10 +1517,7 @@ class Validator:
         x["seg_z"] = zs
         if zs and max(zs) - min(zs) > 0.001 + 1e-9:
             self.emit("X-POS-05", P, None, "pos.z_mm", f"{min(zs)}~{max(zs)}")
-        pas = [r["pass_idx"] for r in sorted(seg, key=host) if r["pass_idx"] is not None]
-        if pas and (pas[0] != 0 or any(b - a not in (0, 1) for a, b in zip(pas, pas[1:]))):
-            self.emit("X-POS-12", P, None, "pos.pass_idx", ",".join(map(str, pas[:20])))
-        es = [r["e_mm"] for r in seg if r["e_mm"] is not None]
+        es =[r["e_mm"] for r in seg if r["e_mm"] is not None]
         if es and max(es) != min(es):
             self.emit("X-POS-06", P, None, "pos.e_mm", f"{min(es)}~{max(es)}")
         fe = [r["feed_mm_s"] for r in seg if r["feed_mm_s"] is not None]
@@ -1452,14 +1529,17 @@ class Validator:
         sbase = f"sessions/{sid}"
         metas = [x for x in scans if x["meta"]]
         by_id = {x["meta"].get("scan_id"): x for x in metas if x["meta"].get("scan_id")}
+        # v1.2: 같은 층 반복 (_q) 스캔은 짝 · 첫 줄 · 줄 번호 · 개수에서 뺌 (명세 4 · 5 · 8절). 같은 Z (X-REF-16)에는 넣음
+        is_q = lambda x: q_of(x["meta"].get("scan_id")) is not None  # noqa: E731
+        base_metas = [x for x in metas if not is_q(x)]
         # post 정확히 1개 (FILE-04)
         for sr, layers in sorted(s["specreps"].items()):
-            n = sum(1 for x in metas if x["sr"] == sr and x["meta"].get("timing") == "post" and x["meta"].get("scan_pass_idx") in (0, None))
+            n = sum(1 for x in base_metas if x["sr"] == sr and x["meta"].get("timing") == "post" and x["meta"].get("scan_pass_idx") in (0, None))
             if n != 1:
                 self.emit("FILE-04", f"{sbase}/{sr}", None, "meta.timing", str(n))
-        # 줄 번호 (scan_pass_idx): 같은 시편·반복·층 (post끼리) 안에서 0부터 빈 번호 없이
+        # 줄 번호 (scan_pass_idx): 같은 시편·반복·층 (post끼리) 안에서 0부터 빈 번호 없이 (_q 없는 스캔끼리, v1.2)
         passes: dict = {}
-        for x in metas:
+        for x in base_metas:
             m = x["meta"]
             if m.get("scan_pass_idx") is None or m.get("timing") is None:
                 continue
@@ -1468,6 +1548,30 @@ class Validator:
         for (sr, lay), ps in sorted(passes.items(), key=str):
             if sorted(ps) != list(range(len(ps))):
                 self.emit("X-MET-55", f"{sbase}/{sr}", None, "meta.scan_pass_idx", f"{lay}: {sorted(ps)}")
+        # 같은 층 반복 _qNN (X-MET-68, v1.2): layer만 · 01 이상 · 같은 시편·반복·층·줄 안 01부터 빈 번호 없이 · 바탕 스캔 있음
+        base_keys = {(x["sr"], x["meta"].get("layer_idx"), x["meta"].get("scan_pass_idx")) for x in base_metas
+                     if x["meta"].get("timing") == "layer"}
+        qs: dict = {}
+        for x in metas:
+            m = x["meta"]
+            q = q_of(m.get("scan_id"))
+            if q is None:
+                continue
+            M = f"{x['base']}/meta.json"
+            if m.get("timing") == "post":
+                self.emit("X-MET-68", M, None, "meta.scan_id", m["scan_id"], "timing = post 스캔에 _q가 붙음 (같은 층 반복은 층별만)")
+                continue
+            if q == 0:
+                self.emit("X-MET-68", M, None, "meta.scan_id", m["scan_id"], "_q00 (반복 번호는 01부터, 첫 측정은 _q 없음)")
+            k = (x["sr"], m.get("layer_idx"), m.get("scan_pass_idx"))
+            qs.setdefault(k, []).append(q)
+            if k not in base_keys:
+                self.emit("X-MET-68", M, None, "meta.scan_id", m["scan_id"],
+                          "_q 스캔이 있는데 같은 시편·반복·층·줄의 _q 없는 스캔이 없음")
+        for (sr, li, pi), ql in sorted(qs.items(), key=str):
+            if sorted(ql) != list(range(1, len(ql) + 1)) and 0 not in ql:
+                self.emit("X-MET-68", f"{sbase}/{sr}", None, "meta.scan_id", f"층 {li} 줄 {pi}: _q {sorted(ql)}",
+                          "같은 시편·반복·층·줄의 _q 숫자가 01부터 빈 번호 없이 이어지지 않음")
         # 모든 층 스캔 (D-18, 판정 거부 X7). D-21 대기라 기본 끔 (W-MET-56)
         for sr in sorted(s["specreps"]):
             ins = [x["meta"] for x in metas if x["sr"] == sr and x["meta"].get("thermal_state") == "in_process"]
@@ -1534,7 +1638,8 @@ class Validator:
             m = x["meta"]
             if m.get("timing") in ("layer", "post"):
                 groups_lp.setdefault((x["sr"], "post" if m["timing"] == "post" else m.get("layer_idx")), []).append(x)
-        first_of = {k: next((y for y in v if y["meta"].get("scan_pass_idx") == 0), None) for k, v in groups_lp.items()}
+        # 첫 줄 스캔 = scan_pass_idx 0이고 _q 없는 스캔 (v1.2). groups_lp에는 _q 스캔도 남김 (같은 Z 규칙 X-REF-16)
+        first_of = {k: next((y for y in v if y["meta"].get("scan_pass_idx") == 0 and not is_q(y)), None) for k, v in groups_lp.items()}
 
         def base_of(x):
             m = x["meta"]
@@ -1571,7 +1676,7 @@ class Validator:
                     self.emit("FILE-14", M, None, "meta.bed_mesh_file", m["bed_mesh_file"])
             if m.get("paired_scan_id") is not None:
                 y = by_id.get(m["paired_scan_id"])
-                ok = (y is not None and y["sr"] == x["sr"] and y["meta"].get("thermal_state") == "in_process"
+                ok = (y is not None and not is_q(y) and y["sr"] == x["sr"] and y["meta"].get("thermal_state") == "in_process"
                       and m.get("layer_count") is not None and y["meta"].get("layer_idx") == m["layer_count"] - 1
                       and y["meta"].get("scan_pass_idx") == m.get("scan_pass_idx"))  # v1.0: 같은 줄 번호끼리 짝
                 if not ok:
@@ -1622,12 +1727,18 @@ class Validator:
                 if r["t_start_ns"] is not None and y["frames"] and y["frames"][0]["t_host_ns"] is not None:
                     if abs(r["t_start_ns"] - y["frames"][0]["t_host_ns"]) > 600e9:
                         self.emit("X-REF-07", Rp, None, "ref.t_start_ns", r["t_start_ns"])
-                if r["kind"] == "step_gauge":
-                    # v1.0: x ≤ 짝 스캔 layer_z_mm (같은 높이 허용, 4절 C2)
-                    if r["gauge_height_mm"] is not None and ym.get("layer_z_mm") is not None and r["gauge_height_mm"] > ym["layer_z_mm"] + 1e-12:
-                        self.emit("X-REF-15", Rp, None, "ref.gauge_height_mm", r["gauge_height_mm"])
-                # v1.0: 층 기준의 짝 스캔은 그 층 첫 줄 (scan_pass_idx = 0)
-                if r["kind"] in LAYER_REFS and ym.get("scan_pass_idx") not in (None, 0):
+                if r["kind"] == "step_gauge" and ym.get("layer_z_mm") is not None:
+                    # v1.2 C2 두 줄 (4절): ① 공칭 ≤ 층 Z (허용차 0.0001) ② 교정 ≤ 층 Z + 0.02. 같은 높이 허용
+                    z = ym["layer_z_mm"]
+                    nom = gauge_nominal(r["gauge_block_id"])
+                    if nom is not None and nom > z + C2_NOMINAL_TOL_MM + 1e-9:
+                        self.emit("X-REF-15", Rp, None, "ref.gauge_block_id", f"공칭 {nom} > 층 Z {z} ({r['gauge_block_id']})",
+                                  "C2 공칭 줄 위반: ref.gauge_block_id 공칭 높이 > 짝 스캔 layer_z_mm (허용차 0.0001, 명세 v1.2 4절)")
+                    if r["gauge_height_mm"] is not None and r["gauge_height_mm"] > z + C2_CAL_TOL_MM + 1e-9:
+                        self.emit("X-REF-15", Rp, None, "ref.gauge_height_mm", f"교정 {r['gauge_height_mm']} > 층 Z {z} + 0.02",
+                                  "C2 교정 줄 위반: ref.gauge_height_mm > 짝 스캔 layer_z_mm + 0.02 (명세 v1.2 4절)")
+                # v1.0: 층 기준의 짝 스캔은 그 층 첫 줄 (scan_pass_idx = 0). v1.2: _q 스캔도 첫 줄이 아님
+                if r["kind"] in LAYER_REFS and (ym.get("scan_pass_idx") not in (None, 0) or is_q(y)):
                     self.emit("X-REF-24", Rp, None, "ref.scan_id", r["scan_id"])
             # 기준물 ID · 높이 ↔ 교정 (같은 캠페인 cal_manifest.csv). GB-00 (베드 면)은 cal 행 없음 (높이 0은 X-REF-23)
             gb = r["gauge_block_id"]
@@ -1660,7 +1771,7 @@ class Validator:
         """v1.0 (T1 3차, LM-T14-3) 세션 규칙: 두 단 · 같은 Z (행마다) · post 줄 집합 · ref_id 순번 · 줄마다 bed_bare."""
         # post 줄 번호 집합 = 마지막 층 timing = layer 스캔의 줄 번호 집합 (X-MET-65)
         for sr in sorted({x["sr"] for x in metas}):
-            ms = [x["meta"] for x in metas if x["sr"] == sr]
+            ms = [x["meta"] for x in metas if x["sr"] == sr and q_of(x["meta"].get("scan_id")) is None]  # _q 없는 스캔끼리 (v1.2)
             lc = {m.get("layer_count") for m in ms if isinstance(m.get("layer_count"), int)}
             if len(lc) != 1:
                 continue
@@ -1722,8 +1833,9 @@ class Validator:
                     h1, h2 = max(hs), min(hs)
                     if not (0 < h1 - h2 <= 3.04 + 1e-9):
                         bad = f"h1 − h2 = {h1 - h2:.4f} (0 < 차 ≤ 3.04)"
-                    elif z is not None and (h1 > z + 1e-12 or z - h2 > 8.0 + 1e-9):
-                        bad = f"h1 {h1}, h2 {h2}, 층 Z {z} (h1 ≤ Z, Z − h2 ≤ 8.0)"
+                    elif z is not None and z - h2 > 8.0 + 1e-9:
+                        # v1.2: h1의 C2 두 줄 (공칭 ≤ Z, 교정 ≤ Z + 0.02)은 X-REF-15가 행마다 봄 (겹쳐 내지 않음)
+                        bad = f"h2 {h2}, 층 Z {z} (Z − h2 ≤ 8.0)"
                 if bad:
                     self.emit("X-REF-20", f"{b['base']}/meta.json", None, "ref.kind", bad)
                 elif len(stg) == 2 and None not in hs and z is not None:
@@ -1772,7 +1884,8 @@ class Validator:
         u = max(us)
         limit = TWO_STEP_LIMIT_UM / math.sqrt(2 * TWO_STEP_SIGMA_UM ** 2 + 2 * u ** 2)
         ratio = (z - h1) / (h1 - h2)
-        if ratio > limit + 1e-9:
+        # v1.2: d = 층 Z − h1 < 0 (교정 h1이 층 Z를 0.02 안에서 넘음)이면 경고 없음 (외삽 아님, 비가 음수라 부등식도 성립)
+        if z - h1 >= 0 and ratio > limit + 1e-9:
             self.emit("W-REF-25", f"{b['base']}/meta.json", None, "ref.gauge_height_mm",
                       f"층 Z {z}, h1 {h1} ({hi['gauge_block_id']}), h2 {h2} ({lo['gauge_block_id']}), u {u} µm: "
                       f"비 {ratio:.4f} > 문턱 {limit:.4f}")

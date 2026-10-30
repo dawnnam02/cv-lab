@@ -136,9 +136,10 @@ _h("FILE-03", "FILE", "ERROR", "구현", "", "", "고정 파일이 없음 (스�
    "(+ 움직이며 찍는 기준 bed_bare·bed_marker·ref_tower·step_gauge·feeler는 position_log.csv), 교정 폴더 cal_manifest.csv, MSA 폴더 design.csv)")
 _h("FILE-04", "FILE", "ERROR", "구현", "meta.timing;meta.scan_pass_idx", "meta.timing:시편·반복마다 post 스캔 (scan_pass_idx = 0)이 정확히 1개",
    "시편·반복 폴더에 post 스캔 (scan_pass_idx = 0)이 정확히 1개가 아님 (§8, D-06)")
-_h("FILE-05", "FILE", "ERROR", "구현", "meta.session_id;meta.specimen_id;meta.repeat;meta.layer_idx;meta.timing;meta.scan_pass_idx",
+_h("FILE-05", "FILE", "ERROR", "구현", "meta.session_id;meta.specimen_id;meta.repeat;meta.layer_idx;meta.timing;meta.scan_pass_idx;meta.scan_id",
    "meta.session_id:폴더 이름과 같음",
-   "스캔 폴더 경로에서 뽑은 세션·시편·반복·층·줄 번호 (_pNN)가 meta 값과 다름 (§8 경로 일치)")
+   "스캔 폴더 경로에서 뽑은 세션·시편·반복·층·줄 번호 (_pNN)가 meta 값과 다르거나, 폴더의 같은 층 반복 꼬리 (_qNN)가 "
+   "meta.scan_id의 _qNN과 다름 (§8 경로 일치, v1.2)")
 _h("FILE-06", "FILE", "ERROR", "구현", "frame.file", "frame.file:파일이 실제로 있음", "frame.file이 가리키는 영상이 없음")
 _h("FILE-07", "FILE", "ERROR", "구현", "frame.sha256", "frame.sha256:다시 계산한 값과 같음", "frame.sha256이 영상 파일 지문과 다름")
 _h("FILE-08", "FILE", "ERROR", "구현", "frame.roi_w_px;frame.roi_h_px",
@@ -192,11 +193,15 @@ _h("H-FRM-19", "보류", "WARN", "보류", "frame.lossy", "frame.lossy:처리 �
 # SV13 (T1 2차)
 _h("X-FRM-20", "CROSS", "ERROR", "구현", "frame.layer_idx;ref.layer_idx", "frame.layer_idx:기준 촬영 폴더에서는",
    "기준 촬영 폴더의 frame.layer_idx가 ref.layer_idx와 다름 (ref.layer_idx가 빈 칸이면 -1이어야 함)")
-_h("X-FRM-21", "CROSS", "ERROR", "구현", "frame.trig_pulse_idx", "frame.trig_pulse_idx:값이 있는 행끼리 증가",
-   "trig_pulse_idx가 값이 있는 행끼리 늘지 않음")
+# v1.2: 한 스캔 = 등속 구간 하나 (같은 층 반복은 _q 스캔마다 자기 파일). 파일 = 스캔 하나라 X-FRM-21 · 23은 그대로 파일마다 봄
+_h("X-FRM-21", "CROSS", "ERROR", "구현", "frame.trig_pulse_idx",
+   "frame.trig_pulse_idx:값이 있는 행끼리 증가;;frame.trig_pulse_idx:번호는 스캔마다 0부터 한 번만 이어짐"
+   ";;frame.trig_pulse_idx:같은 층 반복 (`_q` 스캔)은 자기 첫 펄스 0부터 따로 셈",
+   "trig_pulse_idx가 값이 있는 행끼리 늘지 않음 (한 스캔 파일 안에서 한 번만 이어짐)")
 _h("X-FRM-22", "CROSS", "ERROR", "구현", "frame.trig_pulse_idx;frame.dropped_before", "frame.trig_pulse_idx:앞 값과의 차",
    "trig_pulse_idx 앞 값과의 차 − 1 ≠ dropped_before")
-_h("X-FRM-23", "CROSS", "ERROR", "구현", "frame.gate_on", "frame.gate_on:스캔 안에서 true 행이",
+_h("X-FRM-23", "CROSS", "ERROR", "구현", "frame.gate_on",
+   "frame.gate_on:스캔 안에서 true 행이;;frame.gate_on:같은 층 반복은 `_q` 스캔마다 자기 덩어리 하나",
    "gate_on = true 행이 한 덩어리가 아님 (중간에 끊김)")
 
 # pos 교차 (§2)
@@ -216,8 +221,12 @@ _h("X-POS-10", "CROSS", "ERROR", "구현", "pos.acc_x_mm_s2;pos.acc_y_mm_s2;pos.
 # SV13 (T1 2차)
 _h("X-POS-11", "CROSS", "ERROR", "구현", "pos.layer_idx;pos.scan_id;frame.layer_idx;frame.scan_id", "pos.layer_idx:기준 촬영 폴더에서는",
    "기준 폴더 position_log의 scan_id·layer_idx가 그 기준 frames_index와 다름 (명세 4절)")
-_h("X-POS-12", "CROSS", "ERROR", "구현", "pos.pass_idx", "pos.pass_idx:scan_start~scan_end 사이에서 값이 0부터",
-   "스캔 구간 pass_idx가 0부터 빈 번호 없이 늘지 않음")
+# v1.2: 뜻이 바뀜 (v1.1 "구간 안 0부터 늘어남" → 그 스캔의 같은 층 반복 번호, 파일 안 같은 값)
+_h("X-POS-12", "CROSS", "ERROR", "구현", "pos.pass_idx;meta.scan_id",
+   "pos.pass_idx:파일 안 모든 행이 같은 값;;pos.pass_idx:스캔 폴더에서는 `meta.scan_id`의 `_q` 숫자와 같고"
+   ";;pos.pass_idx:기준 폴더 위치 로그는 모든 행 0",
+   "pos.pass_idx가 파일 안에서 다르거나, 스캔 폴더에서 meta.scan_id의 _q 숫자 (_q가 없으면 0)와 다르거나, "
+   "기준 폴더 위치 로그에서 0이 아님 (명세 v1.2 2절)")
 _h("X-POS-13", "CROSS", "ERROR", "구현", "pos.event;meta.timing", "pos.event:resume은",
    "resume이 layer 스캔의 scan_end 뒤 0–1개가 아님 (post 스캔에 있거나, 2개 이상이거나, scan_end 앞)")
 _h("X-POS-14", "CROSS", "ERROR", "구현", "pos.event;pos.t_ns;meta.timing", "pos.event:cool_start · cool_end는",
@@ -300,8 +309,11 @@ _h("X-REF-13", "CROSS", "ERROR", "구현", "ref.gauge_block_id;ref.kind", "ref.g
 _h("X-REF-14", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;cal.gauge_block_height_mm;cal.gauge_measured_mm",
    "ref.gauge_height_mm:GB- 블록이면 = 그 블록",
    "ref.gauge_height_mm ≠ cal 교정값 (GB- 블록: gauge_block_height_mm, FG-: gauge_measured_mm, 차 > 1e-9)")
-_h("X-REF-15", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;meta.layer_z_mm", "ref.gauge_height_mm:kind = step_gauge면 **x ≤",
-   "step_gauge 높이 > 짝 스캔 layer_z_mm (노즐 충돌, 같은 높이는 허용, 명세 4절 C2)")
+# v1.2: C2 두 줄 (명세 4절). ① 공칭 (ID 숫자: GB- + 로 나눈 합, FG- 숫자, GB-00 0) ≤ 층 Z + 0.0001 ② 교정 ≤ 층 Z + 0.02.
+# step_gauge 행마다 (두 단의 h1 · h2 모두). 두 단 규칙 (X-REF-20)은 C2를 다시 보지 않음 (같은 고장이 두 규칙으로 겹쳐 나오지 않게)
+_h("X-REF-15", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;ref.gauge_block_id;meta.layer_z_mm", "ref.gauge_height_mm:kind = step_gauge면 **x ≤",
+   "C2 (명세 4절, v1.2 두 줄) 위반: step_gauge 행의 공칭 높이 (gauge_block_id 숫자) > 짝 스캔 layer_z_mm + 0.0001이거나, "
+   "교정 높이 (gauge_height_mm) > layer_z_mm + 0.02 (같은 높이는 허용)")
 _h("X-REF-16", "CROSS", "ERROR", "구현", "ref.kind;pos.z_mm;meta.scan_pass_idx", "pos.z_mm:계단 기준물과의 같은 Z 규칙은 4절",
    "같은 Z 연속 측정 (D-16, 명세 4절): 그 층 다른 줄 스캔 · 두 단 기준 위치 로그의 스캔 구간 cmd 행 하나가 기준 Z "
    "(첫 줄 스캔 구간 cmd 평균)와 0.001 mm 넘게 다름")
@@ -317,8 +329,8 @@ _h("X-REF-18", "CROSS", "ERROR", "구현", "ref.ref_id;ref.t_start_ns",
 _h("X-REF-19", "CROSS", "ERROR", "구현", "ref.ref_id", "ref.ref_id:세션 안에서 유일", "같은 세션 안에 같은 ref_id가 둘 이상")
 _h("X-REF-20", "CROSS", "ERROR", "구현", "ref.kind;ref.scan_id;ref.gauge_block_id;ref.gauge_height_mm;meta.layer_z_mm;meta.zero_ref_method",
    "ref.kind:step_gauge는 4절 \"두 단 규칙\";;meta.zero_ref_method:step_gauge면 그 층 첫 줄 스캔을 짝으로",
-   "두 단 규칙 (C1, 명세 4절) 위반: 첫 줄 스캔을 짝으로 하는 step_gauge 행이 2개가 아니거나, 두 ID가 같거나, "
-   "0 < h1 − h2 ≤ 3.04 · h1 ≤ 층 Z · 층 Z − h2 ≤ 8.0 중 하나가 거짓")
+   "두 단 규칙 (C1, 명세 4절) 위반: 첫 줄 스캔 (scan_pass_idx 0이고 _q 없음)을 짝으로 하는 step_gauge 행이 2개가 아니거나, "
+   "두 ID가 같거나, 0 < h1 − h2 ≤ 3.04 · 층 Z − h2 ≤ 8.0 중 하나가 거짓 (h1의 C2 두 줄은 X-REF-15가 행마다 봄, v1.2)")
 _h("X-REF-21", "CROSS", "ERROR", "구현", "ref.scan_pass_idx;ref.kind;meta.scan_pass_idx",
    "ref.scan_pass_idx:한 세션의 bed_bare 행은 0부터;;ref.kind:줄 번호 (`meta.scan_pass_idx`)마다 1행 이상",
    "세션의 bed_bare 줄 번호가 0부터 빈 번호 없이 이어지지 않거나, 그 세션 스캔의 줄 번호 최댓값까지 다 있지 않음")
@@ -328,13 +340,13 @@ _h("X-REF-22", "CROSS", "ERROR", "구현", "ref.scan_pass_idx;pos.x_mm;meta.scan
 _h("X-REF-23", "CROSS", "ERROR", "구현", "ref.gauge_height_mm;ref.gauge_block_id", "ref.gauge_height_mm:x = 0은 GB-00",
    "gauge_height_mm = 0인데 GB-00이 아니거나, GB-00인데 gauge_height_mm ≠ 0")
 _h("X-REF-24", "CROSS", "ERROR", "구현", "ref.scan_id;meta.scan_pass_idx", "ref.scan_id:그 스캔의 `meta.scan_pass_idx` = 0",
-   "층에 매인 기준의 ref.scan_id가 가리키는 스캔이 첫 줄 (scan_pass_idx = 0)이 아님")
+   "층에 매인 기준의 ref.scan_id가 가리키는 스캔이 첫 줄 (scan_pass_idx = 0이고 _q 없음, v1.2)이 아님")
 # v1.1 (V-1): 두 단 비 경고 (명세 4절 본문 bullet "두 단 비 경고 (C1, v1.1)"). 필드표 문장이 아니라 4절 본문이라
 # 두 단 규칙과 같은 ref.kind 문장 ("4절 \"두 단 규칙\"")에 함께 잇는다
 _h("W-REF-25", "CROSS", "WARN", "구현", "ref.gauge_height_mm;ref.gauge_block_id;meta.layer_z_mm;cal.gauge_block_u_um;cal.gauge_u_um",
    "ref.kind:step_gauge는 4절 \"두 단 규칙\"",
    "두 단 비 경고 (C1, 명세 4절 v1.1): (층 Z − h1) ÷ (h1 − h2) > 4 µm ÷ √(2 × 1.5² + 2u²) "
-   "(u = 두 단 교정 표준불확도 중 큰 값, GB-00은 다른 단 값)",
+   "(u = 두 단 교정 표준불확도 중 큰 값, GB-00은 다른 단 값). d = 층 Z − h1 < 0이면 경고 없음 (v1.2)",
    "명세 v1.1 4절: σ 1.5 µm가 추정값이고 데이터 형식은 맞아 WARN (종료 코드 그대로). 두 단 규칙 (X-REF-20)을 통과한 층만 봄 "
    "(post 포함, 첫 줄 스캔 없는 층 · 두 단 규칙 실패 층은 건너뜀). 끌 수 있는 목록 (SWITCHABLE_OFF)에 넣지 않음: "
    "사용자 결정 대기 규칙이 아니고 T3 정상 캠페인은 이 경고도 0이어야 함 (명세 4절)")
@@ -422,8 +434,8 @@ _h("H-MET-52", "보류", "ERROR", "보류", "meta.slicer_name", "meta.slicer_nam
 _h("X-MET-54", "CROSS", "ERROR", "구현", "meta.scan_id;meta.scan_pass_idx", "meta.scan_id:`meta.scan_pass_idx` = 0이면",
    "scan_id의 _p 부분이 scan_pass_idx와 맞지 않음 (0이면 _p 없음, 1 이상이면 _p 숫자 = scan_pass_idx)")
 _h("X-MET-55", "CROSS", "ERROR", "구현", "meta.scan_pass_idx",
-   "meta.scan_pass_idx:같은 시편·반복·층;;meta.scan_pass_idx:줄이 하나면 0",
-   "같은 시편·반복·층 (post끼리)의 scan_pass_idx가 0부터 빈 번호 없이 이어지지 않음")
+   "meta.scan_pass_idx:같은 시편·반복·층;;meta.scan_pass_idx:줄이 하나면 0;;meta.scan_pass_idx:이 연속 · 집합 규칙은 `_q` 없는 스캔끼리 셈",
+   "같은 시편·반복·층 (post끼리)의 scan_pass_idx가 0부터 빈 번호 없이 이어지지 않음 (_q 스캔은 세지 않음, v1.2)")
 _h("W-MET-56", "CROSS", "WARN", "구현", "meta.layer_idx;meta.layer_count;meta.thermal_state",
    "meta.layer_idx:모든 층 스캔 (D-18);;meta.layer_idx:검증기는 경고, 거부는 판정 함수",
    "같은 시편·반복의 in_process 스캔에 0 ~ layer_count − 1 층이 다 있지 않음 (판정 거부 X7)",
@@ -453,6 +465,12 @@ _h("X-MET-65", "CROSS", "ERROR", "구현", "meta.scan_pass_idx;meta.timing;meta.
    "post 스캔의 줄 번호 집합 ≠ 마지막 층 (layer_count − 1) timing = layer 스캔의 줄 번호 집합")
 _h("X-MET-66", "CROSS", "ERROR", "구현", "meta.blind;meta.source", "meta.blind:source = real이면 false", "실측 (source = real)인데 blind = true")
 _h("X-MET-67", "CROSS", "ERROR", "구현", "meta.blind", "meta.blind:같은 캠페인 모든 스캔이 같은 값", "같은 캠페인 안 스캔들의 blind 값이 다름")
+# v1.2 (V-3): 같은 층 반복 _qNN 스캔 (명세 2 · 5 · 8절)
+_h("X-MET-68", "CROSS", "ERROR", "구현", "meta.scan_id;meta.timing;meta.scan_pass_idx",
+   "meta.scan_id:`_q` (같은 층 반복, v1.2)는 timing = layer일 때만;;meta.scan_id:같은 시편·반복·층·줄의 `_q` 스캔은 01부터"
+   ";;meta.scan_pass_idx:`_q` 스캔 (같은 층 반복)은 반복한 줄의 번호를 그대로 가짐",
+   "같은 층 반복 (_qNN) 위반: timing = post인데 _q가 붙음, _q00, 같은 시편·반복·층·줄의 _q 숫자가 01부터 빈 번호 없이 "
+   "이어지지 않음, 또는 _q 스캔이 있는데 같은 시편·반복·층·줄의 _q 없는 스캔이 없음 (층에 _q 스캔만 있음)")
 
 # rep 교차 (§7)
 _h("X-REP-01", "CROSS", "ERROR", "구현", "rep.part_idx;rep.specimen_id", "rep.part_idx:같은 specimen_id면 같음", "같은 specimen_id인데 part_idx가 다름")
@@ -463,6 +481,13 @@ _h("H-REP-05", "보류", "WARN", "보류", "rep.run_order", "rep.run_order:행 �
    "행 순서와 다른 무작위 순서 권장", "권장 사항이라 위반 기준이 없음")
 _h("X-REP-06", "CROSS", "ERROR", "구현", "rep.noise_seed", "rep.noise_seed:같은 study 안에서 행마다 다름", "같은 study 안 noise_seed 중복")
 _h("X-REP-07", "CROSS", "ERROR", "구현", "rep.truth_id;rep.specimen_id", "rep.truth_id:같은 specimen_id면 같음", "같은 specimen_id인데 truth_id가 다름")
+# v1.2 (V-3): design 행 하나 = 실행된 스캔 하나 (명세 7절 "같은 층 반복과 스캔")
+_h("X-REP-08", "CROSS", "ERROR", "구현", "rep.scan_id", "rep.scan_id:같은 study 안에서 행마다 다름",
+   "같은 study (design_executed.csv) 안에 같은 rep.scan_id가 둘 이상")
+_h("X-REP-09", "CROSS", "ERROR", "구현", "rep.scan_id;rep.repeat_idx", "rep.scan_id:같은 층 반복이면 repeat_idx 1",
+   "rep.scan_id가 _qNN 스캔인데 repeat_idx ≠ NN + 1 (같은 층 반복: repeat_idx 1 = _q 없는 스캔, k ≥ 2 = _q(k − 1))",
+   "한쪽 방향만 봄: _q 스캔이면 같은 층 반복이 확실해 repeat_idx = NN + 1을 요구. _q 없는 스캔은 같은 층 반복 연구인지 "
+   "데이터로 가릴 표시가 없어 (T1 V-3 남은 문제 5) repeat_idx를 보지 않음")
 
 # truth (부록 A). data/raw 검사에서는 열지 않음: Validator.check_truth()로 참값 객체만 따로 봄 (T3 시뮬레이터가 씀)
 _h("X-TRU-01", "CROSS", "ERROR", "구현", "truth.judgement;truth.pass_pct", "",
@@ -481,6 +506,11 @@ _h("X-TRU-04", "CROSS", "ERROR", "구현", "truth.factor_params;meta.injected_fa
    "truth.factor_params 키 집합 ≠ 주입 요인 합집합 (blind면 truth.scan_factors 값의 합집합) (부록 A)")
 _h("X-TRU-05", "CROSS", "ERROR", "구현", "truth.gauge_thickness_mm", "",
    "truth.gauge_thickness_mm 키 ∉ {0.20, 0.30, 0.40, 0.50}이거나 abs(값 − 공칭) > 0.02 (부록 A)")
+# v1.2 (V-3): 새 참값 필드. 캠페인 cal_manifest.csv의 material_sample (재료, 색) 쌍은 truth_ctx["material_pairs"]
+_h("X-TRU-06", "CROSS", "ERROR", "구현", "truth.material_offset_um;cal.target_type;cal.material;cal.color", "",
+   "재료 치우침 참값 위반: material_sample 행이 있는데 truth.material_offset_um이 dict가 아니거나 (없으면 null이어야 함), "
+   "바깥 키 ∉ meta.material 허용 값, 안쪽 값이 dict가 아니거나 색 키가 빈 문자열, (재료, 색) 쌍 집합 ≠ material_sample 행 쌍 집합, "
+   "값이 abs(x) ≤ 100 수가 아님 (부록 A, v1.2)")
 
 # 다른 필드의 REQ 규칙이 맡는 문장 (규칙은 자동 생성, 여기서는 덮는 문장만 적음)
 EXTRA_COVERS = {
@@ -495,8 +525,9 @@ EXTRA_COVERS = {
     "REGEX.meta.firmware": "meta.firmware:정규식 `^([a-z0-9]+-)?",
     # v1.1: 스캔 없는 MSA 캠페인은 blind = false로 봄 → 가상이면 noise_seed 필수 (COND_FUNCS: blind 모르면 가상 여부만)
     "REQ.rep.noise_seed": "meta.blind:스캔 없이 `msa/`만 있는 캠페인은 blind = false로 봄",
-    # v1.1: 허용 값 {1.0, 1.1}. 1.0 데이터도 같은 규칙 (값만 다름)
-    "ENUM.meta.spec_version": "meta.spec_version:v1.1은 필드를 바꾸지 않아 1.0 데이터도 같은 규칙으로 봄",
+    # v1.1: 허용 값 {1.0, 1.1}. 1.0 데이터도 같은 규칙 (값만 다름). v1.2: {1.0, 1.1, 1.2}, 옛 판 데이터도 v1.2 규칙으로 봄
+    "ENUM.meta.spec_version": "meta.spec_version:v1.1은 필드를 바꾸지 않아 1.0 데이터도 같은 규칙으로 봄"
+                              ";;meta.spec_version:1.0 · 1.1 데이터도 v1.2 규칙으로 봄",
 }
 
 # 설명문 (검사할 내용 없음). (필드, 문장 일부, 사유)
@@ -546,7 +577,7 @@ NOTES = [
     ("meta.fps", "단위 프레임/s", "단위 설명"),
     ("meta.proc_time_s", "실시간 처리를 안 했으면 null", "작성 안내 (선택 필드라 null 허용)"),
     # v1.1 (V-1)
-    ("meta.spec_version", "이 판을 따라 새로 쓰는 데이터는 1.1", "작성 안내 (허용 값 {1.0, 1.1}은 ENUM, 어느 쪽이든 위반 아님)"),
+    ("meta.spec_version", "이 판을 따라 새로 쓰는 데이터는 1.2", "작성 안내 (허용 값 {1.0, 1.1, 1.2}는 ENUM, 어느 쪽이든 위반 아님, v1.2)"),
     ("meta.blind", "평가용 (블라인드) 데이터는 스캔이 있는 캠페인으로만 만듦",
      "작성 안내: 스캔 없는 캠페인은 blind를 적을 meta.json이 없어 데이터로 볼 것이 없음 (blind = false로 보는 것은 REQ.rep.noise_seed)"),
 ]
