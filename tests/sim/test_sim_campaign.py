@@ -51,14 +51,12 @@ def test_small_campaign_reproducible(tmp_path):
     camp = load_campaign(SMALL)
     a = run_shape_campaign(cfg, camp, 20261029, tmp_path / "a", workers=1)
     b = run_shape_campaign(cfg, camp, 20261029, tmp_path / "b", workers=4)
-    c = run_shape_campaign(cfg, camp, 20261030, tmp_path / "c", workers=1)
     da = _tree_digest(Path(a["out"]))
     db = _tree_digest(Path(b["out"]))
-    dc = _tree_digest(Path(c["out"]))
     assert da == db
     assert sorted(da) == ["heightmaps/T-S01_L000.npy", "heightmaps/T-S01_L001.npy", "heightmaps/T-S01_post.npy",
                           "sim_plan.json", "truth_shape.json"]
-    assert da["heightmaps/T-S01_L001.npy"] != dc["heightmaps/T-S01_L001.npy"]  # Z축 무작위 몫이 시드를 따름
+    # 다른 시드 → 다른 값은 test_zaxis_seeded_and_off (Z축 무작위) · 명령 ⑥ (캠페인 전체 지문)으로 봄 (시험 시간)
     with pytest.raises(FileExistsError):
         run_shape_campaign(cfg, camp, 20261029, tmp_path / "a")
 

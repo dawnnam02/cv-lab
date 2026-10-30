@@ -31,7 +31,8 @@ def tl():
 @pytest.mark.parametrize("name", ["voron24", "caliper"])
 def test_step_choice_matches_t14_layer_table(name):
     st = CFG["steps"]
-    rows = list(csv.DictReader(open(LAYER_TABLE / f"층표_{name}.csv", encoding="utf-8")))
+    with open(LAYER_TABLE / f"층표_{name}.csv", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
     bad = []
     for r in rows:
         i1, i2 = choose_steps(float(r["z_n_mm"]), st)
@@ -109,26 +110,28 @@ def test_session_refs(tl):
 
 def test_step_refs_two_step_rules(tl):
     ids = []
-    conflicts = []
     for r in tl.layers + [tl.post]:
         rows = r["step_refs"]
         assert len(rows) == 2 and rows[0]["gauge_block_id"] != rows[1]["gauge_block_id"]
         assert all(x["scan_id"] == r["scan_ids"][0] and x["layer_idx"] == r["layer"] for x in rows)
         h2, h1 = rows[0]["gauge_height_mm"], rows[1]["gauge_height_mm"]
         u = [2.0 if x["gauge_block_id"].startswith("GB") and x["gauge_block_id"] != "GB-00" else 1.0 for x in rows]
-        chk = two_step_rule(h1, h2, r["z_top"], *u)
         nom_h1 = CFG["steps"]["height_mm"][CFG["steps"]["ids"].index(rows[1]["gauge_block_id"])]
-        if not chk["rule_ok"]:
-            # 알려진 충돌 (대조표 '명세에 반영할 점' ①): 공칭 h1 = 층 Z인 층에서 교정값이 공칭보다 크면 h1 ≤ 층 Z가 깨짐
-            assert abs(nom_h1 - r["z_top"]) < 1e-9 and 0 < h1 - r["z_top"] <= 0.02, (r["layer"], chk)
-            conflicts.append(r["layer"])
-        assert chk["ratio_ok"], (r["layer"], chk)
+        chk = two_step_rule(h1, h2, r["z_top"], *u, h1_nominal=nom_h1)   # 명세 v1.2 초안 C2 두 줄
+        assert chk["rule_ok"] and chk["nominal_ok"] and chk["ratio_ok"], (r["layer"], chk)
         assert all(x["gauge_temp_c"] is not None for x in rows)
         ids += [x["ref_id"] for x in rows]
     assert ids == [f"REF-STG-{i:03d}" for i in range(1, len(ids) + 1)]
     temps = tl.truth["gauge_temp_params"]["temp_c"]
     assert set(temps) == {f"L{n:03d}" for n in range(len(tl.layers))} | {"post"}
     assert all(-10 <= t <= 130 for t in temps.values())
+
+
+def test_two_step_rule_v12_edges():
+    assert two_step_rule(0.2200, 0.0, 0.2, 1.0, 1.0, h1_nominal=0.2)["rule_ok"]          # 교정 + 0.0200 정상
+    assert not two_step_rule(0.2201, 0.0, 0.2, 1.0, 1.0, h1_nominal=0.2)["rule_ok"]      # + 0.0201 위반
+    assert not two_step_rule(0.2, 0.0, 0.2, 1.0, 1.0, h1_nominal=0.3)["nominal_ok"]      # 공칭 h1 > 층 Z
+    assert two_step_rule(0.205, 0.0, 0.2, 1.0, 1.0, h1_nominal=0.2)["ratio_ok"]          # d < 0 → 경고 없음
 
 
 def test_msa_repeats(tl):
@@ -139,7 +142,10 @@ def test_msa_repeats(tl):
     design, executed = tl.msa
     assert len(design) == 5 and len({d["noise_seed"] for d in design}) == 5
     assert sorted(d["run_order"] for d in design) == [1, 2, 3, 4, 5]
-    assert all(d["scan_id"] is None for d in design) and all(e["scan_id"] == f"S01_r01_L{mid:03d}" for e in executed)
+    assert all(d["scan_id"] is None for d in design)
+    base = f"S01_r01_L{mid:03d}"   # v1.2 초안 V12-2: repeat_idx 1 = _q 없는 스캔, k ≥ 2 = _q(k − 1)
+    assert [e["scan_id"] for e in executed] == [base] + [f"{base}_q{q:02d}" for q in range(1, 5)]
+    assert tl.layers[mid]["repeat_ids"] == [f"{base}_q{q:02d}" for q in range(1, 5)]
     assert all(d["truth_id"] == "T-S01" for d in design)
 
 

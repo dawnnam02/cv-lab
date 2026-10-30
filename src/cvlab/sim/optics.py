@@ -523,6 +523,48 @@ def checker_texture(square_mm: float, rows: int, cols: int, marker_mm: float | N
     return tex
 
 
+def load_aruco_bits(path=None) -> dict:
+    """config/sim/aruco_dict_4x4_50.csv → {id: (4, 4) 비트 배열, 1 = 흰색} (출처 머리 · 팀장검증 7차 §5.3)."""
+    import csv as _csv
+    from pathlib import Path as _P
+    p = _P(path) if path else _P(__file__).resolve().parents[3] / "config" / "sim" / "aruco_dict_4x4_50.csv"
+    with open(p, encoding="utf-8") as fh:
+        lines = [ln for ln in fh if not ln.startswith("#")]
+    return {int(r["id"]): np.array([int(c) for c in r["bits"]]).reshape(4, 4) for r in _csv.DictReader(lines)}
+
+
+def charuco_texture(square_mm: float, rows: int, cols: int, marker_mm: float, bits: dict):
+    """OpenCV CharucoBoard 규약 (legacy 무늬 아님, 명세 v1.2 V12-3): 판 좌표 원점 왼쪽 위 · x 오른쪽 · y 아래 (영상 행).
+    9 × 6 판은 왼쪽 위 칸이 검정, 마커는 흰 칸에 행 우선으로 ID 0부터 (스크래치 OpenCV 4.13.0 그림과 대조, 모델 문서 §5.1).
+    평면 좌표 (x, y)는 판 가운데 원점 · y 위쪽이라 판 y = −평면 y (위에서 볼 때 거울상이 아니게)."""
+    W, H = cols * square_mm, rows * square_mm
+    cell = marker_mm / 6.0          # 4 × 4 비트 + 테 1칸
+    pad = (square_mm - marker_mm) / 2.0
+    lut = np.zeros((max(bits) + 1, 4, 4))
+    for k, b in bits.items():
+        lut[k] = b
+
+    def tex(x, y):
+        xt = np.asarray(x, float) + W / 2
+        yt = -np.asarray(y, float) + H / 2
+        inside = (xt >= 0) & (xt < W) & (yt >= 0) & (yt < H)
+        j = np.clip(np.floor(xt / square_mm).astype(int), 0, cols - 1)
+        i = np.clip(np.floor(yt / square_mm).astype(int), 0, rows - 1)
+        black = (i + j) % 2 == 0
+        val = np.where(black, 0.0, 1.0)
+        mid = (i * cols + j) // 2
+        mx = xt - j * square_mm - pad
+        my = yt - i * square_mm - pad
+        inm = ~black & (mx >= 0) & (mx < marker_mm) & (my >= 0) & (my < marker_mm) & (mid < len(lut))
+        cx = np.clip(np.floor(mx / cell).astype(int), 0, 5)
+        cy = np.clip(np.floor(my / cell).astype(int), 0, 5)
+        border = (cx == 0) | (cx == 5) | (cy == 0) | (cy == 5)
+        bit = lut[np.clip(mid, 0, len(lut) - 1), np.clip(cy - 1, 0, 3), np.clip(cx - 1, 0, 3)]
+        val = np.where(inm, np.where(border, 0.0, bit), val)
+        return np.where(inside, 0.08 + 0.77 * val, 0.6)
+    return tex
+
+
 def dots_texture(pitch_mm: float, d_mm: float):
     def tex(x, y):
         fx = (x / pitch_mm) - np.round(x / pitch_mm)
@@ -538,18 +580,21 @@ def render_plane(geom: Geometry, R_ps: np.ndarray, t_ps: np.ndarray, texture, li
     H, W = geom.height, geom.width
     acc = np.zeros((H, W))
     offs = (np.arange(supersample) + 0.5) / supersample - 0.5
-    vv, uu = np.mgrid[0:H, 0:W].astype(float)
     nrm = R_ps[:, 2]
     depths = []
-    for dy in offs:
-        for dx in offs:
-            d = geom.ray_s((uu + dx).ravel(), (vv + dy).ravel())
-            denom = d @ nrm
-            tt = ((t_ps - geom.C_s) @ nrm) / np.where(np.abs(denom) < 1e-9, 1e-9, denom)
-            P = geom.C_s[None, :] + tt[:, None] * d
-            q = (P - t_ps[None, :]) @ R_ps
-            acc += texture(q[:, 0], q[:, 1]).reshape(H, W)
-            depths.append(np.median(tt))
+    cache = geom.__dict__.setdefault("_ray_cache", {})   # 화소 광선은 기하마다 같음 → 한 번만 (왜곡 역계산 비용)
+    if supersample not in cache:
+        vv, uu = np.mgrid[0:H, 0:W].astype(float)
+        cache[supersample] = [geom.ray_s((uu + dx).ravel(), (vv + dy).ravel()).astype(np.float32)
+                              for dy in offs for dx in offs]
+    for d32 in cache[supersample]:
+        d = d32.astype(float)
+        denom = d @ nrm
+        tt = ((t_ps - geom.C_s) @ nrm) / np.where(np.abs(denom) < 1e-9, 1e-9, denom)
+        P = geom.C_s[None, :] + tt[:, None] * d
+        q = (P - t_ps[None, :]) @ R_ps
+        acc += texture(q[:, 0], q[:, 1]).reshape(H, W)
+        depths.append(np.median(tt))
     img = acc / supersample ** 2 * light
     dep = float(np.median(depths))
     blur = geom.aperture_mm * geom.K[0, 0] * geom.pixel_mm * abs(dep - geom.focus_depth) / (dep * geom.focus_depth)

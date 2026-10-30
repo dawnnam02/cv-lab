@@ -70,8 +70,10 @@ def make_gauges(steps: dict, gcfg: dict, rng, cal_temp_c: float) -> Gauges:
 
 def gauge_truth(g: Gauges, used_block_ids) -> dict:
     thick = {gid[3:]: round(g.true20[gid], 6) for gid in g.true20 if gid.startswith("FG-")}
-    blocks = {gid: round(g.true20[gid], 6) for gid in sorted(set(used_block_ids)) if gid.startswith("GB-") and gid != "GB-00"}
-    return {"gauge_thickness_mm": thick, "gauge_block_heights_mm": blocks or None}
+    used = list(used_block_ids)
+    blocks = {gid: round(g.true20[gid], 6) for gid in sorted(set(used)) if gid.startswith("GB-") and gid != "GB-00"}
+    # step_gauge 기준이 하나라도 있으면 dict (블록 단을 안 썼으면 빈 dict), 없으면 null (명세 부록 A)
+    return {"gauge_thickness_mm": thick, "gauge_block_heights_mm": blocks if used else None}
 
 
 def _row(**kw) -> dict:
@@ -132,11 +134,24 @@ def cal_plan(cfg: dict, cal_id: str, clock, gauges: Gauges, rng, material_bias_u
                   nozzle_touch_z_mm=round(float(touch), 4))
             k += 1
             clock.advance(10.0)
-    plate_len = nr * c["d4_pitch_mm"] + 4.0
-    n_plate = int(round(plate_len / (cfg["motion"]["scan_speed_mm_s"] * cfg["motion"]["trigger_period_s"])))
-    jobs.append({"kind": "D4", "scan": "plate_scan", "frames": n_plate, "pose_idx0": k,
+    plate_len = float(c.get("d4_scan_len_mm") or (nr - 1) * c["d4_pitch_mm"] + 4.0)
+    pitch = cfg["motion"]["scan_speed_mm_s"] * cfg["motion"]["trigger_period_s"]
+    n_plate = int(round(plate_len / pitch))
+    bmid = nc // 2
+    fx_mid = 100.0 + bmid * c["d4_pitch_mm"]
+    fys = [100.0 + a * c["d4_pitch_mm"] for a in range(nr)]
+    y_start = (fys[0] + fys[-1]) / 2 - plate_len / 2
+    for fi in range(n_plate):  # D4 판 스캔: 가운데 열 위를 Y로, 프레임마다 가장 가까운 원기둥 ID
+        y = y_start + fi * pitch
+        a = int(np.argmin([abs(y - fy) for fy in fys]))
+        stamp("D4", record_type="image", target_type="coord_plate", pose_idx=k, laser_on=True,
+              image_file=f"d4/plate_scan/f{fi:05d}.png", exposure_us=cam["exposure_us"],
+              feature_id=f"P{a:02d}_{bmid:02d}", feature_x_mm=fx_mid, feature_y_mm=fys[a])
+        k += 1
+    jobs.append({"kind": "D4", "scan": "plate_scan", "frames": n_plate, "x_mm": fx_mid, "y_start_mm": y_start,
                  "features": [[100.0 + b * c["d4_pitch_mm"], 100.0 + a * c["d4_pitch_mm"]] for a in range(nr) for b in range(nc)],
                  "cyl_h_mm": c["d4_cyl_h_mm"], "cyl_d_mm": c["d4_cyl_d_mm"], "plate_top_mm": plate_top_mm})
+    clock.advance(n_plate * cfg["motion"]["trigger_period_s"] + 10.0)
     n_g = int(round(c["gauge_scan_len_mm"] / (cfg["motion"]["scan_speed_mm_s"] * cfg["motion"]["trigger_period_s"])))
     pose = 0
     for gid, nom in zip(cfg["steps"]["ids"], cfg["steps"]["height_mm"]):  # D5 필러: 영상 + 두께 한 행

@@ -35,13 +35,13 @@ class Timeline:
     post: dict | None = None
     msa: tuple | None = None
     truth: dict = field(default_factory=dict)
+    t_print0_s: float = 0.0      # 세션 시작 (기준물 온도 시계 0) 가상 경과 초
+    boot_ns: int = 0             # 호스트 단조 시계 = 가상 경과 + boot
 
 
-def scan_id_of(sid: str, rep: int, layer_key: str, spass: int) -> str:
-    base = f"{sid}_r{rep:02d}"
-    if layer_key != "post":
-        base += f"_{layer_key}"
-    return base + (f"_p{spass:02d}" if spass else "")
+def scan_id_of(sid: str, rep: int, layer_key: str, spass: int, q: int = 0) -> str:
+    from .specdefs import scan_id
+    return scan_id(sid, rep, layer_key, spass, q)
 
 
 def build_timeline(cfg: dict, camp: dict, seed: int, spec_entry: dict, z_layers, bbox: dict,
@@ -78,15 +78,17 @@ def build_timeline(cfg: dict, camp: dict, seed: int, spec_entry: dict, z_layers,
     xs, y0, L = line_plan(bbox, cfg["motion"], passes)
     st = cfg["steps"]
     cal = camp["calibration_id"]
+    nb = int(cfg["camera"]["background_frames"])   # 스캔마다 레이저 끈 배경 프레임 (n_frames = 펄스 + nb)
     # 세션 기준 (출력 전). 기준물 온도는 세션 시작 (베드 가열)부터 셈
     ms.t_print0_s = clock.elapsed_s
+    tl.t_print0_s, tl.boot_ns = ms.t_print0_s, ms.boot_ns
     beds, feelers = ms.preprint(xs, y0, L)
     for i, b in enumerate(beds):
-        tl.session_refs.append((ref_row(ids.next("bed_bare"), "bed_bare", b.scan_start_ns, b.n_pulses + 10, cal,
+        tl.session_refs.append((ref_row(ids.next("bed_bare"), "bed_bare", b.scan_start_ns, b.n_pulses + nb, cal,
                                         layer_idx=-1, scan_pass_idx=i, note=f"출력 전 베드 기준 줄 {i}"), b))
     for f in feelers:
         gid = st["ids"][f.gauge_idx]
-        tl.session_refs.append((ref_row(ids.next("feeler"), "feeler", f.scan_start_ns, f.n_pulses + 10, cal,
+        tl.session_refs.append((ref_row(ids.next("feeler"), "feeler", f.scan_start_ns, f.n_pulses + nb, cal,
                                         layer_idx=-1, gauge_id=gid, gauge_h=gauges.cal_height(gid),
                                         gauge_temp=f.gauge_temp_c, note=f"출력 전 필러게이지 {gid[3:]}"), f))
     rc = cfg["refs"]
@@ -106,11 +108,12 @@ def build_timeline(cfg: dict, camp: dict, seed: int, spec_entry: dict, z_layers,
                      repeats=(rc["msa_repeats"] - 1) if n == mid else 0)
         key = f"L{n:03d}"
         r["scan_ids"] = [scan_id_of(sid, rep, key, i) for i in range(passes)]
+        r["repeat_ids"] = [scan_id_of(sid, rep, key, 0, q) for q in range(1, len(r["repeats"]) + 1)]
         r["layer"], r["z_top"] = n, float(zt)
         r["step_refs"] = []
         for S in r["steps"]:
             gid = st["ids"][S.gauge_idx]
-            r["step_refs"].append(ref_row(ids.next("step_gauge"), "step_gauge", S.scan_start_ns, S.n_pulses + 10, cal,
+            r["step_refs"].append(ref_row(ids.next("step_gauge"), "step_gauge", S.scan_start_ns, S.n_pulses + nb, cal,
                                           scan_id=r["scan_ids"][0], layer_idx=n, gauge_id=gid,
                                           gauge_h=gauges.cal_height(gid), gauge_temp=S.gauge_temp_c,
                                           note=f"층 {n} 같은 Z {'낮은 단 h2' if S is r['steps'][0] else '높은 단 h1'}"))
@@ -125,7 +128,7 @@ def build_timeline(cfg: dict, camp: dict, seed: int, spec_entry: dict, z_layers,
     p["step_refs"] = []
     for S in p["steps"]:
         gid = st["ids"][S.gauge_idx]
-        p["step_refs"].append(ref_row(ids.next("step_gauge"), "step_gauge", S.scan_start_ns, S.n_pulses + 10, cal,
+        p["step_refs"].append(ref_row(ids.next("step_gauge"), "step_gauge", S.scan_start_ns, S.n_pulses + nb, cal,
                                       scan_id=p["scan_ids"][0], layer_idx=last, gauge_id=gid,
                                       gauge_h=gauges.cal_height(gid), gauge_temp=S.gauge_temp_c,
                                       note="식힌 재측정 같은 Z 두 단"))
@@ -133,8 +136,9 @@ def build_timeline(cfg: dict, camp: dict, seed: int, spec_entry: dict, z_layers,
         temps["post"] = round(true_temp["last"], 3)
     tl.post = p
     # 같은 층 반복 (MSA-01): 가운데 층 첫 줄
-    tl.msa = msa_design("MSA-01", sid, camp["session_id"], scan_id_of(sid, rep, f"L{mid:03d}", 0), rc["msa_repeats"],
-                        tree, f"T-{sid}", rc["msa_operator"], blind=blind)
+    mid_r = tl.layers[mid]
+    tl.msa = msa_design("MSA-01", sid, camp["session_id"], [mid_r["scan_ids"][0]] + mid_r["repeat_ids"],
+                        rc["msa_repeats"], tree, f"T-{sid}", rc["msa_operator"], blind=blind)
     used = [st["ids"][S.gauge_idx] for r in tl.layers + [p] for S in r["steps"]]
     tl.truth = dict(geometry_truth(geom), **gauge_truth(gauges, used),
                     gauge_temp_params={"cte_um_per_m_c": gcfg["cte_um_per_m_c"], "temp_c": temps},

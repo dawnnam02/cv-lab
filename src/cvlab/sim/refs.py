@@ -44,9 +44,13 @@ def ref_row(ref_id, kind, t_start_ns, n_frames, cal_id=None, scan_id=None, layer
     return row
 
 
-def msa_design(study_id: str, specimen_id: str, session_id: str, scan_id: str, n_repeats: int, tree,
+def msa_design(study_id: str, specimen_id: str, session_id: str, scan_id, n_repeats: int, tree,
                truth_id: str, operator: str = "sim_A", interval_s: float = 0.0, blind: bool = False) -> tuple:
-    """(design 행, design_executed 행). 실행 순서는 시드로 섞음 (반복 번호와 다르게 권장, 명세 7절)."""
+    """(design 행, design_executed 행). 실행 순서는 시드로 섞음 (반복 번호와 다르게 권장, 명세 7절).
+    scan_id: 문자열 하나 또는 반복마다의 스캔 ID 목록 (v1.2 초안 V12-2: repeat_idx 1 = `_q` 없는 스캔, k ≥ 2 = `_q`(k − 1))."""
+    ids = list(scan_id) if isinstance(scan_id, (list, tuple)) else [scan_id] * n_repeats
+    if len(ids) != n_repeats:
+        raise ValueError("반복 수와 스캔 ID 수가 다름")
     rng = tree.child("msa", study_id, "order").rng()
     order = list(rng.permutation(n_repeats) + 1)
     design, executed = [], []
@@ -56,15 +60,27 @@ def msa_design(study_id: str, specimen_id: str, session_id: str, scan_id: str, n
                    operator=operator, remount=False, rehome=False, run_order=int(order[i]),
                    interval_s=float(interval_s), scan_id=None, noise_seed=None if blind else seed, truth_id=truth_id)
         design.append(row)
-        executed.append(dict(row, scan_id=scan_id))
+        executed.append(dict(row, scan_id=ids[i]))
     return design, executed
 
 
-def two_step_rule(h1: float, h2: float, layer_z: float, u1_um: float, u2_um: float, sigma_um: float = 1.5) -> dict:
-    """명세 4절 두 단 규칙 + v1.1 두 단 비 경고 (검증기와 같은 식을 시뮬레이터 쪽에서 미리 봄)."""
+C2_CAL_TOL_MM = 0.02   # 명세 v1.2 초안 V12-1 (팀장검증 7차 §5.1): 교정 h1 ≤ 층 Z + 0.02
+
+
+def two_step_rule(h1: float, h2: float, layer_z: float, u1_um: float, u2_um: float, h1_nominal: float | None = None,
+                  sigma_um: float = 1.5) -> dict:
+    """명세 4절 두 단 규칙 + 두 단 비 경고, v1.2 초안 식.
+
+    h1 · h2: 교정 높이 (`ref.gauge_height_mm`), h1_nominal: 높은 단 ID의 공칭 높이 (없으면 공칭 검사 생략).
+    C2 두 줄: 공칭 h1 ≤ 층 Z, 교정 h1 ≤ 층 Z + 0.02. 두 단 비: d = 층 Z − h1 < 0이면 외삽이 아니라 경고 없음.
+    """
     gap = h1 - h2
-    ok = (0 < gap <= 3.04 + 1e-9) and (h1 <= layer_z + 1e-9) and (layer_z - h2 <= 8.0 + 1e-9)
+    nom_ok = True if h1_nominal is None else h1_nominal <= layer_z + 1e-9
+    ok = (0 < gap <= 3.04 + 1e-9) and nom_ok and (h1 <= layer_z + C2_CAL_TOL_MM + 1e-9) \
+        and (layer_z - h2 <= 8.0 + 1e-9)
     u = max(u1_um, u2_um)
     thr = 4.0 / (2 * sigma_um ** 2 + 2 * u ** 2) ** 0.5
-    ratio = (layer_z - h1) / gap if gap > 0 else float("inf")
-    return {"rule_ok": ok, "ratio": ratio, "ratio_limit": thr, "ratio_ok": ratio <= thr + 1e-9}
+    d = layer_z - h1
+    ratio = d / gap if gap > 0 else float("inf")
+    return {"rule_ok": ok, "nominal_ok": nom_ok, "ratio": ratio, "ratio_limit": thr,
+            "ratio_ok": d < 0 or ratio <= thr + 1e-9}

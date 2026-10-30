@@ -1,6 +1,13 @@
-# 처리 담당 (T4b · T7–T12) 열람 금지. 시험용 작은 캠페인 (SM14: plate20 2층, ≤ 2분)
-# S1–S2 뼈대: 계획 (스캔 목록 · 가상 시각 · 시드) + 참 높이맵. raw 쓰기는 S5.
+# 처리 담당 (T4b · T7–T12) 열람 금지. 시험용 작은 캠페인 (SM14: plate20 2층)
+# S5: 명세 형식 raw + 참값을 씀. 시간을 줄이려고 스캔 길이 · 교정 장 수 · 반복 수를 줄임 (overrides, 형식은 같음).
+# 본 캠페인 (voron24)은 줄이지 않음. 줄인 값은 SM7 · SM8 개수 목표 대상이 아님.
 campaign:
+  overrides:
+    motion: {scan_len_override_mm: 0.6}      # 시편 · bed_bare 줄 30펄스
+    steps: {len_mm: 0.6}                     # 기준물 단 30펄스
+    camera: {background_frames: 3}
+    calib: {d1_poses: 2, d2_heights: 2, d3_moves: 2, gauge_scan_len_mm: 0.1, d4_scan_len_mm: 0.1}
+    refs: {bkg_frames: 3, dark_frames: 3, static_frames: 100, msa_repeats: 2}
   campaign_id: VC-2026-11-20-S      # 개발용. 끝 글자 S = small
   session_id: PS-2026-11-20-A
   calibration_id: CAL-2026-11-20-A

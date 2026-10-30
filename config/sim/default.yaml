@@ -126,6 +126,7 @@ camera:                      # S3 · SM5 (§6.4). OV9281 자료 미확인 값은
   drop_prob_on: 0.001        # 스위치 frame_drop 켬일 때 빠진 프레임 확률 [추정]
   sensor_temp_c: 40.0        # [추정]
   background_frames: 10      # 스캔마다 레이저 끈 배경 프레임 (명세 B.4: 1,000 + 10)
+  png_level: 3               # PNG 압축 수준 고정 (팀장검증 7차 §5.4: 수준 3 = 9.1 ms · 62 KiB/장). 바꾸면 바이트가 바뀜
 
 motion:                      # S4 · SM6 (LM-T14-3, T14 9.4절 · §12)
   macro_version: LM-T14-3

@@ -109,7 +109,7 @@ class Scene(Surface):
             inb = (x >= bk.x0) & (x <= bk.x1) & (y >= bk.y0) & (y <= bk.y1)
             if inb.any():
                 z = np.where(inb, b + bk.height, z)
-                mat = np.where(inb, 2, mat)
+                mat = np.where(inb, Surface.MATERIALS.index(bk.material), mat)
         return z, mat, hot
 
     def band_max(self, x0, x1, y0, y1) -> float:

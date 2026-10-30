@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from cvlab.sim.campaign import compare_sm2, expected_rows, factor_switches, run_shape_campaign, truth_all  # noqa: E402
 from cvlab.sim.seeds import check_seed, eval_seed_from_env  # noqa: E402
-from cvlab.sim.simconfig import data_roots, load_campaign, load_default, load_factors  # noqa: E402
+from cvlab.sim.simconfig import ROOT, data_roots, load_campaign, load_default, load_factors  # noqa: E402
 
 SIM_KEYS = ["campaign", "seed_tag", "specimens", "layers", "scans", "frames", "bytes_raw", "bytes_disk",
             "runtime_s", "faults", "blind"]
@@ -77,11 +77,57 @@ def run_campaign(a, cfg) -> int:
             raise SystemExit("--seed가 필요함 (개발용). 평가용은 --eval + 환경 변수")
         seed = check_seed(a.seed)
     camp = load_campaign(a.campaign)
-    _, truth_root = data_roots(cfg, a.out_root)
-    s = run_shape_campaign(cfg, camp, seed, truth_root, workers=a.workers, blind=a.eval)
+    raw_root, truth_root = data_roots(cfg, a.out_root)
+    if a.shape_only:
+        s = run_shape_campaign(cfg, camp, seed, truth_root, workers=a.workers, blind=a.eval)
+        s["runtime_s"] = round(time.time() - t0, 1)
+        print(sim_line(s))
+        return 0
+    from cvlab.sim.writer import Writer
+    s = Writer(cfg, camp, seed, raw_root, truth_root, blind=a.eval).run()
     s["runtime_s"] = round(time.time() - t0, 1)
     print(sim_line(s))
+    rep, ctx = validate_raw(Path(s["raw"]))
+    print("VALID " + json.dumps(rep, ensure_ascii=False))
+    print("TRUTH " + json.dumps(check_truth_file(Path(s["truth"]), ctx), ensure_ascii=False))
     return 0
+
+
+def _validator():
+    from cvlab.config import load_owned
+    from cvlab.io.schema_files import load
+    from cvlab.io.validate import Validator
+    from cvlab.sim.specdefs import SCHEMA_CHECK_SPEC
+    fields, rules, file_cols = load(check_spec=SCHEMA_CHECK_SPEC)   # V-4 (11-07) 전: v1.1 스키마로 봄
+    vcfg = load_owned(str(ROOT / "config" / "default.yaml"))["validate"]
+    return Validator(fields, rules, file_cols, set(), set(vcfg["enable_rules"]), repo_root=ROOT,
+                     disabled_rules=set(vcfg["disable_rules"]))
+
+
+def validate_raw(raw_dir: Path) -> tuple[dict, dict]:
+    """T6 검증기 (cvlab.io)로 raw를 봄. 돌려줌: (요약 · 규칙별 개수, 참값 검사용 캠페인 사실)."""
+    from collections import Counter
+    from cvlab.io.validate import DirFS, summarize
+    v = _validator()
+    f = v.run(DirFS(raw_dir), raw_dir.name)
+    s = summarize(f)
+    by = Counter(f"{x.severity} {x.rule_id}" for x in f)
+    return {"error": s["n_error"], "warn": s["n_warn"], "rules": dict(sorted(by.items()))}, v.truth_ctx
+
+
+def check_truth_file(truth_dir: Path, ctx: dict | None) -> dict:
+    v = _validator()
+    recs = json.loads((truth_dir / "truth.json").read_text(encoding="utf-8"))
+    hm = sorted(p.name for p in (truth_dir / "heightmaps").glob("*.npy"))
+    ok = all((r["judgement"] == "pass") == (r["pass_pct"] >= 95) for r in recs)
+    files_ok = all((truth_dir / r["heightmap_file"]).is_file() for r in recs)
+    try:
+        f = v.check_truth(recs, "truth.json", ctx=ctx)
+    except KeyError as e:  # 검증기 코드와 규칙표가 어긋난 상태 (V-4 재동기화 중)
+        return {"records": len(recs), "findings": None, "error": f"검증기 규칙표 어긋남: {e}", "heightmaps": len(hm),
+                "heightmap_files_ok": files_ok, "judgement_rule_ok": ok}
+    return {"records": len(recs), "findings": len(f), "rules": sorted({x.rule_id for x in f}),
+            "heightmaps": len(hm), "heightmap_files_ok": files_ok, "judgement_rule_ok": ok}
 
 
 def main(argv=None) -> int:
@@ -96,12 +142,21 @@ def main(argv=None) -> int:
     ap.add_argument("--eval", action="store_true")
     ap.add_argument("--workers", type=int, default=None)
     ap.add_argument("--out-root", default=None)
+    ap.add_argument("--shape-only", action="store_true", help="참 높이맵 · 계획만 (S2 뼈대)")
+    ap.add_argument("--check-truth", default=None, help="캠페인 ID: 참값 검사만 (팀장 명령 ④)")
+    ap.add_argument("--truth-root", default=None)
     a = ap.parse_args(argv)
     cfg = load_default()
     if a.workers is None:
         a.workers = int(cfg["run"]["workers"])
     if a.truth_only:
         return run_truth_only(a, cfg)
+    if a.check_truth:
+        raw_root, truth_root = data_roots(cfg, a.out_root)
+        troot = Path(a.truth_root) if a.truth_root else truth_root
+        _, ctx = validate_raw(raw_root / a.check_truth) if (raw_root / a.check_truth).is_dir() else (None, None)
+        print("TRUTH " + json.dumps(check_truth_file(troot / a.check_truth, ctx), ensure_ascii=False))
+        return 0
     if a.campaign:
         try:
             return run_campaign(a, cfg)

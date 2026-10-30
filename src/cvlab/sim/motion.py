@@ -286,7 +286,11 @@ def line_plan(bbox: dict, mcfg: dict, passes: int | None = None) -> tuple[list, 
     if passes is not None and passes != len(xs):
         cx = (bbox["xmin"] + bbox["xmax"]) / 2
         xs = [round(cx + 18.0 * (i - (passes - 1) / 2), 4) for i in range(passes)]
-    return xs, round(y0, 4), round(bbox["ymax"] - bbox["ymin"] + margin, 4)
+    L = bbox["ymax"] - bbox["ymin"] + margin
+    if mcfg.get("scan_len_override_mm"):   # 시험용 작은 캠페인: 물체 가운데 짧은 구간만 (명세는 덮는 범위를 정하지 않음)
+        L = float(mcfg["scan_len_override_mm"])
+        y0 = (bbox["ymin"] + bbox["ymax"]) / 2 - L / 2
+    return xs, round(y0, 4), round(L, 4)
 
 
 def check_same_z(lines: list, tol: float = 0.001) -> float:
