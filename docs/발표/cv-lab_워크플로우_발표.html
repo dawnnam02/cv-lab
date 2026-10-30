@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D 프린터 출력물 검사 워크플로우</title>
+<style>
+:root{
+  --bg:#f6f4ef; --card:#ffffff; --ink:#1c1a17; --muted:#6a645b; --line:#e0dbd0;
+  --accent:#1f5fbf; --accent-soft:#e6eefb; --ok:#1d8a57; --ok-soft:#e1f3e9;
+  --warn:#b8740c; --warn-soft:#fbefd9; --bad:#bf3a2c; --bad-soft:#f9e2de;
+  --laser:#d4281c; --stage:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#14130f; --card:#201e19; --ink:#f1eee6; --muted:#a9a296; --line:#3a362e;
+    --accent:#7fb0ff; --accent-soft:#1d2b45; --ok:#5fd29b; --ok-soft:#173326;
+    --warn:#f0b04a; --warn-soft:#3a2b10; --bad:#ff8a7a; --bad-soft:#40201b;
+    --laser:#ff6a5c; --stage:#1a1914;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#deck{position:relative;width:1280px;height:720px;transform-origin:center center;flex:none}
+.slide{position:absolute;inset:0;background:var(--stage);border:1px solid var(--line);border-radius:18px;
+  padding:48px 64px 56px;display:none;flex-direction:column;overflow:hidden}
+.slide.on{display:flex}
+.kicker{font-size:15px;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:10px}
+h1{font-size:54px;line-height:1.2;font-weight:800;letter-spacing:-.02em}
+h2{font-size:36px;line-height:1.25;font-weight:800;letter-spacing:-.01em;margin-bottom:22px}
+h3{font-size:22px;font-weight:700;margin-bottom:8px}
+p,li{font-size:22px;line-height:1.55}
+.lead{font-size:26px;line-height:1.5;color:var(--ink)}
+.muted{color:var(--muted)}
+.small{font-size:17px}
+.tiny{font-size:14px;color:var(--muted)}
+ul{padding-left:1.1em}
+li{margin:6px 0}
+b,strong{font-weight:700}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.card.soft{background:var(--accent-soft);border-color:transparent}
+.card.ok{background:var(--ok-soft);border-color:transparent}
+.card.warn{background:var(--warn-soft);border-color:transparent}
+.card.bad{background:var(--bad-soft);border-color:transparent}
+.card h3{font-size:20px}
+.card p,.card li{font-size:19px;line-height:1.5}
+.num{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;
+  background:var(--accent);color:#fff;font-weight:700;font-size:18px;margin-right:10px;flex:none}
+.row{display:flex;align-items:center;gap:12px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:10px 12px;text-align:left;font-size:19px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:16px;color:var(--muted);font-weight:600}
+td.r,th.r{text-align:right}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:15px;font-weight:700}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.bad{background:var(--bad-soft);color:var(--bad)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}.tag.acc{background:var(--accent-soft);color:var(--accent)}
+.bar{height:22px;border-radius:6px;background:var(--accent)}
+.bar.gray{background:var(--line)}.bar.hi{background:var(--ok)}
+.flex1{flex:1;min-height:0}
+.center{display:flex;flex-direction:column;justify-content:center}
+svg{display:block;max-width:100%}
+svg text{font-family:inherit;fill:var(--ink)}
+svg .m{fill:var(--muted)}
+.foot{position:absolute;left:64px;right:64px;bottom:20px;display:flex;justify-content:space-between;
+  font-size:13px;color:var(--muted)}
+.big{font-size:84px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.arrow{font-size:28px;color:var(--muted);align-self:center}
+.step{display:flex;gap:14px;align-items:flex-start;margin:10px 0}
+.step .t{font-weight:700;font-size:21px}
+.step .d{font-size:18px;color:var(--muted);line-height:1.45}
+#hud{position:fixed;left:0;right:0;bottom:0;height:4px;background:transparent}
+#hud i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+#help{position:fixed;right:14px;top:12px;font-size:13px;color:var(--muted);background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:6px 10px;opacity:.9}
+#notes{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;width:min(1000px,92vw);
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;
+  font-size:17px;line-height:1.55;display:none;box-shadow:0 8px 30px rgba(0,0,0,.18);max-height:30vh;overflow:auto}
+#notes.on{display:block}
+#notes b{color:var(--accent)}
+@media print{
+  html,body{overflow:visible;height:auto;background:#fff}
+  #viewport{position:static;display:block}
+  #deck{transform:none!important;width:auto;height:auto}
+  .slide{display:flex!important;position:relative;width:1280px;height:720px;page-break-after:always;margin:0}
+  #hud,#help,#notes{display:none!important}
+  @page{size:1280px 720px;margin:0}
+}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="deck">
+
+<!-- 1 표지 -->
+<section class="slide center" data-notes="<b>인사 + 오늘의 한 줄.</b> 오늘 이야기의 중심은 '3D 프린터가 만든 물건이 도면대로 나왔는지를 어떻게 숫자로 판정하나'입니다. 기술 용어는 하나씩 풀어서 설명할 테니 모르는 말이 나와도 걱정하지 않으셔도 됩니다. 구성: 문제 → 방법 → 장비와 설치 → 프린터와 펌웨어를 고른 이유 → 실제로 돌아가는 순서 → 믿을 수 있는지 → 지금 상태.">
+  <div class="kicker">3D 프린터 출력물 검사 워크플로우</div>
+  <h1>도면대로 나왔는지,<br>레이저로 층마다 재서<br>숫자로 판정하기</h1>
+  <p class="lead muted" style="margin-top:28px">장비를 고른 이유부터 설치, 작동, 전체 흐름까지<br>처음 듣는 분을 위한 설명</p>
+  <div class="foot"><span>cv-lab · 2026-10 기준</span><span>→ 키로 넘기기 · N 발표 노트</span></div>
+</section>
+
+<!-- 2 오늘 이야기 -->
+<section class="slide" data-notes="<b>세 질문으로 오늘을 열어요.</b> 청중에게 '이 세 가지에 답할 수 있으면 오늘 목표 달성'이라고 말해 주세요. 뒤에 나오는 모든 장이 이 세 질문 중 하나에 속합니다.">
+  <div class="kicker">오늘 답할 세 가지 질문</div>
+  <h2>이 발표가 끝나면 설명할 수 있어야 하는 것</h2>
+  <div class="grid g3 flex1" style="align-content:center">
+    <div class="card soft"><div class="row" style="margin-bottom:10px"><span class="num">1</span><h3>무엇을, 왜 재나?</h3></div>
+      <p>3D 프린터로 뽑은 물건이 설계대로인지 <b>층마다 높이를 재서</b> 합격/불합격을 가린다.</p></div>
+    <div class="card soft"><div class="row" style="margin-bottom:10px"><span class="num">2</span><h3>어떻게 재나?</h3></div>
+      <p>프린터 노즐 옆에 <b>레이저와 카메라</b>를 달아 한 층이 끝날 때마다 윗면을 훑는다.</p></div>
+    <div class="card soft"><div class="row" style="margin-bottom:10px"><span class="num">3</span><h3>왜 이 장비인가?</h3></div>
+      <p>프린터는 <b>Sovol SV08</b>, 펌웨어는 <b>Klipper</b>. 고른 이유와 근거를 숫자로 보여 준다.</p></div>
+  </div>
+</section>
+
+<!-- 3 문제 -->
+<section class="slide" data-notes="<b>일상 비유로 시작하세요.</b> 빵틀과 빵의 관계로 설명하면 좋습니다. 설계도(도면)는 완벽해도, 실제로 구워 낸 것은 항상 조금씩 다릅니다. 3D 프린터도 같아요. 그런데 눈으로는 0.2 mm 차이를 볼 수 없습니다. 머리카락 한 올이 약 0.07 mm이니, 머리카락 두세 올 두께입니다.">
+  <div class="kicker">문제</div>
+  <h2>프린터는 '지시서'대로 만들었다고 믿지만, 정말 그럴까?</h2>
+  <div class="grid g2 flex1" style="align-items:center">
+    <div>
+      <ul>
+        <li>3D 프린터는 플라스틱을 녹여 <b>얇은 층을 한 층씩 쌓아</b> 물건을 만든다.</li>
+        <li>설계는 지시서(<b>G코드</b>)에 층마다 적혀 있다.</li>
+        <li>하지만 열, 진동, 재료 때문에 실제 높이는 <b>조금씩 어긋난다</b>.</li>
+        <li>이 어긋남이 <b>0.2 mm</b>(머리카락 두세 올)를 넘으면 불량으로 본다.</li>
+        <li>눈으로는 안 보이니 <b>재서 숫자로</b> 판단해야 한다.</li>
+      </ul>
+    </div>
+    <svg viewBox="0 0 440 340" width="100%" aria-label="설계 높이와 실제 높이 비교">
+      <text x="10" y="24" font-size="16" class="m">설계 (지시서)</text>
+      <g fill="#9bb7e6"><rect x="20" y="220" width="170" height="30"/><rect x="20" y="190" width="170" height="30"/><rect x="20" y="160" width="170" height="30"/><rect x="20" y="130" width="170" height="30"/></g>
+      <g stroke="var(--bg)" stroke-width="2"><line x1="20" y1="160" x2="190" y2="160"/><line x1="20" y1="190" x2="190" y2="190"/><line x1="20" y1="220" x2="190" y2="220"/></g>
+      <line x1="10" y1="250" x2="210" y2="250" stroke="var(--muted)" stroke-width="2"/>
+      <text x="75" y="278" font-size="16" class="m">평평한 윗면</text>
+      <text x="250" y="24" font-size="16" class="m">실제 (프린터가 만든 것)</text>
+      <g fill="#9bb7e6"><rect x="260" y="220" width="170" height="30"/><rect x="260" y="190" width="170" height="30"/><rect x="260" y="160" width="170" height="30"/><rect x="260" y="140" width="170" height="20"/></g>
+      <line x1="250" y1="250" x2="440" y2="250" stroke="var(--muted)" stroke-width="2"/>
+      <line x1="215" y1="130" x2="440" y2="130" stroke="var(--bad)" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="262" y="122" font-size="15" fill="var(--bad)" style="fill:var(--bad)">설계 높이</text>
+      <path d="M445 130 L445 140" stroke="var(--bad)" stroke-width="3"/>
+      <text x="262" y="314" font-size="17" style="fill:var(--bad)" font-weight="700">조금 낮게 쌓였다 → 얼마나?</text>
+    </svg>
+  </div>
+</section>
+
+<!-- 4 용어 -->
+<section class="slide" data-notes="<b>용어는 네 개만 외우면 됩니다.</b> 이 네 개만 알면 뒤 내용은 따라올 수 있어요. 특히 '허용 오차 0.2 mm'가 합격의 기준이라는 것을 한 번 강조해 주세요.">
+  <div class="kicker">기초 용어</div>
+  <h2>이 네 가지만 알면 뒷이야기가 쉬워집니다</h2>
+  <div class="grid g2 flex1" style="align-content:center">
+    <div class="card"><h3>🧱 층 (layer)</h3><p>3D 프린터가 한 번에 쌓는 얇은 판. 이번 시험 파일은 층 하나가 0.2 mm.</p></div>
+    <div class="card"><h3>📜 G코드</h3><p>프린터에 주는 <b>지시서</b>. "여기로 가서, 이만큼 플라스틱을 내보내라"가 줄줄이 적힌 문서. 우리는 이것을 <b>정답</b>으로 쓴다.</p></div>
+    <div class="card"><h3>🔴 레이저 삼각측량</h3><p>레이저 선을 물체에 쏘고 옆에서 카메라로 찍어, 선이 <b>옆으로 밀린 정도</b>로 높이를 구하는 방법.</p></div>
+    <div class="card"><h3>📏 허용 오차 0.2 mm</h3><p>설계 높이와 실제 높이 차이가 이 안이면 <b>OK</b>. 우리가 정한 합격선.</p></div>
+  </div>
+</section>
+
+<!-- 5 목표 -->
+<section class="slide" data-notes="<b>여기가 프로젝트 전체의 한 문장입니다.</b> 입력은 두 가지(정답과 실측), 출력은 하나(합격/불합격/보류)라는 점을 짚어 주세요. 예산 100만 원은 측정 장비 기준이고 프린터 본체는 별도입니다. 지금은 실제 기기를 사기 전이라 컴퓨터로 만든 가상 데이터로 전 과정을 먼저 검증하고 있다는 점도 미리 말해 두면 뒤에서 혼란이 없습니다.">
+  <div class="kicker">우리가 만들려는 것</div>
+  <h2>정답(G코드)과 실측을 비교해 합격 여부를 판정한다</h2>
+  <div class="row flex1" style="gap:18px;align-items:stretch">
+    <div class="card soft" style="flex:1"><h3>입력 ① 정답</h3><p>G코드에서 계산한 <b>"이 층은 이 높이여야 한다"</b>는 지도</p></div>
+    <div class="arrow">+</div>
+    <div class="card soft" style="flex:1"><h3>입력 ② 실측</h3><p>레이저 스캔으로 잰 <b>"실제 이 높이다"</b>는 지도</p></div>
+    <div class="arrow">→</div>
+    <div class="card ok" style="flex:1"><h3>출력</h3><p><b>합격 / 불합격 / 보류</b><br>+ 어디가 얼마나 틀렸는지 그림</p></div>
+  </div>
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><h3>💰 예산</h3><p class="small">측정 장비 약 120만 원 이하<br>(프린터 본체는 별도)</p></div>
+    <div class="card"><h3>🎯 합격선</h3><p class="small">측정점의 95 %가 ±0.2 mm 안</p></div>
+    <div class="card"><h3>🧪 지금 단계</h3><p class="small">실제 장비 구입 전, 컴퓨터가 만든 가상 데이터로 전 과정 검증 중</p></div>
+  </div>
+</section>
+
+<!-- 6 전체 워크플로우 -->
+<section class="slide" data-notes="<b>이 한 장이 오늘 발표의 지도입니다.</b> 왼쪽에서 오른쪽으로 읽어 주세요. 1~2번은 장비를 준비하는 단계(한 번만), 3번은 출력할 때마다 반복, 4~6번은 데이터를 처리해서 판정하는 단계입니다. 이후 장들은 이 지도의 각 칸을 하나씩 확대해서 보여 드립니다.">
+  <div class="kicker">전체 흐름</div>
+  <h2>준비 → 출력하며 스캔 → 계산 → 판정</h2>
+  <svg viewBox="0 0 1150 330" width="100%">
+    <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker></defs>
+    <g font-size="20" font-weight="700">
+      <rect x="0" y="30" width="170" height="130" rx="14" fill="var(--accent-soft)"/><text x="20" y="62">① 장비 설치</text>
+      <text x="20" y="92" font-size="16" class="m" font-weight="400">레이저·카메라를</text><text x="20" y="114" font-size="16" class="m" font-weight="400">노즐 옆에 고정</text>
+      <rect x="195" y="30" width="170" height="130" rx="14" fill="var(--accent-soft)"/><text x="215" y="62">② 교정</text>
+      <text x="215" y="92" font-size="16" class="m" font-weight="400">영상 한 칸이</text><text x="215" y="114" font-size="16" class="m" font-weight="400">몇 mm인지 맞추기</text>
+      <rect x="390" y="30" width="170" height="130" rx="14" fill="var(--warn-soft)"/><text x="410" y="62">③ 출력+스캔</text>
+      <text x="410" y="92" font-size="16" class="m" font-weight="400">한 층 끝날 때마다</text><text x="410" y="114" font-size="16" class="m" font-weight="400">윗면을 레이저로 훑기</text>
+      <rect x="585" y="30" width="170" height="130" rx="14" fill="var(--ok-soft)"/><text x="605" y="62">④ 높이 지도</text>
+      <text x="605" y="92" font-size="16" class="m" font-weight="400">레이저 선 위치를</text><text x="605" y="114" font-size="16" class="m" font-weight="400">높이로 변환</text>
+      <rect x="780" y="30" width="170" height="130" rx="14" fill="var(--ok-soft)"/><text x="800" y="62">⑤ 정답과 비교</text>
+      <text x="800" y="92" font-size="16" class="m" font-weight="400">G코드 정답 지도와</text><text x="800" y="114" font-size="16" class="m" font-weight="400">차이 계산</text>
+      <rect x="975" y="30" width="175" height="130" rx="14" fill="var(--ok-soft)"/><text x="995" y="62">⑥ 판정·보고</text>
+      <text x="995" y="92" font-size="16" class="m" font-weight="400">합격/불합격/보류</text><text x="995" y="114" font-size="16" class="m" font-weight="400">+ 차이 지도</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2.5" marker-end="url(#ar)">
+      <line x1="172" y1="95" x2="192" y2="95"/><line x1="367" y1="95" x2="387" y2="95"/><line x1="562" y1="95" x2="582" y2="95"/>
+      <line x1="757" y1="95" x2="777" y2="95"/><line x1="952" y1="95" x2="972" y2="95"/>
+    </g>
+    <text x="0" y="210" font-size="17" class="m">한 번만 하는 일</text>
+    <path d="M0 220 H365" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+    <text x="390" y="210" font-size="17" class="m">출력할 때마다 반복</text>
+    <path d="M390 220 H560" stroke="var(--warn)" stroke-width="4" stroke-linecap="round"/>
+    <text x="585" y="210" font-size="17" class="m">컴퓨터가 계산</text>
+    <path d="M585 220 H1150" stroke="var(--ok)" stroke-width="4" stroke-linecap="round"/>
+    <text x="0" y="280" font-size="19">정답 지도는 G코드만 있으면 <tspan font-weight="700">출력 전에 이미 계산해 둘 수 있습니다.</tspan></text>
+  </svg>
+</section>
+
+<!-- 7 후보 비교 -->
+<section class="slide" data-notes="<b>왜 레이저 삼각측량인가?</b> 처음에는 123가지 측정 방법을 후보로 놓고 컴퓨터 시뮬레이션으로 걸러 봤습니다. 여기 있는 건 대표 후보만 뽑은 것입니다. 핵심: 접촉식 센서는 정확하지만 점 하나씩이라 느리고, 값비싼 산업용은 예산을 넘고, 싼 깊이 카메라는 너무 거칩니다. 자작 레이저 장치는 가격과 정확도 균형이 가장 좋았습니다. 표의 오차는 시뮬레이션 추정값이라 실제 부품으로 재 보기 전까지는 확정이 아닙니다.">
+  <div class="kicker">측정 방법을 고른 이유</div>
+  <h2>가격과 정확도를 함께 만족하는 건 '자작 레이저'뿐</h2>
+  <table>
+    <tr><th>방법</th><th class="r">가격(대략)</th><th class="r">높이 오차</th><th>판단</th></tr>
+    <tr><td>깊이 카메라 (일반 3D 카메라)</td><td class="r">50만</td><td class="r">1,000 µm 이상</td><td><span class="tag bad">너무 거칠다</span></td></tr>
+    <tr><td>웹캠 + 라인 레이저 (저가형)</td><td class="r">15만</td><td class="r">약 39 µm</td><td><span class="tag warn">가능하나 여유 적음</span></td></tr>
+    <tr><td><b>카메라 + 라인 레이저 (노즐 장착)</b></td><td class="r"><b>약 50만</b></td><td class="r"><b>약 22 µm</b></td><td><span class="tag ok">선택</span></td></tr>
+    <tr><td>접촉 센서 (점 하나씩 찍기)</td><td class="r">5만</td><td class="r">약 5 µm</td><td><span class="tag warn">정확하나 점 단위·좁은 면 불가</span></td></tr>
+    <tr><td>산업용 라인 스캐너 (중고)</td><td class="r">322만</td><td class="r">약 3 µm</td><td><span class="tag bad">예산 초과</span></td></tr>
+    <tr><td>공초점 센서 (고급)</td><td class="r">760만</td><td class="r">약 1 µm</td><td><span class="tag bad">예산 초과</span></td></tr>
+  </table>
+  <p class="tiny" style="margin-top:10px">µm(마이크로미터) = 1 mm의 1/1000. 0.2 mm = 200 µm. 오차는 컴퓨터 시뮬레이션으로 추정한 값. 후보는 총 123개를 걸러 낸 결과 중 대표만 표시.</p>
+</section>
+
+<!-- 8 원리 -->
+<section class="slide" data-notes="<b>이 장이 가장 중요한 원리 설명입니다.</b> 손전등으로 벽을 비추는 상황을 상상하게 해 주세요. 내가 똑바로 위에서 레이저를 쏘고, 옆에서 친구가 사진을 찍는다면, 바닥이 높아질수록 빛점이 사진 속에서 옆으로 움직여 보입니다. 그 움직임의 크기가 곧 높이입니다. 삼각형(레이저-표면-카메라)의 각도를 알고 있으니 계산이 가능합니다.">
+  <div class="kicker">원리</div>
+  <h2>레이저 선이 '옆으로 밀린 만큼'이 높이다</h2>
+  <div class="grid g2 flex1" style="align-items:center">
+    <svg viewBox="0 0 520 380" width="100%">
+      <rect x="0" y="0" width="520" height="380" fill="none"/>
+      <!-- laser -->
+      <rect x="90" y="20" width="44" height="26" rx="4" fill="var(--laser)"/>
+      <text x="48" y="14" font-size="15">레이저</text>
+      <line x1="112" y1="46" x2="112" y2="300" stroke="var(--laser)" stroke-width="3"/>
+      <!-- surfaces -->
+      <rect x="20" y="300" width="250" height="14" fill="#9aa3b2"/>
+      <rect x="20" y="256" width="130" height="44" fill="#9bb7e6"/>
+      <text x="26" y="290" font-size="14" style="fill:#fff">높은 곳</text>
+      <text x="26" y="338" font-size="14" class="m">낮은 곳(바닥)</text>
+      <circle cx="112" cy="256" r="6" fill="var(--laser)"/>
+      <circle cx="112" cy="300" r="6" fill="var(--laser)" opacity=".45"/>
+      <!-- camera -->
+      <rect x="330" y="30" width="60" height="38" rx="6" fill="#3b4252"/>
+      <circle cx="330" cy="49" r="9" fill="#9bb7e6"/>
+      <text x="318" y="22" font-size="15">카메라 (비스듬히 30°)</text>
+      <line x1="330" y1="49" x2="112" y2="256" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 4"/>
+      <line x1="330" y1="49" x2="112" y2="300" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".5"/>
+      <!-- angle -->
+      <path d="M112 232 A24 24 0 0 1 128 236" stroke="var(--muted)" fill="none" stroke-width="1.5"/>
+      <text x="132" y="228" font-size="13" class="m">30°</text>
+      <!-- image inset -->
+      <rect x="360" y="130" width="150" height="210" rx="10" fill="var(--card)" stroke="var(--line)"/>
+      <text x="372" y="154" font-size="15">카메라가 본 사진</text>
+      <line x1="440" y1="170" x2="440" y2="330" stroke="var(--line)" stroke-dasharray="3 4"/>
+      <circle cx="420" cy="236" r="6" fill="var(--laser)"/>
+      <circle cx="468" cy="300" r="6" fill="var(--laser)" opacity=".45"/>
+      <text x="372" y="226" font-size="13" class="m">높은 곳</text>
+      <text x="400" y="326" font-size="13" class="m">낮은 곳</text>
+    </svg>
+    <div>
+      <div class="step"><span class="num">1</span><div><div class="t">위에서 레이저를 쏜다</div><div class="d">가는 선 모양(라인 레이저)이라 한 번에 한 줄을 본다.</div></div></div>
+      <div class="step"><span class="num">2</span><div><div class="t">비스듬히 카메라로 찍는다</div><div class="d">높은 곳의 빛점은 사진 속에서 한쪽으로 치우쳐 보인다.</div></div></div>
+      <div class="step"><span class="num">3</span><div><div class="t">밀린 거리를 높이로 바꾼다</div><div class="d">각도를 알고 있어서 삼각형 계산으로 높이가 나온다.</div></div></div>
+      <div class="step"><span class="num">4</span><div><div class="t">프린터 헤드를 옮기며 반복</div><div class="d">한 줄씩 모으면 <b>면 전체의 높이 지도</b>가 된다.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 정밀도 -->
+<section class="slide" data-notes="<b>'사진 한 칸이 31.6 µm인데 어떻게 2 µm까지 알아?'라는 의문이 자연스럽게 나옵니다.</b> 비유: 줄눈 간격이 3 cm인 줄자라도, 눈금 사이 어디쯤인지 비율로 읽으면 3 mm 단위까지 읽을 수 있죠. 레이저 선은 여러 칸에 걸쳐 번져 있어서 밝기 중심을 계산하면 한 칸보다 훨씬 잘게 위치를 알 수 있습니다. 이것을 '서브픽셀'이라고 합니다.">
+  <div class="kicker">정밀도</div>
+  <h2>사진 한 칸이 32 µm여도 2 µm까지 읽을 수 있는 이유</h2>
+  <div class="grid g3 flex1" style="align-items:center">
+    <div class="card"><div class="big" style="color:var(--accent)">31.6 µm</div><p style="margin-top:10px">사진 한 칸(화소)이 뜻하는 높이<br><span class="small muted">화소 3 µm ÷ (확대 0.19 × sin 30°)</span></p></div>
+    <div class="card"><h3>레이저 선의 '밝기 중심'</h3>
+      <svg viewBox="0 0 220 110" width="100%"><g fill="var(--accent-soft)" stroke="var(--line)"><rect x="10" y="70" width="30" height="30"/><rect x="40" y="50" width="30" height="50"/><rect x="70" y="20" width="30" height="80"/><rect x="100" y="14" width="30" height="86"/><rect x="130" y="30" width="30" height="70"/><rect x="160" y="60" width="30" height="40"/></g><line x1="114" y1="6" x2="114" y2="104" stroke="var(--laser)" stroke-width="2.5" stroke-dasharray="4 3"/><text x="120" y="12" font-size="12" style="fill:var(--laser)">중심</text></svg>
+      <p class="small muted">선이 여러 칸에 걸쳐 번지니, 밝기의 무게중심을 칸보다 잘게 계산할 수 있다.</p></div>
+    <div class="card ok"><div class="big" style="color:var(--ok)">약 2 µm</div><p style="margin-top:10px">시험 영상에서 잰 위치 오차<br><span class="small muted">0.071 화소 ≈ 2.3 µm (합성 영상 기준)</span></p></div>
+  </div>
+  <p class="tiny">실제 정확도는 이것보다 나빠진다(열, 진동, 재료 번짐 때문). 뒤의 '믿을 수 있나?'에서 이어서 설명.</p>
+</section>
+
+<!-- 10 장비 구성 -->
+<section class="slide" data-notes="<b>무엇을 사야 하는지 구체적으로.</b> 부품 값은 국내 판매가와 해외 가격을 합친 추정값입니다. 중요한 건 '측정 장비'와 '기준물'을 구분하는 것인데, 기준물(필러게이지, 블록게이지)은 측정 도구가 맞는지 확인하는 자 같은 역할이라 뒤에서 다시 설명합니다. 프린터 본체는 예산에 넣지 않았습니다.">
+  <div class="kicker">장비 구성</div>
+  <h2>사야 하는 것: 센서 세트 + 확인용 기준물 + 프린터</h2>
+  <div class="grid g3 flex1">
+    <div class="card"><h3>① 측정 센서 (약 50만)</h3>
+      <ul class="small" style="font-size:18px"><li>카메라 (흑백, 1280×800, 셔터 전체 동시 노출)</li><li>렌즈 (초점거리 8 mm)</li><li>450 nm 파란 라인 레이저 (출력 1 mW 이하)</li><li>파란빛만 통과시키는 필터</li><li>고정 부품·배선</li></ul></div>
+    <div class="card"><h3>② 확인용 기준물 (약 27~44만)</h3>
+      <ul style="font-size:18px"><li>필러게이지: 두께를 정확히 아는 얇은 쇠 조각(0.2·0.3·0.4·0.5 mm)</li><li>블록게이지: 높이가 정확한 쇠 블록 세트</li><li>마이크로미터: 두께 직접 재는 도구</li><li>온도 센서: 기준물 열팽창 보정</li></ul></div>
+    <div class="card"><h3>③ 프린터 (별도, 약 82~100만)</h3>
+      <ul style="font-size:18px"><li><b>Sovol SV08</b> (완성품)</li><li>Klipper 펌웨어가 이미 설치됨</li><li>라즈베리파이급 컴퓨터가 내장</li></ul>
+      <p class="tiny" style="margin-top:10px">배송비·환율은 아직 미확정</p></div>
+  </div>
+  <div class="row" style="margin-top:14px"><span class="tag acc">합계 명목 약 84만</span><span class="tag warn">최대 약 120만 (프린터 본체 제외)</span><span class="tiny">마이크로미터를 이미 갖고 있거나 빌리면 약 110만</span></div>
+</section>
+
+<!-- 11 설치 -->
+<section class="slide" data-notes="<b>설치 그림.</b> 프린터 노즐(뜨거운 부분)이 달린 헤드에 레이저와 카메라를 고정합니다. 카메라는 비스듬히 30도로 달아야 삼각측량이 됩니다. 필터를 끼우는 이유는 노즐 열 빛과 방 안 조명이 사진에 섞이지 않게 하려는 것입니다. 베드 옆에는 높이를 아는 블록을 줄지어 세워 둡니다. 스캔할 때마다 이 블록도 같이 재서, 측정이 맞는지 확인하는 기준으로 씁니다.">
+  <div class="kicker">설치</div>
+  <h2>어디에 어떻게 다나</h2>
+  <div class="grid g2 flex1" style="align-items:center">
+    <svg viewBox="0 0 520 360" width="100%">
+      <rect x="40" y="320" width="440" height="16" rx="4" fill="#9aa3b2"/>
+      <text x="200" y="352" font-size="13" class="m">출력판(베드)</text>
+      <rect x="150" y="270" width="170" height="50" fill="#9bb7e6"/><text x="168" y="300" font-size="14" style="fill:#fff">출력물</text>
+      <!-- gauge steps -->
+      <g fill="#c4c9d4"><rect x="352" y="300" width="20" height="20"/><rect x="376" y="290" width="20" height="30"/><rect x="400" y="278" width="20" height="42"/><rect x="424" y="262" width="20" height="58"/><rect x="448" y="244" width="20" height="76"/></g>
+      <text x="356" y="236" font-size="13" class="m">높이를 아는 계단(기준물)</text>
+      <!-- toolhead -->
+      <rect x="150" y="80" width="120" height="90" rx="10" fill="#3b4252"/>
+      <text x="160" y="72" font-size="14">프린터 헤드</text>
+      <polygon points="190,170 230,170 210,208" fill="#b86b2a"/>
+      <text x="236" y="198" font-size="13" class="m">노즐</text>
+      <rect x="116" y="110" width="30" height="28" rx="4" fill="var(--laser)"/><text x="50" y="104" font-size="13">레이저</text>
+      <line x1="131" y1="138" x2="131" y2="268" stroke="var(--laser)" stroke-width="2.5"/>
+      <rect x="274" y="96" width="40" height="30" rx="5" fill="#2f3646"/><text x="282" y="90" font-size="13">카메라</text>
+      <line x1="294" y1="126" x2="131" y2="268" stroke="var(--accent)" stroke-dasharray="5 4"/>
+    </svg>
+    <div>
+      <div class="step"><span class="num">1</span><div><div class="t">레이저·카메라를 헤드에 고정</div><div class="d">카메라는 비스듬히 30°. 직접 설계해 출력한 거치대 사용.</div></div></div>
+      <div class="step"><span class="num">2</span><div><div class="t">파란색 필터 장착</div><div class="d">방 조명과 노즐의 열 빛이 사진에 섞이는 것을 막는다.</div></div></div>
+      <div class="step"><span class="num">3</span><div><div class="t">베드 옆에 기준물 계단 세우기</div><div class="d">높이를 아는 블록들. 스캔마다 함께 재서 측정이 맞는지 확인.</div></div></div>
+      <div class="step"><span class="num">4</span><div><div class="t">카메라를 프린터 컴퓨터에 연결</div><div class="d">사진은 프린터의 Klipper 컴퓨터가 받아 저장.</div></div></div>
+      <p class="tiny" style="margin-top:8px">⚠ 레이저는 눈에 해로울 수 있는 약한 등급(Class 2). 안전 수칙 필요.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 교정 -->
+<section class="slide" data-notes="<b>교정이란?</b> 새 카메라를 샀을 때 '사진 속 한 칸이 실제 몇 mm인지'를 모릅니다. 렌즈는 가장자리가 휘어 보이기도 하고요. 그래서 모양을 정확히 아는 물건(체스판 같은 판, 정확한 두께의 얇은 쇠 조각)을 찍어서 카메라의 '눈 보정'을 합니다. 설치 직후 한 번, 그 뒤 점검할 때마다 합니다.">
+  <div class="kicker">교정 (설치 직후 한 번)</div>
+  <h2>카메라의 '눈'을 정확한 자로 맞추기</h2>
+  <div class="grid g2 flex1" style="align-content:center">
+    <div class="card"><div class="row"><span class="num">1</span><h3>렌즈 왜곡 보정</h3></div><p class="small" style="margin-top:8px">체스판 무늬 판(9×6칸)을 여러 각도에서 찍어, 렌즈가 휘게 보이는 정도를 알아낸다.</p></div>
+    <div class="card"><div class="row"><span class="num">2</span><h3>레이저 면 위치 맞추기</h3></div><p class="small" style="margin-top:8px">높이를 아는 판을 찍어 "빛점이 이만큼 밀리면 몇 mm"라는 환산표를 만든다.</p></div>
+    <div class="card"><div class="row"><span class="num">3</span><h3>이동 방향·간격 확인</h3></div><p class="small" style="margin-top:8px">프린터 헤드가 움직이는 방향과 한 장당 이동 거리를 확인한다.</p></div>
+    <div class="card"><div class="row"><span class="num">4</span><h3>노즐과 센서의 위치 차이</h3></div><p class="small" style="margin-top:8px">노즐 끝과 레이저 사이 거리를 알아야 G코드 좌표와 사진을 겹칠 수 있다.</p></div>
+  </div>
+  <p class="small" style="margin-top:14px">끝으로 <b>필러게이지(0.2~0.5 mm 쇠 조각)</b>를 재서 맞는지 확인하는 것이 교정의 합격 시험이다.</p>
+</section>
+
+<!-- 13 프린터와 펌웨어 역할 -->
+<section class="slide" data-notes="<b>여기서부터 프린터와 펌웨어 선정 이유입니다.</b> 비유: 프린터 = 몸, 펌웨어 = 두뇌. 같은 몸이라도 두뇌가 다르면 할 수 있는 일이 다릅니다. 우리는 프린터가 '출력만' 하는 게 아니라 '출력 중간중간 스캔도 해 달라'고 시켜야 하기 때문에, 프린터가 정확히 움직이고, 그 위치를 정직하게 알려주고, 우리가 만든 동작(매크로)을 끼워 넣을 수 있어야 합니다.">
+  <div class="kicker">프린터와 펌웨어</div>
+  <h2>프린터는 '몸', 펌웨어는 '두뇌'</h2>
+  <div class="grid g2" style="margin-bottom:14px">
+    <div class="card"><h3>🖨 프린터 (몸)</h3><p class="small">모터, 노즐, 출력판. <b>얼마나 튼튼하고 정확하게 움직이는가</b>가 측정 품질을 정한다.</p></div>
+    <div class="card"><h3>🧠 펌웨어 (두뇌)</h3><p class="small">프린터 안의 소프트웨어. G코드를 읽어 모터와 히터를 움직인다. <b>우리가 원하는 동작을 끼워 넣을 수 있는가</b>가 중요하다.</p></div>
+  </div>
+  <h3 style="margin-top:6px">우리가 프린터·펌웨어에 요구한 것</h3>
+  <div class="grid g3 flex1" style="align-content:start;margin-top:8px">
+    <div class="card soft"><p class="small"><b>① 흔들리지 않는 구조</b><br>스캔 중 시편이 같이 움직이면 안 된다.</p></div>
+    <div class="card soft"><p class="small"><b>② 직접 만든 동작(매크로) 가능</b><br>"층 끝나면 스캔하러 가라"를 시킬 수 있어야 한다.</p></div>
+    <div class="card soft"><p class="small"><b>③ 실제 위치를 정직하게 보고</b><br>"계획한 위치"가 아니라 "진짜 간 위치"를 알려 줘야 한다.</p></div>
+    <div class="card soft"><p class="small"><b>④ 센서를 달 공간·설계도 공개</b><br>거치대를 직접 설계해야 해서.</p></div>
+    <div class="card soft"><p class="small"><b>⑤ 카메라·컴퓨터 연결 용이</b><br>사진과 위치를 같은 시계로 저장.</p></div>
+    <div class="card soft"><p class="small"><b>⑥ 가격과 구하기 쉬움</b><br>국내 구입, 문서·커뮤니티가 많을 것.</p></div>
+  </div>
+</section>
+
+<!-- 14 점수표 -->
+<section class="slide" data-notes="<b>점수는 이렇게 매겼습니다.</b> 프린터 9개 기준(36점)과 펌웨어 7개 기준(30점)을 합쳐 66점 만점입니다. 기준마다 근거(공식 문서나 판매처)를 칸에 달아 두었고, 확인 못 한 칸은 추정으로 표시했습니다. 세 기종이 57점으로 동점이라 동점 규칙(구조 점수 → 개조비 → 본체 가격)으로 가렸고, 가장 저렴한 SV08이 1순위가 됐습니다. 맨 아래 Bambu P1S는 펌웨어가 닫혀 있어서 우리 용도에는 쓸 수 없지만 비교 기준선으로 넣었습니다.">
+  <div class="kicker">프린터 후보 점수 (66점 만점)</div>
+  <h2>1~3위가 57점 동점 → 동점 규칙으로 SV08</h2>
+  <div class="flex1" style="display:flex;flex-direction:column;justify-content:center;gap:9px">
+    <div class="row"><div style="width:230px;font-size:19px"><b>Sovol SV08</b></div><div style="flex:1"><div class="bar hi" style="width:86.4%"></div></div><div style="width:50px;text-align:right;font-weight:700">57</div></div>
+    <div class="row"><div style="width:230px;font-size:19px">Voron Trident (키트)</div><div style="flex:1"><div class="bar" style="width:86.4%"></div></div><div style="width:50px;text-align:right">57</div></div>
+    <div class="row"><div style="width:230px;font-size:19px">Voron 2.4 (키트)</div><div style="flex:1"><div class="bar" style="width:86.4%"></div></div><div style="width:50px;text-align:right">57</div></div>
+    <div class="row"><div style="width:230px;font-size:19px">QIDI Plus5</div><div style="flex:1"><div class="bar" style="width:77.3%"></div></div><div style="width:50px;text-align:right">51</div></div>
+    <div class="row"><div style="width:230px;font-size:19px">Creality K2 Plus</div><div style="flex:1"><div class="bar" style="width:65.2%"></div></div><div style="width:50px;text-align:right">43</div></div>
+    <div class="row"><div style="width:230px;font-size:19px">Ender-3 V3 SE + Klipper</div><div style="flex:1"><div class="bar" style="width:63.6%"></div></div><div style="width:50px;text-align:right">42</div></div>
+    <div class="row"><div style="width:230px;font-size:19px">Prusa Core One</div><div style="flex:1"><div class="bar" style="width:57.6%"></div></div><div style="width:50px;text-align:right">38</div></div>
+    <div class="row"><div style="width:230px;font-size:19px">Prusa MK4S</div><div style="flex:1"><div class="bar" style="width:53%"></div></div><div style="width:50px;text-align:right">35</div></div>
+    <div class="row"><div style="width:230px;font-size:19px" class="muted">Bambu P1S (비교용)</div><div style="flex:1"><div class="bar gray" style="width:27.3%"></div></div><div style="width:50px;text-align:right" class="muted">18</div></div>
+  </div>
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card ok"><p class="small"><b>동점 규칙</b>: 구조 점수 → 개조비 → 본체 가격 순</p></div>
+    <div class="card ok"><p class="small"><b>SV08</b>: 센서 설치 설계도 공개 + 가장 저렴한 완성품</p></div>
+    <div class="card warn"><p class="small"><b>Bambu</b>: 펌웨어가 닫혀 있어 동작 추가가 막힘</p></div>
+  </div>
+</section>
+
+<!-- 15 구조 -->
+<section class="slide" data-notes="<b>이 장이 '왜 하필 SV08인가'의 핵심 근거입니다.</b> 많은 저가 프린터는 출력판(베드)이 앞뒤로 움직이는 '베드 슬링어' 구조입니다. 이 경우 레이저 스캔을 위해 Y 방향으로 움직일 때 시편이 같이 흔들려서 측정이 틀어집니다. SV08은 출력판이 위아래로만 움직이고, 앞뒤 움직임은 헤드가 담당하는 구조입니다. 그래서 스캔 중에 시편은 가만히 있습니다. 단, SV08의 Z축 방식에 대한 일부 정보는 아직 추정이니, 구매 전에 확인이 필요하다고 솔직히 말씀드려야 합니다.">
+  <div class="kicker">프린터 선정의 핵심 근거 ①</div>
+  <h2>스캔하는 동안 '시편이 가만히 있어야' 한다</h2>
+  <div class="grid g2 flex1" style="align-items:center">
+    <div class="card bad">
+      <h3>❌ 출력판이 앞뒤로 움직이는 방식</h3>
+      <svg viewBox="0 0 400 190" width="100%"><rect x="130" y="40" width="140" height="26" rx="6" fill="#3b4252"/><text x="140" y="32" font-size="13">헤드(고정)</text><line x1="200" y1="66" x2="200" y2="108" stroke="var(--laser)" stroke-width="2.5"/>
+        <rect x="90" y="108" width="220" height="14" fill="#9aa3b2"/><rect x="150" y="84" width="90" height="24" fill="#9bb7e6"/>
+        <path d="M60 140 H340" stroke="var(--bad)" stroke-width="3"/><path d="M60 140 l10 -7 M60 140 l10 7 M340 140 l-10 -7 M340 140 l-10 7" stroke="var(--bad)" stroke-width="3"/>
+        <text x="100" y="170" font-size="15" style="fill:var(--bad)">판 전체가 앞뒤로 움직여 시편이 흔들린다</text></svg>
+      <p class="small">예: Prusa MK4S, Ender-3 계열</p></div>
+    <div class="card ok">
+      <h3>✅ 출력판은 위아래로만, 헤드가 앞뒤로</h3>
+      <svg viewBox="0 0 400 190" width="100%"><rect x="130" y="40" width="140" height="26" rx="6" fill="#3b4252"/><text x="140" y="32" font-size="13">헤드(앞뒤로 이동)</text><line x1="200" y1="66" x2="200" y2="108" stroke="var(--laser)" stroke-width="2.5"/>
+        <path d="M80 54 H320" stroke="var(--ok)" stroke-width="3"/><path d="M80 54 l10 -7 M80 54 l10 7 M320 54 l-10 -7 M320 54 l-10 7" stroke="var(--ok)" stroke-width="3"/>
+        <rect x="90" y="108" width="220" height="14" fill="#9aa3b2"/><rect x="150" y="84" width="90" height="24" fill="#9bb7e6"/>
+        <text x="100" y="170" font-size="15" style="fill:var(--ok)">시편은 가만히, 센서만 움직인다</text></svg>
+      <p class="small">예: Sovol SV08, Voron 2.4/Trident</p></div>
+  </div>
+  <p class="small" style="margin-top:12px"><b>더 쉬운 이유:</b> 높이를 정확히 비교해야 하므로, 출력판이 위아래로만 움직이고 평탄도를 자동 맞춤하는 구조(SV08: 4모터 수평 맞춤)가 유리하다. <span class="tag warn">확인 필요</span> SV08의 Z축 구동 방식은 아직 추정이라 구매 전 확인한다.</p>
+</section>
+
+<!-- 16 펌웨어 -->
+<section class="slide" data-notes="<b>펌웨어 비교 표입니다.</b> 핵심 한 줄: 'Klipper는 우리가 원하는 동작을 짜 넣기 가장 쉽고, 실제 위치를 정직하게 알려줍니다.' Marlin은 가장 흔하지만 기본 설정으로는 '계획한 위치'를 보고하는 경우가 있어서, 정밀 측정에는 한 번 더 주의가 필요합니다. RepRapFirmware는 괜찮지만 선택할 수 있는 프린터가 적고, 제조사 닫힌 펌웨어는 아예 불가능합니다. SV08은 Klipper가 기본 탑재라 따로 바꿀 필요가 없다는 점이 큽니다.">
+  <div class="kicker">프린터 선정의 핵심 근거 ②</div>
+  <h2>펌웨어: 동작을 끼워 넣기 가장 쉬운 Klipper</h2>
+  <table>
+    <tr><th>펌웨어</th><th>동작(매크로) 추가</th><th>위치 보고</th><th>우리 용도 적합</th></tr>
+    <tr><td><b>Klipper</b></td><td>문서가 공개, 템플릿 문법으로 자유롭게</td><td>실제 모터 걸음 기준 위치 조회 가능</td><td><span class="tag ok">선택</span></td></tr>
+    <tr><td>Marlin</td><td>가능하나 제약 많음</td><td>기본 설정은 "계획한 위치" 보고(주의)</td><td><span class="tag warn">가능, 보완 필요</span></td></tr>
+    <tr><td>RepRapFirmware</td><td>가능</td><td>가능</td><td><span class="tag warn">후보 프린터가 적음</span></td></tr>
+    <tr><td>제조사 닫힌 펌웨어 (Bambu 등)</td><td>사실상 불가</td><td>불가</td><td><span class="tag bad">사용 불가</span></td></tr>
+  </table>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card soft"><h3>Klipper의 구조</h3><p class="small">모터 제어 보드 + <b>작은 컴퓨터</b>가 분업. 컴퓨터가 카메라와 스캔 스크립트를 맡는다.</p></div>
+    <div class="card soft"><h3>매크로 예시</h3><p class="small">"층이 끝나면: 노즐 2 mm 올림 → 스캔 위치로 이동 → 촬영 → 복귀"를 한 줄 명령으로 등록.</p></div>
+    <div class="card ok"><h3>SV08은 이미 Klipper</h3><p class="small">제조사가 Klipper를 기본 탑재(Sovol 포크). 추가 비용 없음.</p></div>
+  </div>
+</section>
+
+<!-- 17 한 층 사이클 -->
+<section class="slide" data-notes="<b>작동 순서를 한 층 단위로.</b> 층이 하나 끝날 때마다 헤드가 스캔 위치로 이동해 레이저로 두 줄을 훑습니다. 같은 높이에서 높이를 아는 기준 계단 두 단도 함께 재요. 이 기준 계단 덕분에 '측정기가 오늘 정상인가'를 매 층 확인합니다. 마지막 층은 한 번 더 식은 뒤에 다시 재서, 출력물이 식으면서 줄어든 정도를 확인합니다.">
+  <div class="kicker">작동</div>
+  <h2>한 층이 끝날 때마다 일어나는 일</h2>
+  <svg viewBox="0 0 1150 250" width="100%">
+    <defs><marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker></defs>
+    <g font-size="18" font-weight="700">
+      <rect x="0" y="10" width="170" height="110" rx="12" fill="var(--warn-soft)"/><text x="16" y="42">① 한 층 출력</text><text x="16" y="70" font-size="15" class="m" font-weight="400">노즐이 플라스틱을</text><text x="16" y="90" font-size="15" class="m" font-weight="400">한 층 쌓는다</text>
+      <rect x="195" y="10" width="170" height="110" rx="12" fill="var(--accent-soft)"/><text x="211" y="42">② 노즐 올리기</text><text x="211" y="70" font-size="15" class="m" font-weight="400">2 mm 들어 올려</text><text x="211" y="90" font-size="15" class="m" font-weight="400">긁지 않게 한다</text>
+      <rect x="390" y="10" width="170" height="110" rx="12" fill="var(--accent-soft)"/><text x="406" y="42">③ 시편 두 줄 스캔</text><text x="406" y="70" font-size="15" class="m" font-weight="400">윗면을 레이저로</text><text x="406" y="90" font-size="15" class="m" font-weight="400">두 번 훑는다</text>
+      <rect x="585" y="10" width="170" height="110" rx="12" fill="var(--accent-soft)"/><text x="601" y="42">④ 기준 계단 스캔</text><text x="601" y="70" font-size="15" class="m" font-weight="400">같은 높이에서</text><text x="601" y="90" font-size="15" class="m" font-weight="400">계단 두 단 확인</text>
+      <rect x="780" y="10" width="170" height="110" rx="12" fill="var(--ok-soft)"/><text x="796" y="42">⑤ 사진·위치 저장</text><text x="796" y="70" font-size="15" class="m" font-weight="400">사진과 노즐 위치를</text><text x="796" y="90" font-size="15" class="m" font-weight="400">같은 시계로 기록</text>
+      <rect x="975" y="10" width="175" height="110" rx="12" fill="var(--warn-soft)"/><text x="991" y="42">⑥ 다음 층 출력</text><text x="991" y="70" font-size="15" class="m" font-weight="400">제자리로 돌아가</text><text x="991" y="90" font-size="15" class="m" font-weight="400">계속 쌓는다</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2.5" marker-end="url(#ar2)">
+      <line x1="172" y1="65" x2="192" y2="65"/><line x1="367" y1="65" x2="387" y2="65"/><line x1="562" y1="65" x2="582" y2="65"/><line x1="757" y1="65" x2="777" y2="65"/><line x1="952" y1="65" x2="972" y2="65"/>
+    </g>
+    <text x="0" y="170" font-size="19">마지막 층은 더 한다: <tspan font-weight="700">스캔 → 30분 식히기 → 한 번 더 스캔</tspan> (식으면서 줄어든 정도 확인)</text>
+    <text x="0" y="205" font-size="17" class="m">출력 시작 전에는 빈 출력판도 한 번 스캔해 '높이 0'의 기준으로 쓴다.</text>
+  </svg>
+</section>
+
+<!-- 18 시간 데이터 -->
+<section class="slide" data-notes="<b>비용을 시간과 용량으로 보면 이렇게 됩니다.</b> 모든 층을 스캔하면 출력 시간이 길어집니다. 시험 파일 기준으로 16층짜리는 약 47분, 64층짜리는 약 106분이 늘어나는데 여기에는 마지막 층을 식히는 30분이 포함돼 있습니다. 이 시간은 컴퓨터 계산 값이고 실제 기기에서 확인한 것은 아닙니다. 데이터 용량은 가상 데이터 기준입니다.">
+  <div class="kicker">시간과 데이터</div>
+  <h2>모든 층을 재는 대신 출력 시간이 늘어난다</h2>
+  <div class="grid g2 flex1" style="align-items:center">
+    <div class="card"><h3>⏱ 추가되는 출력 시간 (계산값)</h3>
+      <table><tr><th>시험 파일</th><th class="r">층 수</th><th class="r">층당</th><th class="r">전체 추가</th></tr>
+      <tr><td>작은 판</td><td class="r">16</td><td class="r">약 55초</td><td class="r"><b>약 47분</b></td></tr>
+      <tr><td>계단 시편</td><td class="r">64</td><td class="r">약 68초</td><td class="r"><b>약 106분</b></td></tr></table>
+      <p class="tiny" style="margin-top:8px">마지막 층 식히기 30분 포함. 이동 속도 등은 추정.</p></div>
+    <div class="card"><h3>💾 데이터 양 (가상 데이터 첫 판)</h3>
+      <div class="big" style="color:var(--accent);font-size:64px">약 32 GB</div>
+      <p class="small" style="margin-top:8px">무압축 기준. PNG로 저장하면 약 6 GB.<br>레이저 선 주변만 잘라 저장하면 USB 2.0으로도 전송 가능.</p></div>
+  </div>
+</section>
+
+<!-- 19 데이터 -> 높이지도 -->
+<section class="slide" data-notes="<b>측정 데이터가 판정 결과가 되는 과정입니다.</b> 사진 한 장은 레이저 한 줄입니다. 이것을 수천 장 모아서 면 전체의 높이를 만들어요. 한편 G코드에서는 이미 '이 층은 이 높이'라는 정답 지도를 만들어 둡니다. 두 지도를 같은 격자에 올려 빼면 어디가 얼마나 틀렸는지 한눈에 보입니다. 가장자리처럼 레이저가 잘 못 보는 곳은 미리 제외합니다.">
+  <div class="kicker">데이터 처리</div>
+  <h2>사진 수천 장 → 높이 지도 → 정답과 빼기</h2>
+  <div class="grid g3 flex1" style="align-content:center">
+    <div>
+      <div class="card"><h3>① 사진에서 선 찾기</h3><p class="small">밝기 중심을 잘게 계산해 레이저 선의 위치를 구한다.</p></div>
+      <div class="card" style="margin-top:12px"><h3>② 높이로 환산</h3><p class="small">교정으로 만든 환산표로 "선 위치 → mm".</p></div>
+    </div>
+    <div>
+      <div class="card soft"><h3>③ 측정 높이 지도</h3>
+        <svg viewBox="0 0 220 120" width="100%"><defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#9bb7e6"/><stop offset="1" stop-color="#4a7bd0"/></linearGradient></defs><rect x="10" y="10" width="200" height="100" rx="8" fill="url(#g1)"/></svg>
+        <p class="tiny">잰 높이를 격자에 채운 그림</p></div>
+      <div class="card soft" style="margin-top:12px"><h3>④ 정답 높이 지도</h3><p class="small">G코드에서 미리 계산. 같은 격자.</p></div>
+    </div>
+    <div>
+      <div class="card ok"><h3>⑤ 차이 지도</h3>
+        <svg viewBox="0 0 220 120" width="100%"><rect x="10" y="10" width="200" height="100" rx="8" fill="#e8efe8"/><rect x="30" y="30" width="40" height="30" fill="#f3b3a8"/><rect x="130" y="60" width="50" height="35" fill="#f5d98a"/></svg>
+        <p class="tiny">빨강=높게, 노랑=낮게 나온 곳</p></div>
+      <div class="card warn" style="margin-top:12px"><h3>제외하는 곳</h3><p class="small">가장자리, 레이저가 안 닿는 곳, 바깥 테두리 선</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 판정 -->
+<section class="slide" data-notes="<b>판정 규칙을 막대 하나로 설명할 수 있습니다.</b> 측정에도 오차가 있으니, 합격선 0.2 mm 바로 근처에서 생기는 잘못된 판정을 막기 위해 안전 띠를 둡니다. 0.179 mm 이하는 확실히 합격, 0.221 mm 넘으면 확실히 불합격, 그 사이는 보류(다시 확인)입니다. 출력물 전체로는 확실한 합격 점이 95% 이상이면 합격이고, 불합격 점이 5%를 넘으면 불합격, 나머지는 보류입니다. 측정 조건이 갖춰지지 않았을 때는 판정 자체를 거부하고 '측정 불충분'이라 답합니다.">
+  <div class="kicker">판정 규칙</div>
+  <h2>점마다 3가지로 가르고, 95 %로 전체를 결정한다</h2>
+  <svg viewBox="0 0 1150 170" width="100%">
+    <rect x="0" y="40" width="540" height="46" fill="var(--ok-soft)"/><rect x="540" y="40" width="80" height="46" fill="var(--warn-soft)"/><rect x="620" y="40" width="530" height="46" fill="var(--bad-soft)"/>
+    <text x="270" y="70" font-size="21" text-anchor="middle" style="fill:var(--ok)" font-weight="700">합격</text>
+    <text x="580" y="70" font-size="18" text-anchor="middle" style="fill:var(--warn)" font-weight="700">보류</text>
+    <text x="885" y="70" font-size="21" text-anchor="middle" style="fill:var(--bad)" font-weight="700">불합격</text>
+    <g font-size="17"><text x="0" y="116">0</text><text x="540" y="116" text-anchor="middle">0.179</text><text x="620" y="116" text-anchor="middle">0.221 mm</text></g>
+    <text x="0" y="30" font-size="17" class="m">설계와 실제 높이 차이(절댓값)</text>
+    <line x1="580" y1="86" x2="580" y2="130" stroke="var(--muted)" stroke-dasharray="3 3"/>
+    <text x="580" y="152" font-size="16" text-anchor="middle" class="m">합격선 0.2 mm ± 측정 오차 0.021 mm</text>
+  </svg>
+  <div class="grid g3 flex1" style="margin-top:6px;align-content:center">
+    <div class="card ok"><h3>출력물 합격</h3><p class="small">확실한 합격 점이 전체의 <b>95 % 이상</b></p></div>
+    <div class="card bad"><h3>출력물 불합격</h3><p class="small">확실한 불합격 점이 전체의 <b>5 % 초과</b></p></div>
+    <div class="card warn"><h3>보류 / 측정 불충분</h3><p class="small">그 사이이거나, 측정 조건이 안 맞으면 <b>판정을 내리지 않는다</b></p></div>
+  </div>
+</section>
+
+<!-- 21 믿을 수 있나 -->
+<section class="slide" data-notes="<b>'이 측정기가 틀리지 않았다는 것을 어떻게 아나?'에 대한 답입니다.</b> 측정 오차는 여러 요인의 합입니다: 열로 줄어드는 것, Z축 오차, 프레임 변형, 재료가 빛을 번지게 하는 정도 등. 이 값들을 통계 규칙(국제 표준 방식)으로 합쳤더니 약 21 µm입니다. 이 값이 클수록 보류 구간이 넓어집니다. 높이를 아는 계단 기준물을 같은 높이에서 같이 재면 Z축 오차 같은 공통 오차가 상쇄돼서 15 µm까지 줄어듭니다. 수치 대부분이 추정이라 실제 기기로 재면 달라질 수 있다는 것도 함께 말씀해 주세요.">
+  <div class="kicker">믿을 수 있나?</div>
+  <h2>측정 오차를 숫자로 따지고, 기준물로 줄인다</h2>
+  <div class="grid g2 flex1" style="align-items:center">
+    <div>
+      <div class="row" style="margin-bottom:10px"><div style="width:250px;font-size:18px">기본 (표준 합산)</div><div style="flex:1"><div class="bar" style="width:100%"></div></div><div style="width:80px;text-align:right;font-weight:700">20.9 µm</div></div>
+      <div class="row" style="margin-bottom:10px"><div style="width:250px;font-size:18px">+ 계단 기준물</div><div style="flex:1"><div class="bar" style="width:72%"></div></div><div style="width:80px;text-align:right;font-weight:700">15.0 µm</div></div>
+      <div class="row" style="margin-bottom:10px"><div style="width:250px;font-size:18px">+ 재료 번짐 보정</div><div style="flex:1"><div class="bar" style="width:64%"></div></div><div style="width:80px;text-align:right;font-weight:700">13.4 µm</div></div>
+      <div class="row"><div style="width:250px;font-size:18px">+ 같은 층 4회 반복</div><div style="flex:1"><div class="bar hi" style="width:55%"></div></div><div style="width:80px;text-align:right;font-weight:700">11.5 µm</div></div>
+      <p class="tiny" style="margin-top:12px">합격선 0.2 mm = 200 µm와 견주면 약 10분의 1. 숫자 대부분은 컴퓨터 추정값.</p>
+    </div>
+    <div class="grid" style="gap:12px">
+      <div class="card"><h3>왜 틀릴 수 있나</h3><p class="small">열 수축, 프린터 Z축의 미세한 오차, 틀의 변형, 재료(PLA)가 빛을 번지게 하는 정도</p></div>
+      <div class="card ok"><h3>계단 기준물이 줄여 주는 이유</h3><p class="small">같은 높이에서 높이를 아는 쇠 블록을 함께 재면, 프린터 자체의 공통 오차가 <b>양쪽에 똑같이 들어가 서로 상쇄</b>된다.</p></div>
+      <div class="card warn"><h3>조건</h3><p class="small">두 계단의 간격이 3 mm 이하여야 효과가 나고, 아니면 배율 오차가 오히려 커진다.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 22 비용 총괄 -->
+<section class="slide" data-notes="<b>돈 이야기를 한 장에 모읍니다.</b> 프린터 본체는 별도로 봅니다. 측정 장비와 기준물, 개조비를 합친 금액이 120만 원 안에 들어오는지가 기준입니다. 최대로 잡아도 약 120만 원으로 900원 초과 정도라서 허용하기로 했습니다. 마이크로미터는 새로 사는 것으로 계산돼 있어 빌릴 수 있으면 더 내려갑니다.">
+  <div class="kicker">비용 총괄</div>
+  <h2>프린터 본체를 뺀 측정 시스템은 약 84~120만 원</h2>
+  <div class="grid g2 flex1" style="align-items:center">
+    <table>
+      <tr><th>항목</th><th class="r">명목</th><th class="r">최대</th></tr>
+      <tr><td>측정 센서 세트</td><td class="r">50만</td><td class="r">90만</td></tr>
+      <tr><td>확인용 기준물</td><td class="r">약 31만</td><td class="r">약 44만→<b>최저안 27만</b></td></tr>
+      <tr><td>개조(서미스터, 배선 등)</td><td class="r">3만</td><td class="r">3만</td></tr>
+      <tr><td><b>합계</b></td><td class="r"><b>약 84만</b></td><td class="r"><b>약 120만</b></td></tr>
+    </table>
+    <div>
+      <div class="card"><h3>별도 항목</h3><p class="small">프린터 Sovol SV08 본체: 약 82~100만 원 + 배송비<br>(환율과 관세는 가정값)</p></div>
+      <div class="card ok" style="margin-top:12px"><h3>줄이는 방법</h3><p class="small">마이크로미터를 빌리거나 이미 있으면 합계 약 110만 원</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 23 현재 상태 -->
+<section class="slide" data-notes="<b>솔직하게 현재 상태를 말씀드리는 장입니다.</b> 아직 실제 장비를 구입하지 않았고, 모든 수치는 컴퓨터로 만든 가상 데이터와 계산입니다. 이 단계에서 확인한 것: 판정 규칙 코드, G코드 해석, 레이저 선 찾기, 데이터 형식과 검사기까지 시험을 마쳤습니다. 지금은 가상 센서(컴퓨터가 만든 레이저 영상)를 만드는 중입니다. 확인되지 않은 것 몇 가지도 숨기지 않고 말씀드려요. 청중이 '진짜로 되는 거냐'라고 물을 때, 어디까지 검증됐고 어디부터 가정인지를 명확히 구분해 답하세요.">
+  <div class="kicker">지금 어디까지?</div>
+  <h2>컴퓨터 위에서는 끝까지 돌려 보는 중, 실제 기기는 아직</h2>
+  <div class="grid g2 flex1">
+    <div class="card ok"><h3>✅ 만들어서 시험까지 마친 것</h3>
+      <ul style="font-size:19px"><li>G코드 → 정답 높이 지도</li><li>합격/불합격/보류 판정 함수</li><li>레이저 선 위치 찾기</li><li>측정 데이터 형식과 자동 검사기</li><li>판정 시나리오 23종과 정답</li></ul></div>
+    <div class="card warn"><h3>🔶 진행 중 / 아직 가정인 것</h3>
+      <ul style="font-size:19px"><li>가상 센서 영상 생성(속도 개선 중)</li><li>SV08의 Z축 방식과 센서 장착 공간</li><li>층 스캔 매크로의 실제 동작</li><li>측정 오차 수치(추정 많음)</li><li>실제 부품 구매와 실측</li></ul></div>
+  </div>
+  <div class="row" style="margin-top:14px;gap:14px"><span class="tag acc">전체 진행도 약 46 %</span><div style="flex:1;height:14px;border-radius:7px;background:var(--line)"><div style="width:46%;height:100%;border-radius:7px;background:var(--accent)"></div></div></div>
+</section>
+
+<!-- 24 다음 단계/Q&A -->
+<section class="slide" data-notes="<b>마무리.</b> 세 줄 요약으로 정리하세요: (1) 층마다 레이저로 재서 정답과 비교하는 방식, (2) 센서는 직접 만들고 프린터는 Sovol SV08 + Klipper, (3) 판정은 점마다 3가지, 전체는 95%. 이후 질의응답으로 넘어가세요. 오른쪽 용어 사전은 질문이 나왔을 때 보여 주기 좋습니다.">
+  <div class="kicker">정리와 다음 단계</div>
+  <h2>세 줄 요약</h2>
+  <div class="grid g2 flex1">
+    <div>
+      <div class="step"><span class="num">1</span><div><div class="t">층마다 레이저로 재서 G코드 정답과 비교한다</div><div class="d">허용 오차 0.2 mm, 점의 95 %가 안에 들면 합격.</div></div></div>
+      <div class="step"><span class="num">2</span><div><div class="t">센서는 약 50만 원 자작, 프린터는 Sovol SV08 + Klipper</div><div class="d">시편이 흔들리지 않는 구조와, 동작을 끼워 넣을 수 있는 펌웨어라서.</div></div></div>
+      <div class="step"><span class="num">3</span><div><div class="t">기준물로 측정기를 매번 확인하고, 조건이 안 맞으면 판정을 안 한다</div><div class="d">측정 오차는 약 15~21 µm로 추정, 합격선의 10분의 1.</div></div></div>
+      <p class="small" style="margin-top:18px"><b>다음:</b> 가상 센서로 전 과정 검증 → 실제 부품 구매 → 실측</p>
+    </div>
+    <div class="card"><h3>용어 사전</h3>
+      <table style="font-size:16px">
+        <tr><td><b>µm</b></td><td>1 mm의 1/1000</td></tr>
+        <tr><td><b>화소</b></td><td>사진의 한 칸</td></tr>
+        <tr><td><b>교정</b></td><td>측정기를 정확한 자에 맞추는 일</td></tr>
+        <tr><td><b>매크로</b></td><td>자주 쓰는 동작을 묶은 명령</td></tr>
+        <tr><td><b>베드</b></td><td>출력물이 놓이는 판</td></tr>
+        <tr><td><b>필러게이지</b></td><td>두께를 아는 얇은 쇠 조각</td></tr>
+        <tr><td><b>블록게이지</b></td><td>높이를 아는 쇠 블록</td></tr>
+        <tr><td><b>측정 오차</b></td><td>측정 자체의 흔들림</td></tr>
+      </table></div>
+  </div>
+</section>
+
+</div></div>
+
+<div id="help">← → 이동 · N 발표 노트 · F 전체화면 · P 인쇄(PDF)</div>
+<div id="notes"></div>
+<div id="hud"><i></i></div>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var deck=document.getElementById('deck'), notes=document.getElementById('notes'), bar=document.querySelector('#hud i');
+  var cur=0, n=slides.length;
+  function fit(){
+    var s=Math.min(window.innerWidth/1300, window.innerHeight/740);
+    deck.style.transform='scale('+s+')';
+  }
+  function show(i){
+    cur=Math.max(0,Math.min(n-1,i));
+    slides.forEach(function(el,k){el.classList.toggle('on',k===cur)});
+    bar.style.width=((cur+1)/n*100)+'%';
+    notes.innerHTML=slides[cur].getAttribute('data-notes')||'';
+    try{history.replaceState(null,'','#'+(cur+1))}catch(e){}
+    slides.forEach(function(el,k){
+      var f=el.querySelector('.foot');
+      if(!f && k>0){var d=document.createElement('div');d.className='foot';
+        d.innerHTML='<span>3D 프린터 출력물 검사 워크플로우</span><span>'+(k+1)+' / '+n+'</span>';el.appendChild(d);}
+    });
+  }
+  window.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();show(cur+1)}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();show(cur-1)}
+    else if(e.key==='Home'){show(0)} else if(e.key==='End'){show(n-1)}
+    else if(e.key==='n'||e.key==='N'){notes.classList.toggle('on')}
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()} else {document.exitFullscreen()} }
+    else if(e.key==='p'||e.key==='P'){window.print()}
+  });
+  document.getElementById('viewport').addEventListener('click',function(e){
+    if(e.target.closest('#notes'))return;
+    var x=e.clientX/window.innerWidth; show(x<0.3?cur-1:cur+1);
+  });
+  window.addEventListener('resize',fit);
+  var h=parseInt((location.hash||'').slice(1),10);
+  fit(); show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
