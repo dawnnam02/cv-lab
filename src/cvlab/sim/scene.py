@@ -94,18 +94,32 @@ class Scene(Surface):
         z = b.copy()
         mat = np.zeros(x.shape, np.int64)
         hot = np.zeros(x.shape, bool)
+        if x.size == 0:
+            return z, mat, hot
+        qx0, qx1, qy0, qy1 = float(x.min()), float(x.max()), float(y.min()), float(y.max())  # 겹치지 않는 것은 건너뜀 (속도)
         if self.hmap is not None:
-            fx = (x - self.origin[0]) / self.step
-            fy = (y - self.origin[1]) / self.step
-            H = ndimage.map_coordinates(self.hmap, [fy.ravel(), fx.ravel()], order=1, mode="constant",
-                                        cval=0.0).reshape(x.shape)
-            on = H > 1e-6
-            if on.any():
-                z = np.where(on, self.bed.mesh(x, y) + H if self.bed.mesh_on else H, z)
-                mat = np.where(on, 1, mat)
-                if self.hot_above_mm is not None:
-                    hot = on & (H >= self.hot_above_mm)
+            ny, nx = self.hmap.shape
+            hx0, hy0 = self.origin
+            hx1, hy1 = hx0 + (nx - 1) * self.step, hy0 + (ny - 1) * self.step
+            if qx1 >= hx0 - self.step and qx0 <= hx1 + self.step and qy1 >= hy0 - self.step and qy0 <= hy1 + self.step:
+                fx = (x - hx0) / self.step
+                fy = (y - hy0) / self.step
+                H = ndimage.map_coordinates(self.hmap, [fy.ravel(), fx.ravel()], order=1, mode="constant",
+                                            cval=0.0).reshape(x.shape)
+                on = H > 1e-6
+                if on.any():
+                    if self.bed.mesh_on:
+                        zo = z.copy()
+                        zo[on] = self.bed.mesh(x[on], y[on]) + H[on]
+                        z = zo
+                    else:
+                        z = np.where(on, H, z)
+                    mat = np.where(on, 1, mat)
+                    if self.hot_above_mm is not None:
+                        hot = on & (H >= self.hot_above_mm)
         for bk in self.blocks:
+            if bk.x1 < qx0 or bk.x0 > qx1 or bk.y1 < qy0 or bk.y0 > qy1:
+                continue
             inb = (x >= bk.x0) & (x <= bk.x1) & (y >= bk.y0) & (y <= bk.y1)
             if inb.any():
                 z = np.where(inb, b + bk.height, z)

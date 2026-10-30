@@ -309,48 +309,106 @@ class LineRenderer:
         cand = np.flatnonzero((P[:, 2] < top - 1e-6) & (V[:, 2] > 0))
         if cand.size == 0:
             return occ
+        cand = self._prune_occlusion(surf, P, V, cand, top)
+        if cand.size == 0:
+            return occ
         Pc, Vc = P[cand], V[cand]
         hxy = np.hypot(Vc[:, 0], Vc[:, 1])
         ds = 0.02 / np.maximum(hxy, 1e-6)
-        kmax = int(np.ceil(np.max((top - Pc[:, 2]) / (ds * Vc[:, 2])))) + 1
-        alive = np.ones(len(cand), bool)
+        kmax = min(int(np.ceil(np.max((top - Pc[:, 2]) / (ds * Vc[:, 2])))) + 1, 2000)
+        # 광선마다 k = 1 … n_i (n_i = 광선 높이가 top에 처음 닿는 걸음, 그 걸음까지 봄)를 한 번에 펼쳐 높이를 한 번에 구함.
+        # 걸음마다 반복하던 것과 같은 점 · 같은 비교라 결과가 같음 (T3-2, 파이썬 반복 비용만 없앰)
+        n_i = np.minimum(np.floor((top - Pc[:, 2]) / (ds * Vc[:, 2]) - 1e-12).astype(int) + 1, kmax)
+        n_i = np.maximum(n_i, 1)
         hit = np.zeros(len(cand), bool)
-        for k in range(1, min(kmax, 2000) + 1):
-            idx = np.flatnonzero(alive)
-            if idx.size == 0:
+        alive = np.arange(len(cand))
+        G = 16                                         # 걸음 16개씩 묶어 한 번에 (가린 광선은 일찍 빠짐)
+        for k0 in range(1, kmax + 1, G):
+            if alive.size == 0:
                 break
-            s = k * ds[idx]
-            q = Pc[idx] + s[:, None] * Vc[idx]
+            ks = np.arange(k0, k0 + G)
+            ok = ks[None, :] <= n_i[alive][:, None]   # 광선마다 볼 걸음만
+            a_idx, k_idx = np.nonzero(ok)
+            own = alive[a_idx]
+            q = Pc[own] + (ks[k_idx] * ds[own])[:, None] * Vc[own]
             h, _, _ = surf.heights(q[:, 0], q[:, 1])
-            hit[idx] |= h > q[:, 2] + 1e-9
-            alive[idx] = (q[:, 2] < top) & ~hit[idx]
+            hk = h > q[:, 2] + 1e-9
+            hit[np.unique(own[hk])] = True
+            alive = alive[(~hit[alive]) & (n_i[alive] >= k0 + G)]
         occ[cand] = hit
         return occ
 
+    def _prune_occlusion(self, surf, P, V, cand, top, step=0.02, margin=1e-3):
+        """보수적 가지치기 (속도): 후보 광선이 지나는 띠를 한 번에 높이 격자로 찍고 (5 × 5 최댓값 + 여유 1 µm)
+        광선 높이가 그 상한을 한 번도 넘지 않으면 가림 없음으로 뺌. 남은 후보만 정밀 광선 따라가기."""
+        Pc, Vc = P[cand], V[cand]
+        t_end = (top - Pc[:, 2]) / Vc[:, 2]
+        ends = Pc[:, :2] + t_end[:, None] * Vc[:, :2]
+        x0 = min(Pc[:, 0].min(), ends[:, 0].min()) - 3 * step
+        x1 = max(Pc[:, 0].max(), ends[:, 0].max()) + 3 * step
+        y0 = min(Pc[:, 1].min(), ends[:, 1].min()) - 3 * step
+        y1 = max(Pc[:, 1].max(), ends[:, 1].max()) + 3 * step
+        nx, ny = int(math.ceil((x1 - x0) / step)) + 1, int(math.ceil((y1 - y0) / step)) + 1
+        if nx * ny > 3_000_000:
+            return cand
+        gx = x0 + np.arange(nx) * step
+        gy = y0 + np.arange(ny) * step
+        GX, GY = np.meshgrid(gx, gy)
+        Hr, _, _ = surf.heights(GX, GY)
+        Hf = ndimage.maximum_filter(Hr, size=5, mode="nearest") + margin
+        hxy = np.maximum(np.hypot(Vc[:, 0], Vc[:, 1]), 1e-6)
+        need = np.zeros(len(cand), bool)
+        # ① 가까운 0.24 mm: 고운 칸 (0.02 mm) 간격으로 (자기 면을 굵은 칸에 넣지 않게)
+        dsf = step / hxy
+        n_near = 12
+        tk = np.arange(1, n_near + 1)[:, None] * dsf[None, :]          # (걸음, 광선) 한 번에
+        qx, qy, qz = (Pc[None, :, i] + tk * Vc[None, :, i] for i in range(3))
+        ix = np.clip(np.rint((qx - x0) / step).astype(int), 0, nx - 1)
+        iy = np.clip(np.rint((qy - y0) / step).astype(int), 0, ny - 1)
+        need |= ((Hf[iy, ix] > qz) & (qz < top)).any(axis=0)
+        # ② 그 너머: 5 × 5 고운 칸을 묶은 굵은 칸 (0.1 mm) 최댓값 = 칸 안 어디든 상한. 반 칸 간격으로 걸으며,
+        #    표본 사이에서 광선이 가장 낮은 높이 (앞 표본 높이)와 비교해 보수적으로
+        B = 5
+        Hp = np.pad(Hf, ((0, (-ny) % B), (0, (-nx) % B)), mode="edge")
+        Hb = Hp.reshape(Hp.shape[0] // B, B, Hp.shape[1] // B, B).max(axis=(1, 3))
+        Hb = ndimage.maximum_filter(Hb, size=3, mode="nearest")   # 반 칸 사이에 모서리로 스치는 이웃 칸까지
+        cs = step * B
+        dsc = 0.5 * cs / hxy
+        t0 = n_near * dsf
+        kmax = min(int(np.ceil(np.max((t_end - t0) / dsc))) + 1, 4000)
+        per = max(1, 1_500_000 // max(len(cand), 1))                 # 걸음 묶음 (메모리 한도)
+        for k0 in range(1, kmax + 1, per):
+            ks = np.arange(k0, min(k0 + per, kmax + 1))[:, None]
+            t = t0[None, :] + ks * dsc[None, :]
+            qx, qy, qz = (Pc[None, :, i] + t * Vc[None, :, i] for i in range(3))
+            ix = np.clip(((qx - x0) / step + 0.5).astype(int) // B, 0, Hb.shape[1] - 1)
+            iy = np.clip(((qy - y0) / step + 0.5).astype(int) // B, 0, Hb.shape[0] - 1)
+            zlow = qz - (dsc * Vc[:, 2])[None, :]
+            need |= ((Hb[iy, ix] > zlow) & (zlow < top)).any(axis=0)
+        return cand[need]
+
     def _shadowed_laser(self, z_s, x_s, line_mask):
         """레이저 부채꼴 (광원 {S} (0, 0, Lh))이 선 위 더 높은 점에 막히는지. 시트 가운데 표본으로 봄."""
+        # 광원 (0, Lh)에서 점 j까지의 내림 기울기 s_j = (Lh − z_j) ÷ |x_j|. 점 i는 같은 쪽에서 광원에 더 가까운 점 j
+        # (|x_j| < |x_i|) 중 s_j < s_i인 것이 있으면 그림자 (광선 z(x) = Lh − s_i |x|보다 z_j가 높음과 같은 식).
+        # 정렬 + 누적 최솟값으로 O(N log N) (팀장검증 7차 §5.4 결정 3이 허용한 방법, 물리는 그대로).
         Lh = float(self.g.laser_src_s[2])
-        xs, zs = x_s[line_mask], z_s[line_mask]
-        order = np.argsort(xs)
-        xs, zs = xs[order], zs[order]
+        idx_line = np.flatnonzero(line_mask)
+        xs, zs = x_s[idx_line], z_s[idx_line]
         sh = np.zeros(len(xs), bool)
-        zmax = zs.max()
-        cand = np.flatnonzero(zs < zmax - 1e-6)
-        for i in cand:
-            xi, zi = xs[i], zs[i]
-            if xi == 0:
+        cand = zs < zs.max() - 1e-6
+        for side in (xs > 0, xs < 0):
+            ii = np.flatnonzero(side)
+            if ii.size < 2:
                 continue
-            j = slice(0, i) if xi > 0 else slice(i + 1, len(xs))
-            xj, zj = xs[j], zs[j]
-            between = (xj > min(0.0, xi)) & (xj < max(0.0, xi))
-            if not between.any():
-                continue
-            zr = zi + (Lh - zi) * (xi - xj[between]) / xi
-            sh[i] = bool((zj[between] > zr + 1e-9).any())
-        out = np.zeros(len(order), bool)
-        out[order] = sh
+            ax = np.abs(xs[ii])
+            order = np.argsort(ax, kind="stable")
+            ii, ax = ii[order], ax[order]
+            s = (Lh - zs[ii]) / ax
+            prev_min = np.concatenate([[np.inf], np.minimum.accumulate(s)[:-1]])
+            sh[ii] = (prev_min < s - 1e-12) & cand[ii]
         full = np.zeros(len(x_s), bool)
-        full[np.flatnonzero(line_mask)] = out
+        full[idx_line] = sh
         return full
 
     # 한 프레임 ----------------------------------------------------------
@@ -405,7 +463,12 @@ class LineRenderer:
         w = Wt * fan * refl * (ndv > 0) * dx
         valid = (ndv > 0) & (ndl > 0)
         if self.sw["occlusion"]:
-            occ = self._occluded_camera(surf, P, Cg)
+            # 영상에 들어갈 표본만 가림을 봄 (ROI · 열 범위 밖이거나 빛이 0인 표본은 어차피 안 그림 → 결과 같음, T3-2)
+            vr0 = v - g.roi_y0
+            inroi = (w > 0) & (u > -1.5) & (u < g.width + 0.5) & (vr0 > -30) & (vr0 < g.roi_h + 30)
+            occ = np.zeros(len(P), bool)
+            if inroi.any():
+                occ[inroi] = self._occluded_camera(surf, P[inroi], Cg)
             sh = self._shadowed_laser(t, X, Y == 0.0)           # 시트 가운데 표본으로 보고
             sh = np.repeat(sh.reshape(-1, 3).any(1), 3)          # 같은 x의 세 표본에 같이 적용
             w = w * ~occ * ~sh
@@ -433,14 +496,20 @@ class LineRenderer:
             rows, prof = self._lut_profile(vk, sk, bk, tk)
             u0 = np.floor(uk).astype(int)
             fu = uk - u0
-            for du, wu in ((0, 1.0 - fu), (1, fu)):
+            okr = (rows >= 0) & (rows < g.roi_h)
+            flats, wts = [], []
+            for du, wu in ((0, 1.0 - fu), (1, fu)):   # u 두 열에 선형으로 나눔 (한 번의 bincount로 모음)
                 cols = u0 + du
-                vals = prof * (wk * wu)[:, None]
-                ok = (rows >= 0) & (rows < g.roi_h) & (cols[:, None] >= 0) & (cols[:, None] < g.width)
-                flat = (rows * g.width + cols[:, None])[ok]
-                img += np.bincount(flat, weights=vals[ok], minlength=g.roi_h * g.width).reshape(g.roi_h, g.width)
+                ok = okr & ((cols >= 0) & (cols < g.width))[:, None]
+                flats.append((rows * g.width + cols[:, None])[ok])
+                wts.append((prof * (wk * wu)[:, None])[ok])
+            img += np.bincount(np.concatenate(flats), weights=np.concatenate(wts),
+                               minlength=g.roi_h * g.width).reshape(g.roi_h, g.width)
             su = float(np.median(np.sqrt(sig_diff ** 2 + (blur_mm[keep] / g.pixel_mm / 4.0) ** 2)))
-            img = ndimage.gaussian_filter1d(img, su, axis=1, mode="constant")
+            nz = np.flatnonzero(img.any(axis=1))      # u 방향 흐림은 행마다 따로라 빛이 있는 행만 (결과 같음)
+            if nz.size:
+                r0, r1 = int(nz[0]), int(nz[-1]) + 1
+                img[r0:r1] = ndimage.gaussian_filter1d(img[r0:r1], su, axis=1, mode="constant")
             vv = valid & keep
             info["valid_cols"] = int(len(np.unique(np.clip(np.round(u[vv]), 0, g.width - 1)))) if vv.any() else 0
         return img, info
@@ -468,9 +537,13 @@ class LineRenderer:
         keys = np.round(b, 6) * 1e6 + np.round(t, 5)
         groups = np.unique(keys)
         tabs = [self._table(float(b[keys == k][0]), float(t[keys == k][0])) for k in groups]
+        # 앞쪽 (높은 쪽) 행은 이 프레임 최대 σ의 5배 + 1행까지만 (그 밖 가우스 몫 < 3e-7, T3-2 속도). 꼬리 쪽은 그대로
+        h = min(self.HALF, int(math.ceil(5.0 * float(np.max(s)))) + 1)
+        cut = self.HALF - h
+        tabs = [(o[cut:], tb[:, :, cut:]) for o, tb in tabs]
         K = max(len(o) for o, _ in tabs)
         base = np.floor(v0).astype(int)
-        rows = base[:, None] + np.arange(-self.HALF, -self.HALF + K)[None, :]
+        rows = base[:, None] + np.arange(-h, -h + K)[None, :]
         prof = np.zeros((len(v0), K))
         si = np.clip((s - self.S_GRID[0]) / (self.S_GRID[1] - self.S_GRID[0]), 0, len(self.S_GRID) - 1 - 1e-9)
         fi = np.clip((v0 - base) * (len(self.F_GRID) - 1), 0, len(self.F_GRID) - 1 - 1e-9)

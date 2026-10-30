@@ -70,6 +70,13 @@ class Writer:
         self.stats = {"frames": 0, "bytes_raw": 0, "bytes_disk": 0, "scans": 0, "files": 0}
         self.valid_ratio = []
 
+    def _png_async(self, img):
+        """PNG 인코딩을 스레드 2개에 넘김 (zlib은 GIL을 놓음 → 렌더와 겹침). 결과 바이트는 순서 · 내용 그대로."""
+        if self.__dict__.get("_pool") is None:
+            from concurrent.futures import ThreadPoolExecutor
+            self._pool = ThreadPoolExecutor(max_workers=int(self.cfg["camera"].get("png_threads", 2)))
+        return self._pool.submit(png_bytes, img, self.png_level)
+
     # 시각 ---------------------------------------------------------------
     def wall_iso(self, host_ns: int) -> str:
         c = VirtualClock(self.cfg["clock"]["start_iso"])
@@ -181,9 +188,8 @@ class Writer:
         peak = 0
         for i in range(nb):  # 도움닫기 동안 레이저 끈 배경
             img, sat = self.sensor.expose(bkg_irr, g.roi_y0, rng)
-            b = png_bytes(img, self.png_level)
             rows.append(self._frame_row(scan_id, layer_idx, i, t0 + int(round((i + 1) * T * 1e9)), False, None, 0, sat))
-            files.append((f"frames/{i:06d}.png", b))
+            files.append((f"frames/{i:06d}.png", self._png_async(img)))
         keep, th, drop = frame_times(L.t_pulse_ns, c, rng, c.get("drop_prob_on", 0.0) if self.sw.get("frame_drop") else 0.0)
         valid = []
         for j, k in enumerate(keep):
@@ -193,9 +199,9 @@ class Writer:
             img, sat = self.sensor.expose(irr, g.roi_y0, rng)
             peak = max(peak, int(img.max()))
             idx = nb + j
-            b = png_bytes(img, self.png_level)
             rows.append(self._frame_row(scan_id, layer_idx, idx, th[j], True, int(k), drop[j], sat))
-            files.append((f"frames/{idx:06d}.png", b))
+            files.append((f"frames/{idx:06d}.png", self._png_async(img)))
+        files = [(n, f.result()) for n, f in files]   # PNG 인코딩은 스레드에서 렌더와 겹침 (같은 바이트)
         for r, (_, b) in zip(rows, files):
             r["sha256"] = sha(b)
         self.stats["frames"] += len(rows)
@@ -219,11 +225,12 @@ class Writer:
         for i in range(n):
             img, sat = self.sensor.expose(irr, g.roi_y0, rng, shutter_open=(kind != "dark"))
             peak = max(peak, int(img.max()))
-            b = png_bytes(img, self.png_level)
             rows.append(self._frame_row(scan_id, -1, i, host_ns + int(round((i + 1) * T * 1e9)), laser, None, 0, sat,
                                         trig="free"))
-            rows[-1]["sha256"] = sha(b)
-            files.append((f"frames/{i:06d}.png", b))
+            files.append((f"frames/{i:06d}.png", self._png_async(img)))
+        files = [(nm, f.result()) for nm, f in files]
+        for r, (_, b) in zip(rows, files):
+            r["sha256"] = sha(b)
         self.stats["frames"] += n
         self.stats["bytes_raw"] += n * g.width * g.roi_h
         return files, rows, 100.0 * peak / self.sensor.max_dn

@@ -43,22 +43,32 @@ class Sensor:
         T = c["sensor_temp_c"] if temp_c is None else temp_c
         h = irr.shape[0]
         sl = slice(roi_y0, roi_y0 + h)
-        sig = (irr if shutter_open else np.zeros_like(irr)) * c["peak_fill"] * c["full_well_e"] * (exp_us / c["exposure_us"])
-        sig = sig * self.prnu[sl]
-        dark = c["dark_e_per_s_25c"] * 2.0 ** ((T - 25.0) / c["dark_double_c"]) * exp_us * 1e-6
-        mean = np.clip(sig + dark, 0.0, None).astype(np.float32)
-        # 산탄: 평균 ≥ 20 e⁻ 화소는 가우스 근사 (분산 = 평균), 그 아래만 포아송 (속도) [모델 문서 §3.4]
+        gain = np.float32(c["peak_fill"] * c["full_well_e"] * (exp_us / c["exposure_us"]))
+        dark = np.float32(c["dark_e_per_s_25c"] * 2.0 ** ((T - 25.0) / c["dark_double_c"]) * exp_us * 1e-6)
+        if shutter_open:
+            mean = np.asarray(irr, np.float32) * gain
+            mean *= self.prnu[sl]
+            mean += dark
+            np.maximum(mean, 0.0, out=mean)
+        else:
+            mean = np.full(irr.shape, dark, np.float32)
+        # 산탄 + 읽기 잡음 (T3-2, 속도): 평균 ≥ 20 e⁻ 화소는 두 가우스의 합을 한 번에 (분산 = 평균 + 읽기²),
+        # 그 아래만 포아송 + 읽기 가우스 [모델 문서 §3.4]. 통계는 같고 난수 실현만 바뀜.
+        rn2 = np.float32(c["read_noise_e"] ** 2)
         z = rng.standard_normal(mean.shape, dtype=np.float32)
-        e = mean + np.sqrt(mean) * z
+        e = mean + np.sqrt(mean + rn2) * z
         low = mean < 20.0
         if low.any():
-            e[low] = rng.poisson(mean[low]).astype(np.float32)
-        e = e + self.dsnu[sl] + c["read_noise_e"] * rng.standard_normal(mean.shape, dtype=np.float32)
-        e = np.clip(e, 0.0, c["full_well_e"])
-        dn = np.clip(np.floor(e / self.e_per_dn() + 0.5), 0, self.max_dn)
-        dtype = np.uint8 if self.max_dn <= 255 else np.uint16
-        img = dn.astype(dtype)
-        return img, int((img == self.max_dn).sum())
+            n_low = int(low.sum())
+            e[low] = rng.poisson(mean[low]).astype(np.float32) + \
+                np.float32(c["read_noise_e"]) * rng.standard_normal(n_low, dtype=np.float32)
+        e += self.dsnu[sl]
+        e *= np.float32(1.0 / self.e_per_dn())
+        e += np.float32(0.5)
+        np.floor(e, out=e)
+        np.clip(e, 0, self.max_dn, out=e)
+        img = e.astype(np.uint8 if self.max_dn <= 255 else np.uint16)
+        return img, int(np.count_nonzero(img == self.max_dn))
 
     @property
     def pixel_format(self) -> str:

@@ -60,6 +60,17 @@ def test_png_level_fixed_and_no_time_chunk():
     assert np.array_equal(np.array(Image.open(io.BytesIO(png_bytes(i16, 3)))), i16)
 
 
+def test_png_threads_same_bytes():
+    """T3-2: PNG 인코딩을 스레드로 겹쳐도 결과 바이트 · 순서가 같음."""
+    from types import SimpleNamespace
+    from cvlab.sim.writer import Writer
+    w = SimpleNamespace(cfg={"camera": {"png_threads": 2}}, png_level=3)
+    imgs = [((np.arange(64 * 256) + k) % 251).astype(np.uint8).reshape(64, 256) for k in range(6)]
+    futs = [Writer._png_async(w, im) for im in imgs]
+    assert [f.result() for f in futs] == [png_bytes(im, 3) for im in imgs]
+    w._pool.shutdown()
+
+
 def test_no_opencv_in_sim_paths():
     pat = re.compile(r"^\s*(import cv2|from cv2)", re.M)
     files = list((ROOT / "src" / "cvlab" / "sim").glob("*.py")) + [ROOT / "scripts" / "sim_generate.py"] + \
