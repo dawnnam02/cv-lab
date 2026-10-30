@@ -95,11 +95,15 @@ def test_speckle_point_and_cell_sigma():
     base, _ = r.render_line(PlaneSurface(heights=(0.0,)), np.zeros(3))
     sp = Speckle(O["speckle_contrast"], O["speckle_corr_u_px"], O["speckle_corr_v_px"], O["speckle_rho_frame"],
                  SeedTree(9).child("sp").rng(), base.shape)
-    cs = np.array([centroid((base - O["ambient"]) * sp.next() + O["ambient"]) for _ in range(40)])[:, COLS]
+    lit = np.flatnonzero((base - O["ambient"]).any(axis=1))
+    band = (int(lit[0]), int(lit[-1]) + 1)          # 렌더와 같은 선 둘레 행만 (T3-2 2차)
+    cs = np.array([centroid((base - O["ambient"]) * sp.next(band) + O["ambient"]) for _ in range(40)])[:, COLS]
     d = (cs - cs.mean(0)) * UM_PER_PX
     cells = [np.nanmean(d[f:f + 10, c:c + 13]) for f in range(0, 40, 10) for c in range(0, 870, 13)]
     assert 3.6 <= np.nanstd(d) <= 10.8
     assert 1.45 <= np.nanstd(cells) <= 4.35
+    zb = sp.z[band[0]:band[1]]
+    assert 0.9 < float(zb.std()) < 1.1 and abs(float(zb.mean())) < 0.1   # 고정 정규화로도 단위 분산
 
 
 def test_camera_side_occlusion():

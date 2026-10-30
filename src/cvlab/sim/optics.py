@@ -230,17 +230,41 @@ class Speckle:
     shape: tuple
     z: np.ndarray | None = field(default=None, repr=False)
 
-    def _new(self):
-        w = self.rng.standard_normal(self.shape, dtype=np.float32)
-        f = ndimage.gaussian_filter(w, (self.corr_v, self.corr_u), mode="wrap", truncate=3.0)
-        return f / (f.std() + 1e-12)
+    def _norm(self) -> float:
+        """가우스로 흐린 단위 백색 잡음의 표준편차 역수 (무한 영역, 이산 커널 제곱합) — 프레임마다 std를 재지 않음."""
+        if "_nrm" not in self.__dict__:
+            def ksq(s):
+                r = int(3.0 * s + 0.5)
+                k = np.exp(-0.5 * (np.arange(-r, r + 1) / s) ** 2)
+                k /= k.sum()
+                return float((k ** 2).sum())
+            self.__dict__["_nrm"] = 1.0 / math.sqrt(ksq(self.corr_v) * ksq(self.corr_u))
+        return self.__dict__["_nrm"]
 
-    def next(self) -> np.ndarray:
+    def next(self, band: tuple | None = None) -> np.ndarray:
+        """곱할 스펙클 배율 (shape). band = (r0, r1)이면 그 행만 새로 만듦 (선 둘레, T3-2): 위아래 3σ_v 여유를 두고
+        흐린 뒤 잘라 내므로 띠 안 값은 전체를 흐린 것과 같은 통계. 띠 밖 행은 배율 1 (빛이 없음)."""
+        H, W = self.shape
         if self.contrast <= 0:
-            return np.ones(self.shape)
-        n = self._new()
-        self.z = n if self.z is None else self.rho * self.z + math.sqrt(1.0 - self.rho ** 2) * n
-        return np.clip(1.0 + self.contrast * self.z, 0.0, None)
+            return np.ones(self.shape, np.float32)
+        r0, r1 = (0, H) if band is None else (max(0, int(band[0])), min(H, int(band[1])))
+        if self.z is None:
+            self.z = np.zeros(self.shape, np.float32)
+            self.__dict__["_seen"] = np.zeros(H, bool)
+        out = np.ones(self.shape, np.float32)
+        if r1 <= r0:
+            return out
+        m = int(math.ceil(3.0 * self.corr_v)) + 1
+        a0, a1 = r0 - m, r1 + m
+        w = self.rng.standard_normal((a1 - a0, W), dtype=np.float32)
+        f = ndimage.gaussian_filter(w, (self.corr_v, self.corr_u), mode=("nearest", "wrap"), truncate=3.0)
+        f = f[m:m + (r1 - r0)] * np.float32(self._norm())
+        seen = self.__dict__["_seen"][r0:r1]
+        zb = self.z[r0:r1]
+        zb[:] = np.where(seen[:, None], self.rho * zb + math.sqrt(1.0 - self.rho ** 2) * f, f)
+        self.__dict__["_seen"][r0:r1] = True
+        out[r0:r1] = np.clip(1.0 + self.contrast * zb, 0.0, None)
+        return out
 
 
 # ---------------------------------------------------------------- 렌더러
@@ -270,6 +294,20 @@ class LineRenderer:
         return min(xa, xb), max(xa, xb)
 
     def _samples(self):
+        """선 방향 · 시트 두께 표본 (기하마다 같음 → 한 번만, T3-2 2차)."""
+        if "_smp" not in self.__dict__:
+            self.__dict__["_smp"] = self._samples_make()
+        return self.__dict__["_smp"]
+
+    def _mat_table(self):
+        if "_mt" not in self.__dict__:
+            m = self.mats
+            self.__dict__["_mt"] = {k: np.array([x[k] for x in m], float) for k in
+                                    ("diffuse", "spec", "lobe_deg", "beta", "delta_um")}
+            self.__dict__["_mt"]["lobe_rad"] = np.radians(self.__dict__["_mt"]["lobe_deg"])
+        return self.__dict__["_mt"]
+
+    def _samples_make(self):
         xa, xb = self._x_range()
         n = int(math.ceil((self.g.width + 6) * self.o["samples_per_px"]))
         xs = np.linspace(xa, xb, n)
@@ -338,6 +376,32 @@ class LineRenderer:
         occ[cand] = hit
         return occ
 
+    @staticmethod
+    def _bound_raster(surf, x0, x1, y0, y1, step, margin, ahead_mm=30.0, pad_mm=2.0):
+        """높이 상한 격자 (5 × 5 최댓값 + 여유). 장면은 스캔 내내 같으므로 넓게 한 번 찍어 장면에 두고 (스캔 방향 +Y로
+        30 mm 앞까지) 다음 프레임은 잘라 씀 (T3-2 2차). 격자점은 step의 정수배 (전역 격자)."""
+        cache = surf.__dict__.get("_bound_cache")
+        if cache is not None:
+            gx0, gy0, Hf = cache
+            ny, nx = Hf.shape
+            if x0 >= gx0 and y0 >= gy0 and x1 <= gx0 + (nx - 1) * step and y1 <= gy0 + (ny - 1) * step:
+                i0 = int(math.floor((x0 - gx0) / step + 1e-9))
+                j0 = int(math.floor((y0 - gy0) / step + 1e-9))
+                i1 = int(math.ceil((x1 - gx0) / step - 1e-9)) + 1
+                j1 = int(math.ceil((y1 - gy0) / step - 1e-9)) + 1
+                return Hf[j0:j1, i0:i1], gx0 + i0 * step, gy0 + j0 * step
+        ax0 = math.floor((x0 - pad_mm) / step) * step
+        ay0 = math.floor((y0 - pad_mm) / step) * step
+        ax1, ay1 = x1 + pad_mm, y1 + ahead_mm
+        nx, ny = int(math.ceil((ax1 - ax0) / step)) + 1, int(math.ceil((ay1 - ay0) / step)) + 1
+        if nx * ny > 4_000_000:
+            return None
+        GX, GY = np.meshgrid(ax0 + np.arange(nx) * step, ay0 + np.arange(ny) * step)
+        Hr, _, _ = surf.heights(GX, GY)
+        Hf = (ndimage.maximum_filter(Hr, size=5, mode="nearest") + margin).astype(np.float32)
+        surf.__dict__["_bound_cache"] = (ax0, ay0, Hf)
+        return LineRenderer._bound_raster(surf, x0, x1, y0, y1, step, margin, ahead_mm, pad_mm)
+
     def _prune_occlusion(self, surf, P, V, cand, top, step=0.02, margin=1e-3):
         """보수적 가지치기 (속도): 후보 광선이 지나는 띠를 한 번에 높이 격자로 찍고 (5 × 5 최댓값 + 여유 1 µm)
         광선 높이가 그 상한을 한 번도 넘지 않으면 가림 없음으로 뺌. 남은 후보만 정밀 광선 따라가기."""
@@ -348,14 +412,11 @@ class LineRenderer:
         x1 = max(Pc[:, 0].max(), ends[:, 0].max()) + 3 * step
         y0 = min(Pc[:, 1].min(), ends[:, 1].min()) - 3 * step
         y1 = max(Pc[:, 1].max(), ends[:, 1].max()) + 3 * step
-        nx, ny = int(math.ceil((x1 - x0) / step)) + 1, int(math.ceil((y1 - y0) / step)) + 1
-        if nx * ny > 3_000_000:
+        got = self._bound_raster(surf, x0, x1, y0, y1, step, margin)
+        if got is None:
             return cand
-        gx = x0 + np.arange(nx) * step
-        gy = y0 + np.arange(ny) * step
-        GX, GY = np.meshgrid(gx, gy)
-        Hr, _, _ = surf.heights(GX, GY)
-        Hf = ndimage.maximum_filter(Hr, size=5, mode="nearest") + margin
+        Hf, x0, y0 = got
+        ny, nx = Hf.shape
         hxy = np.maximum(np.hypot(Vc[:, 0], Vc[:, 1]), 1e-6)
         need = np.zeros(len(cand), bool)
         # ① 가까운 0.24 mm: 고운 칸 (0.02 mm) 간격으로 (자기 면을 굵은 칸에 넣지 않게)
@@ -422,7 +483,9 @@ class LineRenderer:
         img, info = self._render_raw(surf, np.asarray(O_g, float))
         img = img * self.scale()
         if speckle is not None and self.sw["speckle"]:
-            img = img * speckle.next()
+            nz = np.flatnonzero(img.any(axis=1))          # 빛이 있는 행만 스펙클 (T3-2 2차)
+            if nz.size:
+                img = img * speckle.next((int(nz[0]), int(nz[-1]) + 1))
         img = img + amb
         return img, (info if with_info else None)
 
@@ -443,15 +506,27 @@ class LineRenderer:
         Ps = np.stack([X, Y, t], 1)                       # {S} 점
         u, v, depth = g.project_s(Ps)
         Cg = O + g.R_gs @ g.C_s
+        # 그림자는 선 위 모든 점 (막는 점 포함)으로 보고, 그 뒤 계산은 영상에 들어갈 표본만 (T3-2 2차, 결과 같음)
+        sh_all = None
+        if self.sw["occlusion"]:
+            sh_all = self._shadowed_laser(t, X, Y == 0.0)       # 시트 가운데 표본으로 보고
+            sh_all = np.repeat(sh_all.reshape(-1, 3).any(1), 3)  # 같은 x의 세 표본에 같이 적용
+        vr_all = v - g.roi_y0
+        pre = (u > -1.5) & (u < g.width + 0.5) & (vr_all > -30) & (vr_all < g.roi_h + 30)
+        if sh_all is not None:
+            pre &= ~sh_all
+        img = np.zeros((g.roi_h, g.width))
+        if not pre.any():
+            return img, {"valid_cols": 0}
+        P, mat, hot, t, u, v, depth, Xp, Wt = P[pre], mat[pre], hot[pre], t[pre], u[pre], v[pre], depth[pre], X[pre], Wt[pre]
         n = self._normals(surf, P)
         Lg = O + g.R_gs @ g.laser_src_s
         Ldir = Lg[None, :] - P
         Ldir /= np.linalg.norm(Ldir, axis=1, keepdims=True)
         Vdir = Cg[None, :] - P
         Vdir /= np.linalg.norm(Vdir, axis=1, keepdims=True)
-        md = np.array([m["diffuse"] for m in self.mats])[mat]
-        ms = np.array([m["spec"] for m in self.mats])[mat]
-        ml = np.radians(np.array([m["lobe_deg"] for m in self.mats]))[mat]
+        mt = self._mat_table()
+        md, ms, ml = mt["diffuse"][mat], mt["spec"][mat], mt["lobe_rad"][mat]
         ndl = np.clip((n * Ldir).sum(1), 0.0, None)
         ndv = (n * Vdir).sum(1)
         Hb = Ldir + Vdir
@@ -459,20 +534,16 @@ class LineRenderer:
         ang = np.arccos(np.clip((n * Hb).sum(1), -1.0, 1.0))
         gloss = np.where(hot & self.sw["hot_gloss"], o["hot_gloss_gain"], 1.0)
         refl = md * ndl + ms * gloss * np.exp(-ang ** 2 / (2 * ml ** 2))
-        fan = np.exp(-2.0 * X ** 2 / o["fan_w_mm"] ** 2)
+        fan = np.exp(-2.0 * Xp ** 2 / o["fan_w_mm"] ** 2)
         w = Wt * fan * refl * (ndv > 0) * dx
         valid = (ndv > 0) & (ndl > 0)
         if self.sw["occlusion"]:
-            # 영상에 들어갈 표본만 가림을 봄 (ROI · 열 범위 밖이거나 빛이 0인 표본은 어차피 안 그림 → 결과 같음, T3-2)
-            vr0 = v - g.roi_y0
-            inroi = (w > 0) & (u > -1.5) & (u < g.width + 0.5) & (vr0 > -30) & (vr0 < g.roi_h + 30)
             occ = np.zeros(len(P), bool)
+            inroi = w > 0
             if inroi.any():
                 occ[inroi] = self._occluded_camera(surf, P[inroi], Cg)
-            sh = self._shadowed_laser(t, X, Y == 0.0)           # 시트 가운데 표본으로 보고
-            sh = np.repeat(sh.reshape(-1, 3).any(1), 3)          # 같은 x의 세 표본에 같이 적용
-            w = w * ~occ * ~sh
-            valid &= ~occ & ~sh
+            w = w * ~occ
+            valid &= ~occ
         # 단면 폭: 회절 + 초점 밖 흐림
         sig_diff = 0.42 * g.wavelength_mm * g.f_number * (1 + g.magnification) / g.pixel_mm
         blur_mm = g.aperture_mm * g.K[0, 0] * g.pixel_mm * np.abs(depth - g.focus_depth) / (depth * g.focus_depth)
@@ -496,15 +567,17 @@ class LineRenderer:
             rows, prof = self._lut_profile(vk, sk, bk, tk)
             u0 = np.floor(uk).astype(int)
             fu = uk - u0
-            okr = (rows >= 0) & (rows < g.roi_h)
-            flats, wts = [], []
-            for du, wu in ((0, 1.0 - fu), (1, fu)):   # u 두 열에 선형으로 나눔 (한 번의 bincount로 모음)
-                cols = u0 + du
-                ok = okr & ((cols >= 0) & (cols < g.width))[:, None]
-                flats.append((rows * g.width + cols[:, None])[ok])
-                wts.append((prof * (wk * wu)[:, None])[ok])
-            img += np.bincount(np.concatenate(flats), weights=np.concatenate(wts),
-                               minlength=g.roi_h * g.width).reshape(g.roi_h, g.width)
+            # u 두 열에 선형으로 나눠 한 번의 bincount로 쌓음. 범위 밖 행 · 열은 여백 둔 판에 쌓고 잘라 냄
+            # (가려 내기 마스크를 만들지 않음, 칸마다 더하는 순서 같음 → 결과 같음, T3-2 2차)
+            K = rows.shape[1]
+            PT, PB, PC = 64, 64 + K, 3
+            WP = g.width + 2 * PC
+            r_ = np.clip(rows, -PT, g.roi_h + PB - 1) + PT
+            base = r_ * WP + (u0 + PC)[:, None]
+            flat = np.concatenate([base.ravel(), (base + 1).ravel()])
+            wts = np.concatenate([(prof * (wk * (1.0 - fu))[:, None]).ravel(), (prof * (wk * fu)[:, None]).ravel()])
+            full = np.bincount(flat, weights=wts, minlength=(g.roi_h + PT + PB) * WP).reshape(-1, WP)
+            img += full[PT:PT + g.roi_h, PC:PC + g.width]
             su = float(np.median(np.sqrt(sig_diff ** 2 + (blur_mm[keep] / g.pixel_mm / 4.0) ** 2)))
             nz = np.flatnonzero(img.any(axis=1))      # u 방향 흐림은 행마다 따로라 빛이 있는 행만 (결과 같음)
             if nz.size:
@@ -529,7 +602,7 @@ class LineRenderer:
             a = offs[None, :] - 0.5 - F.ravel()[:, None]
             n = a.shape[0]
             tab = _profile_rows(a, S.ravel(), np.full(n, b), np.full(n, t))
-            cache[key] = (offs, tab.reshape(len(self.S_GRID), len(self.F_GRID), len(offs)))
+            cache[key] = (offs, tab.reshape(len(self.S_GRID), len(self.F_GRID), len(offs)).astype(np.float32))
         return cache[key]
 
     def _lut_profile(self, v0, s, b, t):
@@ -544,17 +617,19 @@ class LineRenderer:
         K = max(len(o) for o, _ in tabs)
         base = np.floor(v0).astype(int)
         rows = base[:, None] + np.arange(-h, -h + K)[None, :]
-        prof = np.zeros((len(v0), K))
+        prof = np.zeros((len(v0), K), np.float32)   # float32 (T3-2 2차)
         si = np.clip((s - self.S_GRID[0]) / (self.S_GRID[1] - self.S_GRID[0]), 0, len(self.S_GRID) - 1 - 1e-9)
         fi = np.clip((v0 - base) * (len(self.F_GRID) - 1), 0, len(self.F_GRID) - 1 - 1e-9)
         i0, j0 = si.astype(int), fi.astype(int)
-        ws, wf = (si - i0)[:, None], (fi - j0)[:, None]
+        ws = (si - i0).astype(np.float32)[:, None]
+        wf = (fi - j0).astype(np.float32)[:, None]
         for k, (offs, tab) in zip(groups, tabs):
             m = keys == k
             a, c = i0[m], j0[m]
-            p = ((1 - ws[m]) * (1 - wf[m]) * tab[a, c] + (1 - ws[m]) * wf[m] * tab[a, c + 1]
-                 + ws[m] * (1 - wf[m]) * tab[a + 1, c] + ws[m] * wf[m] * tab[a + 1, c + 1])
-            prof[m, :len(offs)] = p
+            wsm, wfm = ws[m], wf[m]
+            lo = tab[a, c] + wfm * (tab[a, c + 1] - tab[a, c])           # 소수 부분 선형 (무게중심 보존)
+            hi = tab[a + 1, c] + wfm * (tab[a + 1, c + 1] - tab[a + 1, c])
+            prof[m, :len(offs)] = lo + wsm * (hi - lo)
         return rows, prof
 
     # 해석해 ---------------------------------------------------------------
